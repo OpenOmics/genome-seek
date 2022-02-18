@@ -1,0 +1,24 @@
+# Python standard library
+from os.path import join
+from os import listdir
+import os, sys
+
+# 3rd party imports from pypi
+from snakemake.workflow import workflow as wf_api
+from snakemake.utils import R
+
+# Local imports
+from scripts.common import (
+    provided, 
+    references
+)
+
+
+# Final ouput files of the pipeline
+rule all:
+    input:
+        []
+
+
+# Import rules 
+include: join("rules", "common.smk")

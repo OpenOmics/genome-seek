@@ -1,0 +1,8 @@
+{
+    "__default__": {
+        "threads": "4",
+        "mem": "8g",
+        "partition": "norm",
+        "time": "0-04:00:00"
+    }
+}
