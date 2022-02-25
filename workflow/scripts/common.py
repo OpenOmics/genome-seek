@@ -101,3 +101,26 @@ def abstract_location(file_address, *args, **kwargs):
             file_list[i] = remote_provider.remote(uri, *args, **kwargs)
 
     return file_list
+
+
+def references(config, reflist):
+    """
+    Checks if a set of required reference files were provided. Some rules depend
+    on a set of required reference files that may only exist for specific reference
+    genomes. An example of this would be blasklists arriba. The blacklist are manually
+    curated and only exist for a few reference genomes (mm10, hg38, hg19).
+    If one of the required reference files does not exist, then it will return
+    an empty list.
+    """
+
+    _all = True
+    for ref in reflist:
+        try: tmp = config['references'][ref]
+        # Check if ref exists in config
+        except KeyError:
+            _all = False
+            break
+        # Check if ref is empty key string
+        if not tmp: _all = False
+
+    return _all

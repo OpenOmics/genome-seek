@@ -200,13 +200,13 @@ def safe_copy(source, target, resources = []):
 
 
 def git_commit_hash(repo_path):
-    """Gets the git commit hash of the RNA-seek repo.
+    """Gets the git commit hash of the repo.
     @param repo_path <str>:
-        Path to RNA-seek git repo
+        Path to git repo
     @return githash <str>:
         Latest git commit hash
     """
-    githash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd = repo_path).strip()
+    githash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd = repo_path).strip().decode('utf-8')
     # Typecast to fix python3 TypeError (Object of type bytes is not JSON serializable)
     # subprocess.check_output() returns a byte string
     githash = str(githash)
@@ -222,7 +222,7 @@ def join_jsons(templates):
     @return aggregated <dict>:
         Dictionary containing the contents of all the input JSON files
     """
-    # Get absolute PATH to templates in rna-seek git repo
+    # Get absolute PATH to templates in git repo
     repo_path = os.path.dirname(os.path.abspath(__file__))
     aggregated = {}
 
