@@ -4,12 +4,13 @@ import os, sys
 # package or py file.
 # Allows for consistent syntax of relative imports 
 # across python2 and python3.
-sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+here = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(here)
 
 # Ground source of truth for version information
 try:
     # Import from root of project directory
-    version = open('VERSION', 'r').readlines()[0].strip()
+    version = open(os.path.join(here, 'VERSION'), 'r').readlines()[0].strip()
 except IOError:
     # When namespace is __main__ 
-    version = open('../VERSION', 'r').readlines()[0].strip()
+    version = open(os.path.join(here, '..', 'VERSION'), 'r').readlines()[0].strip()
