@@ -124,3 +124,24 @@ def references(config, reflist):
         if not tmp: _all = False
 
     return _all
+
+
+def str_bool(s):
+    """Converts a string to boolean. It is dangerous to try to
+    typecast a string into a boolean value using the built-in 
+    `bool()` function. This function avoids any issues that can
+    arise when using `bool()`. 
+    Example:
+      boolean('True') returns True
+      boolean('False') returns False
+      boolean('asdas') raises TypeError
+    """
+    val = s.lower()
+    if val in ['true', '1', 'y', 'yes']:
+        return True
+    elif val in ['false', '0', 'n', 'no', '']:
+        return False
+    else:
+        # Provided value could not be
+        # type casted into a boolean
+        raise TypeError('Fatal: cannot type cast {} into a boolean'.format(val))

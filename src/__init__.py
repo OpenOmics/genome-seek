@@ -12,5 +12,5 @@ try:
     # Import from root of project directory
     version = open(os.path.join(here, 'VERSION'), 'r').readlines()[0].strip()
 except IOError:
-    # When namespace is __main__ 
+    # When namespace is __main__
     version = open(os.path.join(here, '..', 'VERSION'), 'r').readlines()[0].strip()
