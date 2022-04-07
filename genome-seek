@@ -491,6 +491,11 @@ def parsed_arguments(name, description):
 
 def main():
 
+    # Sanity check for usage
+    if len(sys.argv) == 1:
+        # Nothing was provided
+        fatal('Invalid usage: {} [-h] [--version] ...'.format(_name))
+
     # Collect args for sub-command
     args = parsed_arguments(
         name = _name,
