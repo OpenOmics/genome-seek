@@ -96,6 +96,8 @@ def run(sub_args):
     # snakemake and singularity 
     require(['snakemake', 'singularity'], ['snakemake', 'singularity'])
 
+    print(sub_args)
+
     # Step 1. Initialize working directory,
     # copy over required resources to run 
     # the pipeline
@@ -173,37 +175,116 @@ def parsed_arguments(name, description):
     # options that are required! Please note: if a required arg is added the
     # description below should be updated (i.e. update usage and add new option)
     required_run_options = textwrap.dedent("""\
-        usage: {} run [--help] \\
-                            [--mode <local,slurm>] \\
-                            [--job-name JOB_NAME] \\
-                            [--dry-run] \\
-                            [--silent] \\
-                            [--singularity-cache SINGULARITY_CACHE] \\
-                            [--sif-cache SIF_CACHE] \\
-                            [--tmpdir TMP_DIR] \\
-                            [--threads THREADS] \\
-                            --input INPUT [INPUT ...] \\
-                            --output OUTPUT
+        Usage: {0} run [--help] [--mode {{local,slurm}}] [--job-name JOB_NAME] \\
+                          [ --dry-run] [--silent] [--sif-cache SIF_CACHE] \\ 
+                          [--singularity-cache SINGULARITY_CACHE]  \\
+                          [--tmpdir TMP_DIR] [--threads THREADS] \\
+                          [--call-cnv] [--call-sv] [--call-hla] \\
+                          --input INPUT [INPUT ...] \\
+                          --output OUTPUT
 
-        required arguments:
+        Required arguments:
           --input INPUT [INPUT ...]
                                 Input FastQ file(s) to process. The pipeline does NOT
                                 support single-end data. FastQ files for one or more  
                                 samples can be provided.
-                                Example: --input .tests/*.R?.fastq.gz
+                                  Example: --input .tests/*.R?.fastq.gz
           --output OUTPUT
                                 Path to an output directory. This location is where
                                 the pipeline will create all of its output files, also
                                 known as the pipeline's working directory. If the user
                                 provided working directory has not been initialized,
                                 it will be created automatically.
-                                Example: --output /data/$USER/output
+                                  Example: --output /data/$USER/output
 
+        Analysis options:
+          --call-cnv            Call copy number variation (CNV).
+                                  Example: --call-cnv
+    
+          --call-sv             Call structural variation (SV)
+                                  Example: --call-sv
+
+          --call-hla            Call HLA types.
+                                  Example: --call-hla
+                                
+
+        Orchestration options:
+          --mode {{slurm,local}}  
+                                Method of execution. Defines the mode of execution. 
+                                Vaild options for this mode include: local or slurm. 
+                                Additional modes of exection are coming soon, default:  
+                                slurm.
+                                Here is a brief description of each mode:
+                                   • local: uses local method of execution. local runs 
+                                will run serially on compute instance. This is useful 
+                                for testing, debugging, or when a users does not have
+                                access to a  high  performance  computing environment.
+                                If this option is not provided, it will default to a 
+                                slurm mode of execution. 
+                                   • slurm: uses slurm execution backend. This method 
+                                will submit jobs to a  cluster  using sbatch. It is 
+                                recommended running the pipeline in this mode as it 
+                                will be significantly faster. 
+                                  Example: --mode slurm
+          --job-name JOB_NAME   
+                                Overrides the name of the pipeline's master job. When 
+                                submitting the pipeline to a jobscheduler, this option
+                                overrides the default name of the master job. This can 
+                                be useful for tracking the progress or status of a run, 
+                                default: pl:{0}.
+                                  Example: --job-name {0}_03-14.1592
+          --dry-run             
+                                Does not execute anything. Only displays what steps in
+                                the pipeline remain or will be run.
+                                  Example: --dry-run
+          --silent              
+                                Silence standard output. This will reduces the amount 
+                                of information displayed to standard  output  when the 
+                                master job is submitted to the job scheduler. Only the 
+                                job id of the master job is returned.
+                                  Example: --silent
+          --singularity-cache SINGULARITY_CACHE
+                                Overrides the $SINGULARITY_CACHEDIR variable. Images
+                                from remote registries are cached locally on the file
+                                system. By default, the singularity cache is set to:
+                                '/path/to/output/directory/.singularity/'. Please note
+                                that this cache cannot be shared across users.
+                                  Example: --singularity-cache /data/$USER
+          --sif-cache SIF_CACHE
+                                Path where a local cache of SIFs are stored. This cache
+                                can be shared across users if permissions are properly
+                                setup. If a SIF does not exist in the SIF cache, the
+                                image will be pulled from Dockerhub. The {0} cache
+                                sub command can be used to create a local SIF cache. 
+                                Please see {0} cache for more information.
+                                   Example: --sif-cache /data/$USER/sifs/
+          --tmp-dir TMP_DIR     
+                                Path on the file system for writing temporary output 
+                                files. By default, the temporary directory is set to 
+                                '/lscratch/$SLURM_JOBID' for backwards compatibility 
+                                with the NIH's Biowulf cluster; however, if you are 
+                                running the pipeline on another cluster, this option 
+                                will need to be specified. Ideally, this path should 
+                                point to a dedicated location on the filesystem for 
+                                writing tmp files. On many systems, this location is 
+                                set to somewhere in /scratch. If you need to inject a 
+                                variable into this string that should NOT be expanded, 
+                                please quote this options value in single quotes. 
+                                  Example: --tmp-dir '/scratch/cluster_scratch/$USER/'
+          --threads THREADS     
+                                Max number of threads for local processes. It is
+                                recommended setting this vaule to the maximum number of
+                                CPUs available on the host machine, default: 2.
+                                  Example: --threads: 16
+        
+        Misc Options:
+          -h, --help            Show usage information, help message, and exit.
+                                  Example: --help
         """.format(name))
 
     # Display example usage in epilog
     run_epilog = textwrap.dedent("""\
-        example:
+        Example:
           # Step 1.) Grab an interactive node,
           # do not run on head node!
           sinteractive --mem=8g --cpus-per-task=4
@@ -212,7 +293,7 @@ def parsed_arguments(name, description):
 
           # Step 2A.) Dry-run the pipeline
           ./{} run --input .tests/*.R?.fastq.gz \\
-                         --output /data/$USER/output\\
+                         --output /data/$USER/output \\
                          --mode slurm \\
                          --dry-run
 
@@ -224,7 +305,7 @@ def parsed_arguments(name, description):
                          --output /data/$USER/output \\
                          --mode slurm
 
-        version:
+        Version:
           {}
         """.format(name, name, name, __version__))
 
@@ -234,7 +315,8 @@ def parsed_arguments(name, description):
         usage = argparse.SUPPRESS,
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description = required_run_options,
-        epilog  = run_epilog
+        epilog  = run_epilog,
+        add_help=False
     )
 
     # Required Arguments
@@ -255,22 +337,48 @@ def parsed_arguments(name, description):
     )
 
     # Optional Arguments
+    # Add custom help message
+    subparser_run.add_argument(
+        '-h', '--help', 
+        action='help', 
+        help=argparse.SUPPRESS
+    )
+    
+    # Analysis options
+    # Call CNVs
+    subparser_run.add_argument(
+        '--call-cnv',
+        action = 'store_true',
+        required = False,
+        default = False,
+        help = argparse.SUPPRESS
+    )
+
+    # Call SVs
+    subparser_run.add_argument(
+        '--call-sv',
+        action = 'store_true',
+        required = False,
+        default = False,
+        help = argparse.SUPPRESS
+    )
+
+    # Call HLA
+    subparser_run.add_argument(
+        '--call-hla',
+        action = 'store_true',
+        required = False,
+        default = False,
+        help = argparse.SUPPRESS
+    )
+
     # Execution Method (run locally on a compute node, submit to SLURM job scheduler, etc.)
     subparser_run.add_argument('--mode',
         type = str,
         required = False,
         default = "slurm",
         choices = ['slurm', 'local'],
-        help = 'Execution Method [Default: slurm]. Defines the mode or method of execution. \
-        Vaild mode options include: local or slurm. \
-        local: uses local method of execution. local executions will run serially on \
-        compute instance. This is useful for testing, debugging, or when a users does \
-        not have access to a high performance computing environment. If this option is \
-        not provided, it will default to a local execution mode. \
-        slurm: uses slurm and singularity backend. The slurm execution method will submit \
-        jobs to a cluster. It is recommended running {} in this mode as execution \
-        will be significantly faster in a distributed environment. \
-        Example: --mode slurm'.format(name)
+        help = argparse.SUPPRESS
     )
 
     # Name of master job
@@ -278,12 +386,7 @@ def parsed_arguments(name, description):
         type = str,
         required = False,
         default = 'pl:{}'.format(name),
-        help = 'Set the name of the pipeline\'s master job. \
-        When submitting the pipeline to a job scheduler, like SLURM, \
-        this option always you to set the name of the pipeline\'s master \
-        job. By default, the name of the pipeline\'s master job \
-        is set to "pl:{}". \
-        Example: --job-name {}_main'.format(name, name)
+        help = argparse.SUPPRESS
     )
 
     # Dry-run (do not execute the workflow, prints what steps remain)
@@ -291,8 +394,7 @@ def parsed_arguments(name, description):
         action = 'store_true',
         required = False,
         default = False,
-        help = 'Do not execute anything, and only display what steps in the pipeline remain or \
-        will be run.'
+        help = argparse.SUPPRESS
     )
 
     # Silent output mode
@@ -300,31 +402,21 @@ def parsed_arguments(name, description):
         action = 'store_true',
         required = False,
         default = False,
-        help = 'Silence standard output. Reduces the amount of information directed \
-        to standard output when submitting master job to the job scheduler. Only the \
-        job id of the master job is returned.'
+        help = argparse.SUPPRESS
     )
     
     # Singularity cache directory (default uses output directory)
     subparser_run.add_argument('--singularity-cache',
         type = lambda option: check_cache(parser, os.path.abspath(os.path.expanduser(option))),
         required = False,
-        help = 'Overrides the $SINGULARITY_CACHEDIR environment variable. Singularity will cache \
-        image layers pulled from remote registries. By default, the cache is set to \
-        \'/path/to/output/directory/.singularity/\'. \
-        Please note that this cache cannot be shared across users.'
+        help = argparse.SUPPRESS
     )
     
     # Local SIF cache directory (default pull from Dockerhub) 
     subparser_run.add_argument('--sif-cache',
         type = lambda option: os.path.abspath(os.path.expanduser(option)),
         required = False,
-        help = 'Path where a local cache of SIFs are stored. \
-        This cache can be shared across users if permissions are \
-        set correctly. If a SIF does not exist in the SIF cache, \
-        the image will be pulled from Dockerhub. The {} cache \
-        subcommand can be used to create a local SIF cache. Please see \
-        {} cache for more information.'.format(name, name)
+        help = argparse.SUPPRESS
     )
 
     # Base directory to write temporary files 
@@ -332,18 +424,7 @@ def parsed_arguments(name, description):
         type = str,
         required = False,
         default = '/lscratch/$SLURM_JOBID/',
-        help = 'Path on the filesystem for writing intermediate, temporary output \
-        files. By default, this variable is set to \'/lscratch/$SLURM_JOBID\' \
-        for backwards compatibility with the NIH\'s Biowulf cluster; however, \
-        if you are running the pipeline on another cluster, this option will \
-        need to be specified. Ideally, this path should point to a dedicated \
-        location on the filesystem for writing tmp files. On many systems, this \
-        location is set to somewhere in /scratch. If you need to inject a variable \
-        into this string that should NOT be expanded, please quote this options \
-        value in single quotes. As an example, on the NCI/NIH FRCE cluster the \
-        value of this option would be set to \
-        --tmp-dir \'/scratch/cluster_scratch/$USER/\', \
-        default:  \'/lscratch/$SLURM_JOBID/\''
+        help = argparse.SUPPRESS
     )
 
     # Number of threads for the pipeline's main proceess
@@ -353,9 +434,7 @@ def parsed_arguments(name, description):
         type = int,
         required = False,
         default = 2,
-        help = 'Max number of threads for local processes. It is recommended \
-        setting this vaule to the maximum number of CPUs available on the host \
-        machine, default: 2.'
+        help = argparse.SUPPRESS
     )
 
     # Sub-parser for the "unlock" sub-command
