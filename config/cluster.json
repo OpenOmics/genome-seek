@@ -1,8 +1,190 @@
 {
-    "__default__": {
-        "threads": "4",
-        "mem": "8g",
-        "partition": "norm",
-        "time": "0-04:00:00"
-    }
+	"__default__": {
+		"partition": "norm",
+		"threads": "4",
+		"mem": "32g",
+		"time": "4-00:00:00"
+	},
+	"bam": {
+		"threads": "2",
+		"time": "12:00:00"
+	},
+	"bam2fastq": {
+		"threads": "2",
+		"time": "48:00:00",
+		"mem": "72G",
+		"gres": "lscratch:256"
+
+	},
+	"fastp": {
+		"threads": "32",
+		"time": "48:00:00"
+	},
+	"namesort": {
+		"threads": "16",
+		"mem": "72G",
+		"time": "48:00:00"
+	},
+	"bwa_mem2": {
+		"threads": "24",
+		"mem": "288G"
+	},
+	"deepvariant": {
+		"threads": "18",
+		"mem": "48G",
+		"partition": "gpu",
+		"gres": "gpu:v100x:1",
+		"time": "1-00:00:00"
+	},
+	"glnexus": {
+		"threads": "24",
+		"mem": "96G",
+		"time": "8-00:00:00"
+	},
+	"picard_headers": {
+		"threads": "2",
+		"time": "24:00:00"
+	},
+	"novocraft_sort": {
+		"threads": "8",
+		"time": "24:00:00",
+		"mem": "96G",
+		"gres": "lscratch:256"
+	},
+	"picard_markdups": {
+		"threads": "2",
+		"time": "24:00:00"
+	},
+	"gatk_realign": {
+		"threads": "2",
+		"time": "48:00:00"
+	},
+	"gatk_recal": {
+		"threads": "24",
+		"time": "48:00:00",
+		"mem": "72G"
+	},
+	"filter_cnv": {
+		"threads": "2",
+		"time": "2:00:00",
+		"mem": "1G"
+	},
+	"samtools_flagstats": {
+		"threads": "2",
+		"time": "12:00:00",
+		"mem": "12G"
+	},
+
+	"vcftools": {
+		"threads": "2",
+		"time": "12:00:00"
+	},
+
+	"collectvariantcallmetrics": {
+		"threads": "2",
+		"time": "12:00:00"
+	},
+
+	"qc": {
+		"threads": "2",
+		"partition": "norm",
+		"time": "12:00:00"
+	},
+
+	"ped": {
+		"threads": "2",
+		"partition": "norm",
+		"time": "12:00:00"
+	},
+
+	"inbreeding": {
+		"threads": "8",
+		"partition": "norm"
+	},
+
+	"cnv_post": {
+		"threads": "8",
+		"partition": "norm",
+		"time": "12:00:00"
+	},
+	"hla": {
+		"threads": "8",
+		"partition": "norm",
+		"mem": "96G"
+	},
+	"qualimap": {
+		"threads": "8",
+		"mem": "96G"
+	},
+	"varianteval": {
+		"threads": "4",
+		"mem": "32G",
+		"time": "12:00:00"
+	},
+    "rawfastqc":{
+        "threads":"8",
+        "mem":"32G",
+        "time": "12:00:00"
+    },
+	"fastqc": {
+		"threads": "8",
+		"mem": "32G",
+		"time": "12:00:00"
+	},
+	"Gatk_SelectVariants": {
+		"threads": "2",
+		"mem": "24G",
+		"time": "12:00:00"
+	},
+	"SNPeff": {
+		"mem": "24G",
+		"time": "12:00:00"
+	},
+	"haplotypecaller": {
+		"threads": "4",
+		"mem": "48G",
+		"time": "2-00:00:00"
+	},
+	"mergegvcfs": {
+		"threads": "2",
+		"mem": "96G",
+		"time": "5-00:00:00",
+		"gres": "lscratch:768"
+	},
+	"genotype": {
+		"threads": "2",
+		"mem": "96G",
+		"time": "3-00:00:00"
+	},
+	"dbgenotype": {
+		"threads": "2",
+		"mem": "96G",
+		"time": "10-00:00:00",
+		"gres": "lscratch:512"
+	},
+	"vqsr_snp": {
+		"threads": "8",
+		"mem": "48G",
+		"time": "5-00:00:00"
+	},
+	"vqsr_indel": {
+		"threads": "8",
+		"mem": "48G",
+		"time": "5-00:00:00"
+	},
+	"apply_snp": {
+		"threads": "8",
+		"mem": "48G",
+		"time": "2-00:00:00"
+	},
+	"apply_indel": {
+		"threads": "8",
+		"mem": "48G",
+		"time": "2-00:00:00"
+	},
+	"gtype_refinement": {
+		"threads": "2",
+		"mem": "48G",
+		"time": "2-00:00:00"
+	}
 }
