@@ -1,4 +1,5 @@
 {
     "references": {
+        "GENOME": "/data/NCBR/references/genome-seek/Homo_sapiens_assembly38.fasta"
     }
 }
