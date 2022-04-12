@@ -601,12 +601,15 @@ def dryrun(outdir, config='config.json', snakefile=os.path.join('workflow', 'Sna
         Byte string representation of dryrun command
     """
     try:
+        # Setting cores to dummy high number so
+        # displays the true number of cores a rule
+        # will use, it uses the min(--cores CORES, N)
         dryrun_output = subprocess.check_output([
             'snakemake', '-npr',
             '-s', str(snakefile),
             '--use-singularity',
             '--rerun-incomplete',
-            '--cores', str(1),
+            '--cores', str(256),
             '--configfile={}'.format(config)
         ], cwd = outdir,
         stderr=subprocess.STDOUT)
@@ -621,7 +624,7 @@ def dryrun(outdir, config='config.json', snakefile=os.path.join('workflow', 'Sna
             # Failure caused by unknown cause, raise error
             raise e
     except subprocess.CalledProcessError as e:
-        print(e, e.output)
+        print(e, e.output.decode("utf-8"))
         raise(e)
 
     return dryrun_output
