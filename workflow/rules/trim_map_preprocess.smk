@@ -68,9 +68,10 @@ rule bwa_mem2:
         -M \\
         -R \'@RG\\tID:{params.sample}\\tSM:{params.sample}\\tPL:illumina\\tLB:{params.sample}\\tPU:{params.sample}\\tCN:ncbr\\tDS:wgs\' \\
         {params.genome} \\
-        {input.r1} {input.r2} | \\
-    samblaster -M | \\
-    samtools sort -@{threads} \\
+        {input.r1} \\
+        {input.r2} \\
+    | samblaster -M \\
+    | samtools sort -@{threads} \\
         --write-index \\
         -m 10G - \\
         -o {output.bam}
