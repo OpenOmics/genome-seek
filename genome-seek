@@ -176,10 +176,10 @@ def parsed_arguments(name, description):
     # description below should be updated (i.e. update usage and add new option)
     required_run_options = textwrap.dedent("""\
         Usage: {0} run [--help] [--mode {{local,slurm}}] [--job-name JOB_NAME] \\
+                          [--call-cnv] [--call-sv] [--call-hla] [--skip-qc] \\
                           [ --dry-run] [--silent] [--sif-cache SIF_CACHE] \\ 
-                          [--singularity-cache SINGULARITY_CACHE]  \\
+                          [--singularity-cache SINGULARITY_CACHE] \\
                           [--tmpdir TMP_DIR] [--threads THREADS] \\
-                          [--call-cnv] [--call-sv] [--call-hla] \\
                           --input INPUT [INPUT ...] \\
                           --output OUTPUT
 
