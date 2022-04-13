@@ -1,5 +1,6 @@
 {
     "references": {
-        "GENOME": "/data/NCBR/references/genome-seek/Homo_sapiens_assembly38.fasta"
+        "GENOME": "/data/NCBR/references/genome-seek/Homo_sapiens_assembly38.fasta",
+        "FASTQ_SCREEN_CONFIG": "resources/fastq_screen.conf"
     }
 }

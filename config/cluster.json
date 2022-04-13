@@ -20,6 +20,11 @@
 		"threads": "32",
 		"time": "48:00:00"
 	},
+	"fastq_screen": {
+		"threads": "16",
+		"mem": "32g",
+		"time": "24:00:00"
+	},
 	"namesort": {
 		"threads": "16",
 		"mem": "72G",
