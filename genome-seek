@@ -206,7 +206,17 @@ def parsed_arguments(name, description):
 
           --call-hla            Call HLA types.
                                   Example: --call-hla
-                                
+          
+          --skip-qc             Skips over quality control steps. When this option
+                                is provided the pipeline will not run any of its QC
+                                related steps. This means that only data processing 
+                                steps will run like trimming, alignment, and variant 
+                                calling. It is worth noting that we do not recommend 
+                                skipping over QC; however, in certain scenarios it 
+                                may make sense. This option is useful for testing
+                                changes to data processing steps or when evaluating 
+                                the overall accuracy and precision of the pipeline.
+                                  Example: --skip-qc
 
         Orchestration options:
           --mode {{slurm,local}}  
@@ -366,6 +376,15 @@ def parsed_arguments(name, description):
     # Call HLA
     subparser_run.add_argument(
         '--call-hla',
+        action = 'store_true',
+        required = False,
+        default = False,
+        help = argparse.SUPPRESS
+    )
+
+    # Skip QC
+    subparser_run.add_argument(
+        '--skip-qc',
         action = 'store_true',
         required = False,
         default = False,

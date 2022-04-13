@@ -1,5 +1,4 @@
 # Common helper functions shared across the entire workflow
-
 def provided(samplelist, condition):
     """
     Determines if optional rules should run. If an empty list is provided to rule all,
@@ -8,7 +7,28 @@ def provided(samplelist, condition):
     """
 
     if not condition:
-        # If condition is False, returns an empty list to prevent rule from running
+        # If condition is False, 
+        # returns an empty list 
+        # to prevent rule from 
+        # running
+        samplelist = []
+
+    return samplelist
+
+
+def ignore(samplelist, condition):
+    """
+    Determines if optional rules should run. If an empty list is provided to rule all,
+    snakemake will not try to generate that set of target files. If a given condition
+    is met (i.e. True) then it will not try to run that rule. This function is the 
+    inverse to provided(). 
+    """
+
+    if condition:
+        # If condition is True, 
+        # returns an empty list 
+        # to prevent rule from 
+        # running
         samplelist = []
 
     return samplelist

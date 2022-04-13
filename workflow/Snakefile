@@ -10,6 +10,7 @@ from snakemake.utils import R
 
 # Local imports
 from scripts.common import (
+    ignore,
     provided, 
     references,
     str_bool
@@ -31,6 +32,9 @@ call_sv = str_bool(                       # Call structural variation (SV),
 )
 call_hla = str_bool(                      # Call HLA types,
     config['options']['call_sv']          # default: False
+)
+skip_qc  = str_bool(                      # Skip over QC steps,
+    config['options']['skip_qc']          # default: False
 )
 
 # TODO: Clean up this section of legacy variables
@@ -55,15 +59,23 @@ with open(join('config', 'cluster.json')) as fh:
 # Final ouput files of the pipeline
 rule all:
     input:
+        # FastQ Information, flowcell and lanes
+        # Optional step, not run if --skip-qc 
+        # @imported from rules/qc.smk
+        expand(
+            join(workpath,"rawQC","{name}.fastq.info.txt"),
+            name=ignore(samples, skip_qc)
+        ),
         # FastQC (before and after trimming)
+        # Optional step, not run if --skip-qc 
         # @imported from rules/qc.smk
         expand(
             join(workpath,"rawQC","{name}.R1_fastqc.zip"), 
-            name=samples
+            name=ignore(samples, skip_qc)
         ),
         expand(
             join(workpath,"rawQC","{name}.R2_fastqc.zip"), 
-            name=samples
+            name=ignore(samples, skip_qc)
         ),
         # fastp, remove adapter sequences
         # @imported from rules/trim_map_preprocess.smk
@@ -75,12 +87,24 @@ rule all:
             join(workpath,"fastqs","{name}.R2.trimmed.fastq.gz"), 
             name=samples
         ),
+        # FastQ Screen, contamination screening
+        # Optional step, not run if --skip-qc 
+        # @imported from rules/qc.smk
+        expand(
+            join(workpath,"FQscreen","{name}.R1.trimmed_screen.txt"),
+            name=ignore(samples, skip_qc)
+        ),
+        expand(
+            join(workpath,"FQscreen","{name}.R2.trimmed_screen.txt"),
+            name=ignore(samples, skip_qc)
+        ),
         # bwa-mem2, align to reference genome
         # @imported from rules/trim_map_preprocess.smk
         expand(
             join(workpath, "BAM", "{name}.foo.bam.bai"), 
             name=samples
         ),
+
 
 # Import rules
 include: join("rules", "qc.smk")
