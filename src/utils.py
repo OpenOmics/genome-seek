@@ -288,6 +288,39 @@ def unpacked(nested_dict):
             yield value
 
 
+class Colors():
+    """Class encoding for ANSI escape sequeces for styling terminal text.
+    Any string that is formatting with these styles must be terminated with
+    the escape sequence, i.e. `Colors.end`.
+    """
+    # Escape sequence
+    end = '\33[0m'
+    # Formatting options
+    bold   = '\33[1m'
+    italic = '\33[3m'
+    url    = '\33[4m'
+    blink  = '\33[5m'
+    higlighted = '\33[7m'
+    # Text Colors
+    black  = '\33[30m'
+    red    = '\33[31m'
+    green  = '\33[32m'
+    yellow = '\33[33m'
+    blue   = '\33[34m'
+    pink  = '\33[35m'
+    cyan  = '\33[96m'
+    white = '\33[37m'
+    # Background fill colors
+    bg_black  = '\33[40m'
+    bg_red    = '\33[41m'
+    bg_green  = '\33[42m'
+    bg_yellow = '\33[43m'
+    bg_blue   = '\33[44m'
+    bg_pink  = '\33[45m'
+    bg_cyan  = '\33[46m'
+    bg_white = '\33[47m'
+
+
 if __name__ == '__main__':
     # Calculate MD5 checksum of entire file 
     print('{}  {}'.format(md5sum(sys.argv[0]), sys.argv[0]))
