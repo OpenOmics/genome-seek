@@ -195,7 +195,8 @@ def parsed_arguments(name, description):
 
         Optional arguments are shown in square brackets above.
 
-        To run the whole genome clinical sequencing pipeline with your data, please
+        {3}{4}Description:{5}
+          Run the whole genome clinical sequencing pipeline with your data. Please
         provide a space seperated list of FastQ (globbing is supported) and an output 
         directory to store results. Optionally call structural variation (SV), copy 
         number variation (CNV), and more! 
@@ -489,7 +490,8 @@ def parsed_arguments(name, description):
     
         Optional arguments are shown in square brackets above.
 
-        If the pipeline fails ungracefully, it maybe required to unlock
+        {3}{4}Description:{5}
+          If the pipeline fails ungracefully, it maybe required to unlock
         the working directory before proceeding again. Please verify that 
         the pipeline is not running before running this command. If the 
         pipeline is still running, the workflow manager will report the 
@@ -560,7 +562,8 @@ def parsed_arguments(name, description):
 
         Optional arguments are shown in square brackets above.
 
-        Creates a local cache resources hosted on DockerHub or AWS S3.
+        {3}{4}Description:{5}
+          Creates a local cache resources hosted on DockerHub or AWS S3.
         These resources are normally pulled onto the filesystem when the
         pipeline runs; however, due to network issues or DockerHub pull
         rate limits, it may make sense to pull the resources once so a
