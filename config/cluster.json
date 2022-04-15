@@ -75,9 +75,9 @@
 		"mem": "1G"
 	},
 	"samtools_flagstats": {
-		"threads": "2",
+		"threads": "6",
 		"time": "12:00:00",
-		"mem": "12G"
+		"mem": "24G"
 	},
 
 	"vcftools": {
@@ -126,12 +126,12 @@
 		"mem": "32G",
 		"time": "12:00:00"
 	},
-    "rawfastqc":{
-        "threads":"8",
+    "fastqc_raw":{
+        "threads": "8",
         "mem":"32G",
         "time": "12:00:00"
     },
-	"fastqc": {
+	"fastqc_bam": {
 		"threads": "8",
 		"mem": "32G",
 		"time": "12:00:00"
