@@ -34,7 +34,7 @@ rule fc_lane:
     """
 
 
-rule rawfastqc:
+rule fastqc_raw:
     """
     Quality-control step to assess sequencing quality of the raw data prior removing
     adapter sequences. FastQC generates a set of basic statistics to identify problems
@@ -53,7 +53,7 @@ rule rawfastqc:
     params:
         rname  = 'rawfqc',
         outdir = join(workpath,"rawQC"),
-    threads: int(allocated("threads", "rawfastqc", cluster))
+    threads: int(allocated("threads", "fastqc_raw", cluster))
     envmodules: config['tools']['fastqc']
     shell: """
     fastqc \\
@@ -100,4 +100,98 @@ rule fastq_screen:
         --force \\
         {input.fq1} \\
         {input.fq2}
+    """
+
+# Post-alignment QC-related rules
+rule fastqc_bam:
+    """
+    Quality-control step to assess sequencing quality of each sample.
+    FastQC generates a set of basic statistics to identify problems
+    that can arise during sequencing or library preparation.
+    @Input:
+        Duplicate marked, sorted BAM file (scatter)
+    @Output:
+        FastQC report and zip file containing sequencing quality information
+    """
+    input:
+        bam = join(workpath, "BAM", "{name}.sorted.bam"),
+    output:
+        zipfile =  join(workpath,"QC","{name}.sorted_fastqc.zip"),
+        report  =  join(workpath,"QC","{name}.sorted_fastqc.html")
+    params:
+        rname  = "bamfqc",
+        outdir =  join(workpath,"QC"),
+        adapters = config['references']['FASTQC_ADAPTERS']
+    message: "Running FastQC with {threads} threads on '{input.bam}' input file"
+    threads: int(allocated("threads", "fastqc_bam", cluster))
+    envmodules: config['tools']['fastqc']
+    shell: """
+    fastqc -t {threads} \\
+        -f bam \\
+        --contaminants {params.adapters} \\
+        -o {params.outdir} \\
+        {input.bam} 
+    """
+
+
+rule qualimap:
+    """
+    Quality-control step to assess various post-alignment metrics 
+    and a secondary method to calculate insert size. Please see
+    QualiMap's website for more information about BAM QC:
+    http://qualimap.conesalab.org/
+    @Input:
+        Duplicate marked, sorted BAM file (scatter)
+    @Output:
+        Report containing post-aligment quality-control metrics
+    """
+    input:
+        bam = join(workpath, "BAM", "{name}.sorted.bam"),
+    output: 
+        txt  = join(workpath,"QC","{name}","genome_results.txt"),
+        html = join(workpath,"QC","{name}","qualimapReport.html")
+    params:
+        outdir = join(workpath,"QC","{name}"),
+        rname  = "qualibam"
+    message: "Running QualiMap BAM QC with {threads} threads on '{input.bam}' input file"
+    threads: int(allocated("threads", "qualimap", cluster))
+    envmodules: config['tools']['qualimap']
+    shell: """
+    unset DISPLAY
+    qualimap bamqc -bam {input.bam} \\
+        --java-mem-size=92G \\
+        -c -ip --gd hg19 \\
+        -outdir {params.outdir} \\
+        -outformat HTML \\
+        -nt {threads} \\
+        --skip-duplicated \\
+        -nw 500 \\
+        -p NON-STRAND-SPECIFIC
+    """
+
+
+rule samtools_flagstats:
+    """
+    Quality-control step to assess alignment quality. Flagstat provides 
+    counts for each of 13 categories based primarily on bit flags in the 
+    FLAG field. Information on the meaning of the flags is given in the 
+    SAM specification: https://samtools.github.io/hts-specs/SAMv1.pdf
+    @Input:
+        Duplicate marked, sorted BAM file (scatter)
+    @Output:
+        Text file containing alignment statistics
+    """
+    input:
+        bam = join(workpath, "BAM", "{name}.sorted.bam"),
+    output:
+        txt = join(workpath,"QC","{name}.samtools_flagstat.txt")
+    params: 
+        rname = "flagstat"
+    message: "Running SAMtools flagstat on '{input.bam}' input file"
+    threads: int(allocated("threads", "samtools_flagstats", cluster))
+    envmodules: config['tools']['samtools']
+    shell: """
+    samtools flagstat --threads {threads} \\
+        {input.bam} \\
+    > {output.txt}
     """
