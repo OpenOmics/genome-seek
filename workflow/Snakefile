@@ -77,6 +77,10 @@ rule all:
             join(workpath,"rawQC","{name}.R2_fastqc.zip"), 
             name=ignore(samples, skip_qc)
         ),
+        expand(
+             join(workpath,"QC","{name}.sorted_fastqc.html"),
+            name=ignore(samples, skip_qc)
+        ),
         # fastp, remove adapter sequences
         # @imported from rules/trim_map_preprocess.smk
         expand(
@@ -101,10 +105,23 @@ rule all:
         # bwa-mem2, align to reference genome
         # @imported from rules/trim_map_preprocess.smk
         expand(
-            join(workpath, "BAM", "{name}.foo.bam.bai"), 
+            join(workpath, "BAM", "{name}.sorted.bam.bai"), 
             name=samples
         ),
-
+        # QualiMap2, bam quality control
+        # Optional step, not run if --skip-qc 
+        # @imported from rules/qc.smk
+        expand(
+            join(workpath,"QC","{name}","qualimapReport.html"),
+            name=ignore(samples, skip_qc)
+        ),
+        # Samtools Flagstat, bam quality control
+        # Optional step, not run if --skip-qc 
+        # @imported from rules/qc.smk
+        expand(
+            join(workpath,"QC","{name}.samtools_flagstat.txt"),
+            name=ignore(samples, skip_qc)
+        ),
 
 # Import rules
 include: join("rules", "qc.smk")
