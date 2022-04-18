@@ -1,4 +1,6 @@
 {
     "images": {
+        "deepvariant": "/data/NCBR/dev/SIFs/deepvariant_1.3.0-gpu.sif",
+        "glnexus": "/data/NCBR/dev/SIFs/glnexus_v1.4.1.sif"
     }
 }
