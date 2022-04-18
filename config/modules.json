@@ -9,6 +9,7 @@
         "samblaster": "samblaster/0.1.25",
         "python2": "python/2.7",
         "fastq_screen": "fastq_screen/0.14.1",
-        "qualimap": "qualimap/2.2.1"
+        "qualimap": "qualimap/2.2.1",
+        "hla_la": "HLA-PRG-LA/1.0.1"
     }
 }
