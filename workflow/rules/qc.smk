@@ -160,7 +160,7 @@ rule qualimap:
     unset DISPLAY
     qualimap bamqc -bam {input.bam} \\
         --java-mem-size=92G \\
-        -c -ip --gd hg19 \\
+        -c -ip --gd HUMAN \\
         -outdir {params.outdir} \\
         -outformat HTML \\
         -nt {threads} \\
