@@ -31,11 +31,12 @@ call_sv = str_bool(                       # Call structural variation (SV),
     config['options']['call_sv']          # default: False
 )
 call_hla = str_bool(                      # Call HLA types,
-    config['options']['call_sv']          # default: False
+    config['options']['call_hla']         # default: False
 )
 skip_qc  = str_bool(                      # Skip over QC steps,
     config['options']['skip_qc']          # default: False
 )
+
 
 # TODO: Clean up this section of legacy variables
 # dir_renamed = os.getcwd()                            # output directory name 
@@ -122,7 +123,27 @@ rule all:
             join(workpath,"QC","{name}.samtools_flagstat.txt"),
             name=ignore(samples, skip_qc)
         ),
+        # HLA*LA, infers hla type
+        # Optional step, run if --call-hla
+        # @imported from rules/hla.smk
+        expand(
+            join(workpath,"HLA", "{name}", "sample", "hla", "R1_bestguess_G.txt"),
+            name=provided(samples, call_hla)
+        ),
+        # Deepvariant, call germline variants
+        # @imported from rules/germline.smk
+        expand(
+            join(workpath, "deepvariant", "gVCFs", "{name}.g.vcf.gz"),
+            name=samples
+        ),
+        expand(
+            join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"),
+            name=samples
+        ),
+
 
 # Import rules
-include: join("rules", "qc.smk")
 include: join("rules", "trim_map_preprocess.smk")
+include: join("rules", "germline.smk")
+include: join("rules", "qc.smk")
+include: join("rules", "hla.smk")
