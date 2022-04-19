@@ -2,6 +2,7 @@
     "references": {
         "GENOME": "/data/NCBR/references/genome-seek/Homo_sapiens_assembly38.fasta",
         "FASTQ_SCREEN_CONFIG": "resources/fastq_screen.conf",
-        "FASTQC_ADAPTERS": "resources/fastqc_adapters.tsv"
+        "FASTQC_ADAPTERS": "resources/fastqc_adapters.tsv",
+        "DBSNP": "/data/NCBR/references/genome-seek/GATK_resource_bundle/hg38bundle/dbsnp_138.hg38.vcf.gz"
     }
 }
