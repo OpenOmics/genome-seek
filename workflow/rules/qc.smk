@@ -25,6 +25,7 @@ rule fc_lane:
     params:
         rname = 'fclane',
         get_flowcell_lanes = os.path.join("workflow", "scripts", "flowcell_lane.py"),
+    threads: int(allocated("threads", "fc_lane", cluster))
     envmodules: config['tools']['python2']
     shell: """
     python {params.get_flowcell_lanes} \\
@@ -218,6 +219,7 @@ rule bcftools_stats:
     params: 
         rname = "bcfstats",
     message: "Running BCFtools stats on '{input.vcf}' input file"
+    threads: int(allocated("threads", "bcftools_stats", cluster))
     envmodules: config['tools']['bcftools']
     shell: """
     bcftools stats \\
@@ -250,12 +252,47 @@ rule gatk_varianteval:
         ver_gatk = config['tools']['gatk4'],
         memory   = allocated("mem", "gatk_varianteval", cluster).rstrip('G')
     message: "Running GATK4 VariantEval on '{input.vcf}' input file"
-    envmodules: config['tools']['gatk4']
     threads: int(allocated("threads", "gatk_varianteval", cluster))
+    envmodules: config['tools']['gatk4']
     shell: """
     gatk --java-options '-Xmx{params.memory}g -XX:ParallelGCThreads={threads}' VariantEval \\
         -R {params.genome} \\
         -O {output.grp} \\
         --dbsnp {params.dbsnp} \\
         --eval {input.vcf} 
+    """
+
+
+rule snpeff:
+    """
+    Data processing and quality-control step to annotate variants, predict its
+    functional effects, and collect various summary statistics about variants and
+    their annotations. Please see SnpEff's documentation for more information: 
+    https://pcingola.github.io/SnpEff/
+    @Input:
+        Per sample gVCF file (scatter)
+    @Output:
+        Evaluation table containing a collection of summary statistics
+    """
+    input:  
+        vcf = join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz"),
+    output: 
+        vcf  = join(workpath, "QC", "SNPeff", "{name}.germline.snpeff.ann.vcf"),
+        csv  = join(workpath, "QC", "SNPeff", "{name}.germline.snpeff.ann.csv"),
+        html = join(workpath, "QC", "SNPeff", "{name}.germline.snpeff.ann.html"),
+    params: 
+        rname  = "snpeff",
+        genome = config['references']['SNPEFF_GENOME'],
+        config = config['references']['SNPEFF_CONFIG'],
+        bundle = config['references']['SNPEFF_BUNDLE'],
+        memory = allocated("mem", "snpeff", cluster).rstrip('G')
+    threads: int(allocated("threads", "snpeff", cluster))
+    envmodules: config['tools']['snpeff']
+    shell: """
+    java -Xmx{params.memory}g -jar ${{SNPEFF_JAR}} \\
+        -v -canon -c {params.config} \\
+        -csvstats {output.csv} \\
+        -stats {output.html} \\
+        {params.genome} \\
+        {input.vcf} > {output.vcf}
     """
