@@ -6,6 +6,7 @@
         "bcftools": "bcftools/1.9",
         "perl": "perl/5.24.3",
         "samtools": "samtools/1.15",
+        "snpeff": "snpEff/4.3t", 
         "bwa_mem2": "bwa-mem2/2.2.1",
         "samblaster": "samblaster/0.1.25",
         "python2": "python/2.7",
