@@ -143,11 +143,23 @@ rule all:
         # GLnexus, jointly-called norm multi-sample VCF file
         # @imported from rules/germline.smk
         join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
-        # GATK Select Variants, jointly-called norm per-sample VCF file
+        # GATK4 SelectVariants, jointly-called norm per-sample VCF file
         # @imported from rules/germline.smk
         expand(
             join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz"),
             name=samples
+        ),
+        # BCFtools Stats, variant quality control
+        # @imported from rules/qc.smk
+        expand(
+            join(workpath, "QC", "BCFStats", "{name}.germline.bcftools_stats.txt"),
+            name=ignore(samples, skip_qc)
+        ),
+        # GATK4 VariantEval, variant quality control
+        # @imported from rules/qc.smk
+        expand(
+            join(workpath, "QC", "VariantEval", "{name}.germline.eval.grp"),
+            name=ignore(samples, skip_qc)
         ),
 
 
