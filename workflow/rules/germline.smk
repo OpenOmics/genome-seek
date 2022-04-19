@@ -44,3 +44,41 @@ rule deepvariant:
         --num_shards={threads} \\
         --intermediate_results_dir=${{tmp}}
     """
+
+
+rule glnexus:
+    """
+    Data processing step to merge and joint call a set of gVCF files.
+    GLnexus is a scalable gVCF merging and joint variant calling for 
+    population-scale sequencing projects. For more information about
+    GLnexus & deepvariant, please check out this comparison with GATK: 
+    https://academic.oup.com/bioinformatics/article/36/24/5582/6064144
+    @Input:
+        Set of gVCF files (gather)
+    @Output: 
+        Multi-sample joint called BCF file
+    """
+    input: 
+        gvcf = expand(join(workpath,"deepvariant","gVCFs","{name}.g.vcf.gz"), name=samples),
+    output:
+        gvcfs = join(workpath, "deepvariant", "VCFs", "gvcfs.list"),
+        bcf   = join(workpath, "deepvariant", "VCFs", "joint.bcf"),
+    params: 
+        rname  = "glnexus",
+        gvcfdir = join(workpath, "deepvariant", "gVCFs"),
+        memory  = allocated("mem", "glnexus", cluster).rstrip('G'),
+    message: "Running GLnexus on a set of gVCF files"
+    threads: int(allocated("threads", "glnexus", cluster))
+    container: config['images']['glnexus']
+    shell: """
+    # Avoids ARG_MAX issue which will
+    # limit max length of a command
+    find {params.gvcfdir} -iname '*.g.vcf.gz' > {output.gvcfs}
+
+    glnexus_cli \\
+        --config DeepVariant \\
+        --list {output.gvcfs} \\
+        --threads {threads} \\
+        --mem-gbytes {params.memory} \\
+    > {output.bcf}
+    """
