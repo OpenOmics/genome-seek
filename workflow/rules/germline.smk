@@ -56,7 +56,7 @@ rule glnexus:
     @Input:
         Set of gVCF files (gather)
     @Output: 
-        Multi-sample joint called BCF file
+        Multi-sample jointly called, normalized VCF file
     """
     input: 
         gvcf = expand(join(workpath,"deepvariant","gVCFs","{name}.g.vcf.gz"), name=samples),
@@ -97,3 +97,32 @@ rule glnexus:
         --threads {threads} \\
         {output.norm}
     """
+
+
+rule gatk_selectvariants:
+    """
+    Make per-sample jointly called, normalized VCFs from GLnexus output.
+    @Input:
+        Multi-sample joint, normalized VCF file (indirect-gather-due-to-aggregation)
+    @Output:
+        Single-sample joint, normalized VCF file
+    """
+    input: 
+        vcf = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
+    output: 
+        vcf = join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz")
+    params: 
+        rname  = "varselect",
+        genome = config['references']['GENOME'], 
+        sample = "{name}", 
+    message: "Running GATK4 SelectVariants on '{input.vcf}' input file"
+    threads: int(allocated("threads", "gatk_selectvariants", cluster))
+    envmodules: config['tools']['gatk4']
+    shell: """
+        gatk SelectVariants \\
+            -R {params.genome} \\
+            --variant {input.vcf} \\
+            --sample-name {params.sample} \\
+            --exclude-non-variants \\
+            --output {output.vcf}
+        """
