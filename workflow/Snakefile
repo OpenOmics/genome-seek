@@ -140,10 +140,16 @@ rule all:
             join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"),
             name=samples
         ),
+        # GLnexus, joint called multi-sample BCF file
+        # @imported from rules/germline.smk
+        expand(
+            join(workpath, "deepvariant", "VCFs", "joint.bcf"),
+            name=samples
+        ),
 
 
 # Import rules
-include: join("rules", "trim_map_preprocess.smk")
+include: join("rules", "trim_map.smk")
 include: join("rules", "germline.smk")
 include: join("rules", "qc.smk")
 include: join("rules", "hla.smk")
