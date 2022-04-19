@@ -75,7 +75,8 @@ rule glnexus:
     shell: """
     # Avoids ARG_MAX issue which will
     # limit max length of a command
-    find {params.gvcfdir} -iname '*.g.vcf.gz' > {output.gvcfs}
+    find {params.gvcfdir} -iname '*.g.vcf.gz' \\
+    > {output.gvcfs}
 
     glnexus_cli \\
         --config DeepVariant \\
