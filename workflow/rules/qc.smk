@@ -195,3 +195,67 @@ rule samtools_flagstats:
         {input.bam} \\
     > {output.txt}
     """
+
+
+# Post-variant calling QC-related rules
+rule bcftools_stats:
+    """
+    Quality-control step to collect summary statistics from bcftools stats.
+    When bcftools stats is run with one VCF file then stats by non-reference
+    allele frequency, depth distribution, stats by quality and per-sample 
+    counts, singleton statsistics are calculated. Please see bcftools' 
+    documentation for more information: 
+    http://samtools.github.io/bcftools/bcftools.html#stats
+    @Input:
+        Per sample gVCF file (scatter)
+    @Output:
+        Text file containing a collection of summary statistics
+    """
+    input: 
+        vcf = join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz"),
+    output: 
+        txt = join(workpath, "QC", "BCFStats", "{name}.germline.bcftools_stats.txt"),
+    params: 
+        rname = "bcfstats",
+    message: "Running BCFtools stats on '{input.vcf}' input file"
+    envmodules: config['tools']['bcftools']
+    shell: """
+    bcftools stats \\
+        {input.vcf} \\
+    > {output.txt}
+    """
+
+
+rule gatk_varianteval:
+    """
+    Quality-control step to calculate various quality control metrics from a 
+    variant callset. These metrics include the number of raw or filtered SNP 
+    counts; ratio of transition mutations to transversions; concordance of a
+    particular sample's calls to a genotyping chip; number of s per sample.
+    Please see GATK's documentation for more information: 
+    https://gatk.broadinstitute.org/hc/en-us/articles/360040507171-VariantEval
+    @Input:
+        Per sample gVCF file (scatter)
+    @Output:
+        Evaluation table containing a collection of summary statistics
+    """
+    input: 
+        vcf = join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz"),
+    output: 
+        grp = join(workpath, "QC", "VariantEval", "{name}.germline.eval.grp"),
+    params:
+        rname    = "vareval",
+        genome   = config['references']['GENOME'],
+        dbsnp    = config['references']['DBSNP'],
+        ver_gatk = config['tools']['gatk4'],
+        memory   = allocated("mem", "gatk_varianteval", cluster).rstrip('G')
+    message: "Running GATK4 VariantEval on '{input.vcf}' input file"
+    envmodules: config['tools']['gatk4']
+    threads: int(allocated("threads", "gatk_varianteval", cluster))
+    shell: """
+    gatk --java-options '-Xmx{params.memory}g -XX:ParallelGCThreads={threads}' VariantEval \\
+        -R {params.genome} \\
+        -O {output.grp} \\
+        --dbsnp {params.dbsnp} \\
+        --eval {input.vcf} 
+    """
