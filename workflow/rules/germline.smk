@@ -110,19 +110,20 @@ rule gatk_selectvariants:
     input: 
         vcf = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
     output: 
-        vcf = join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz")
+        vcf = join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz"),
     params: 
         rname  = "varselect",
         genome = config['references']['GENOME'], 
         sample = "{name}", 
+        memory = allocated("mem", "gatk_selectvariants", cluster).rstrip('G')
     message: "Running GATK4 SelectVariants on '{input.vcf}' input file"
     threads: int(allocated("threads", "gatk_selectvariants", cluster))
     envmodules: config['tools']['gatk4']
     shell: """
-        gatk SelectVariants \\
-            -R {params.genome} \\
-            --variant {input.vcf} \\
-            --sample-name {params.sample} \\
-            --exclude-non-variants \\
-            --output {output.vcf}
-        """
+    gatk --java-options '-Xmx{params.memory}g -XX:ParallelGCThreads={threads}' SelectVariants \\
+        -R {params.genome} \\
+        --variant {input.vcf} \\
+        --sample-name {params.sample} \\
+        --exclude-non-variants \\
+        --output {output.vcf}
+    """
