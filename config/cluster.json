@@ -136,7 +136,7 @@
 		"mem": "32G",
 		"time": "12:00:00"
 	},
-	"Gatk_SelectVariants": {
+	"gatk_selectvariants": {
 		"threads": "2",
 		"mem": "24G",
 		"time": "12:00:00"
