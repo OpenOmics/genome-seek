@@ -43,7 +43,7 @@
 	},
 	"glnexus": {
 		"threads": "24",
-		"mem": "96G",
+		"mem": "240G",
 		"time": "8-00:00:00"
 	},
 	"picard_headers": {
