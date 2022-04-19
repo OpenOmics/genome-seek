@@ -140,9 +140,15 @@ rule all:
             join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"),
             name=samples
         ),
-        # GLnexus, joint called multi-sample BCF file
+        # GLnexus, jointly-called norm multi-sample VCF file
         # @imported from rules/germline.smk
         join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
+        # GATK Select Variants, jointly-called norm per-sample VCF file
+        # @imported from rules/germline.smk
+        expand(
+            join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz"),
+            name=samples
+        ),
 
 
 # Import rules
