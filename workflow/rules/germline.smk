@@ -63,10 +63,12 @@ rule glnexus:
     output:
         gvcfs = join(workpath, "deepvariant", "VCFs", "gvcfs.list"),
         bcf   = join(workpath, "deepvariant", "VCFs", "joint.bcf"),
+        norm  = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
     params: 
         rname  = "glnexus",
         gvcfdir = join(workpath, "deepvariant", "gVCFs"),
         memory  = allocated("mem", "glnexus", cluster).rstrip('G'),
+        genome = config['references']['GENOME'],
     message: "Running GLnexus on a set of gVCF files"
     threads: int(allocated("threads", "glnexus", cluster))
     container: config['images']['glnexus']
@@ -81,4 +83,16 @@ rule glnexus:
         --threads {threads} \\
         --mem-gbytes {params.memory} \\
     > {output.bcf}
+
+    bcftools norm \\
+        -Oz \\
+        --threads {threads} \\
+        -f {params.genome} \\
+        -o {output.norm} \\
+        {output.bcf}
+
+    bcftools index \\
+        -f -t \\
+        --threads {threads} \\
+        {output.norm}
     """
