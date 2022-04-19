@@ -161,6 +161,11 @@ rule all:
             join(workpath, "QC", "VariantEval", "{name}.germline.eval.grp"),
             name=ignore(samples, skip_qc)
         ),
+        # SNPeff, variant quality control and annotation
+        expand(
+            join(workpath, "QC", "SNPeff", "{name}.germline.snpeff.ann.vcf"),
+            name=samples,
+        ),
 
 
 # Import rules
