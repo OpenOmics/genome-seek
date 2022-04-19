@@ -121,7 +121,7 @@
 		"threads": "8",
 		"mem": "96G"
 	},
-	"varianteval": {
+	"gatk_varianteval": {
 		"threads": "4",
 		"mem": "32G",
 		"time": "12:00:00"
