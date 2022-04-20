@@ -176,6 +176,12 @@ rule all:
             join(workpath, "QC", "{batch}_variants.het"),
             batch=ignore([batch_id], skip_qc),
         ),
+        # Picards CollectVariantCallingMetrics, variant quality control
+        # @imported from rules/qc.smk
+        expand(
+            join(workpath, "QC", "{batch}_variants.variant_calling_detail_metrics"),
+            batch=ignore([batch_id], skip_qc),
+        ),
 
 
 # Import rules
