@@ -296,3 +296,33 @@ rule snpeff:
         {params.genome} \\
         {input.vcf} > {output.vcf}
     """
+
+
+rule vcftools:
+    """
+    Quality-control step to calculates a measure of heterozygosity on 
+    a per-individual basis. The inbreeding coefficient, F, is estimated
+    for each individual using a method of moments. Please see VCFtools
+    documentation for more information: 
+    https://vcftools.github.io/man_latest.html
+    @Input:
+        Multi-sample gVCF file (indirect-gather-due-to-aggregation)
+    @Output:
+        Text file containing a measure of heterozygosity
+    """
+    input: 
+        vcf = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
+    output: 
+        het = join(workpath, "QC", "{batch}_variants.het"),
+    params: 
+        prefix = join(workpath, "QC", "{batch}_variants"),
+        rname  = "vcftools",
+    message: "Running VCFtools on '{input.vcf}' input file"
+    threads: int(allocated("threads", "vcftools", cluster))
+    envmodules: config['tools']['vcftools']
+    shell: """
+    vcftools \\
+        --gzvcf {input.vcf} \\
+        --het \\
+        --out {params.prefix}
+    """
