@@ -6,6 +6,12 @@
         "DBSNP": "/data/NCBR/references/genome-seek/GATK_resource_bundle/hg38bundle/dbsnp_138.hg38.vcf.gz",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/data/NCBR/references/genome-seek/snpEff/4.3t/snpEff.config",
-        "SNPEFF_BUNDLE": "/data/NCBR/references/genome-seek/snpEff/4.3t/"
+        "SNPEFF_BUNDLE": "/data/NCBR/references/genome-seek/snpEff/4.3t/",
+        "SOMALIER": {
+			"ANCESTRY_DB": "/data/NCBR/references/genome-seek/somalier/1kg-somalier",
+			"SITES_VCF": "/data/NCBR/references/genome-seek/somalier/sites.hg38.vcf.gz",
+			"NCBI_BUILD": "GRCh38",
+			"SPECIES": "homo_sapiens"
+		}
     }
 }
