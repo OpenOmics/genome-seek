@@ -16,12 +16,16 @@ from scripts.common import (
     str_bool
 )
 
+# Timestamp in YYYYMMDD format
+today = str(datetime.datetime.today()).split()[0].replace('-', '')
+
 # Global workflow variables
 configfile: 'config.json'                 # CSI_wes_pipeline/resources/processing_references_biowulf_hg38.json
 samples  = config['samples']              # Base name of input samples
 workpath = config['project']['workpath']  # Pipeline's output directory
 filetype = config['project']['filetype']  # 'paired-end' or 'single-end' (not supported)
-tmpdir = config['options']['tmp_dir']     # Temporary directory
+tmpdir   = config['options']['tmp_dir']   # Temporary directory
+batch_id = config['options']['batch_id']  # Batch Identifer  
 
 # Analysis Options 
 call_cnv = str_bool(                      # Call copy number variation (CNVs),
@@ -36,7 +40,6 @@ call_hla = str_bool(                      # Call HLA types,
 skip_qc  = str_bool(                      # Skip over QC steps,
     config['options']['skip_qc']          # default: False
 )
-
 
 # TODO: Clean up this section of legacy variables
 # dir_renamed = os.getcwd()                            # output directory name 
@@ -162,9 +165,16 @@ rule all:
             name=ignore(samples, skip_qc)
         ),
         # SNPeff, variant quality control and annotation
+        # @imported from rules/qc.smk
         expand(
             join(workpath, "QC", "SNPeff", "{name}.germline.snpeff.ann.vcf"),
             name=samples,
+        ),
+        # VCFtools, variant quality control 
+        # @imported from rules/qc.smk
+        expand(
+            join(workpath, "QC", "{batch}_variants.het"),
+            batch=ignore([batch_id], skip_qc),
         ),
 
 
