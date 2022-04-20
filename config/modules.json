@@ -13,6 +13,7 @@
         "fastq_screen": "fastq_screen/0.14.1",
         "qualimap": "qualimap/2.2.1",
         "hla_la": "HLA-PRG-LA/1.0.1",
-        "gatk4": "GATK/4.2.0.0"
+        "gatk4": "GATK/4.2.0.0",
+        "vcftools": "vcftools/0.1.16"
     }
 }
