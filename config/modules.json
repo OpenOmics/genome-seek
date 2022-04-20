@@ -5,6 +5,7 @@
         "bowtie": "bowtie/2-2.4.5",
         "bcftools": "bcftools/1.9",
         "perl": "perl/5.24.3",
+        "picard": "picard/2.20.8",
         "samtools": "samtools/1.15",
         "snpeff": "snpEff/4.3t", 
         "bwa_mem2": "bwa-mem2/2.2.1",
