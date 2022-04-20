@@ -24,7 +24,7 @@ rule fc_lane:
         txt = join(workpath,"rawQC","{name}.fastq.info.txt")
     params:
         rname = 'fclane',
-        get_flowcell_lanes = os.path.join("workflow", "scripts", "flowcell_lane.py"),
+        get_flowcell_lanes = join("workflow", "scripts", "flowcell_lane.py"),
     threads: int(allocated("threads", "fc_lane", cluster))
     envmodules: config['tools']['python2']
     shell: """
@@ -358,4 +358,62 @@ rule collectvariantcallmetrics:
         OUTPUT={params.prefix} \\
         DBSNP={params.dbsnp} \\
         Validation_Stringency=SILENT
+    """
+
+
+rule somalier:
+    """
+    To estimate ancestry, Somalier first extracts known sites from mapped 
+    reads. Somalier estimates relatedness using the extracted site information 
+    to compare across all samples. This step also runs the ancestry estimation
+    function in Somalier.
+    @Input:
+        Multi-sample gVCF file (indirect-gather-due-to-aggregation)
+    @Output:
+        Exracted sites in (binary) somalier format
+    """
+    input:
+        vcf = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
+    output: 
+        somalier = expand(join(workpath, "somalier", "{name}.somalier"), name=samples),
+        related  =  join(workpath, "somalier", "relatedness.samples.tsv"),
+        ancestry = join(workpath, "somalier", "ancestry.somalier-ancestry.tsv"),
+    params:
+        rname  = 'somalier',
+        outdir = join(workpath, "somalier"),
+        # Pedigree file from patient database,
+        # pulled locally from API call
+        ped    = join(workpath, "BSI_sex_ped.ped"),
+        genome = config['references']['GENOME'],
+        sites  = config['references']['SOMALIER']['SITES_VCF'],
+        ancestry_db = config['references']['SOMALIER']['ANCESTRY_DB'],
+    threads: int(allocated("threads", "somalier", cluster))
+    container: config['images']['base']
+    shell: """ 
+    echo "Extracting sites to estimate ancestry."
+    somalier extract \\
+        -d {params.outdir} \\
+        --sites {params.sites} \\
+        -f {params.genome} \\
+        {input.vcf}
+    
+    # Check if pedigree file exists,
+    # pulled from patient database
+    pedigree_option=""
+    if [ -f "{params.ped}" ]; then
+        # Use PED with relate command
+        pedigree_option="-p {params.ped}"
+    fi
+    echo "Estimating relatedness with pedigree $pedigree_option"
+    somalier relate "$pedigree_option" \\
+        -i -o {params.outdir}/relatedness \\
+        {output.somalier}
+    
+    echo "Estimating ancestry."
+    somalier ancestry \\
+        --n-pcs=10 \\
+        -o {params.outdir})/ancestry \\
+        --labels {params.ancestry_db}/ancestry-labels-1kg.tsv \\
+        {params.ancestry_db}/*.somalier ++ \\
+        {output.somalier}
     """
