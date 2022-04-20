@@ -250,7 +250,7 @@ rule gatk_varianteval:
         genome   = config['references']['GENOME'],
         dbsnp    = config['references']['DBSNP'],
         ver_gatk = config['tools']['gatk4'],
-        memory   = allocated("mem", "gatk_varianteval", cluster).rstrip('G')
+        memory   = allocated("mem", "gatk_varianteval", cluster).lower().rstrip('g')
     message: "Running GATK4 VariantEval on '{input.vcf}' input file"
     threads: int(allocated("threads", "gatk_varianteval", cluster))
     envmodules: config['tools']['gatk4']
@@ -285,7 +285,7 @@ rule snpeff:
         genome = config['references']['SNPEFF_GENOME'],
         config = config['references']['SNPEFF_CONFIG'],
         bundle = config['references']['SNPEFF_BUNDLE'],
-        memory = allocated("mem", "snpeff", cluster).rstrip('G')
+        memory = allocated("mem", "snpeff", cluster).lower().rstrip('g')
     threads: int(allocated("threads", "snpeff", cluster))
     envmodules: config['tools']['snpeff']
     shell: """
@@ -325,4 +325,37 @@ rule vcftools:
         --gzvcf {input.vcf} \\
         --het \\
         --out {params.prefix}
+    """
+
+
+rule collectvariantcallmetrics:
+    """
+    Quality-control step to collect summary metrics about snps and indels
+    called in a multisample VCF file. Please see the Broad's documentation
+    for more information about each field in the generated log file:
+    https://broadinstitute.github.io/picard/picard-metric-definitions.html
+    @Input:
+        Multi-sample gVCF file (indirect-gather-due-to-aggregation)
+    @Output:
+        Text file containing a collection of metrics relating to snps and indels 
+    """
+    input: 
+        vcf = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
+    output: 
+        metrics = join(workpath, "QC", "{batch}_variants.variant_calling_detail_metrics"),
+    params:
+        rname  = "varcallmetrics",
+        dbsnp  = config['references']['DBSNP'],
+        prefix = join(workpath, "QC", "{batch}_variants"),
+        memory = allocated("mem", "collectvariantcallmetrics", cluster).lower().rstrip('g')
+    message: "Running Picard CollectVariantCallingMetrics on '{input.vcf}' input file"
+    threads: int(allocated("threads", "collectvariantcallmetrics", cluster))
+    envmodules: config['tools']['picard']
+    shell: """
+    java -Xmx{params.memory}g -jar ${{PICARDJARPATH}}/picard.jar \\
+        CollectVariantCallingMetrics \\
+        INPUT={input.vcf} \\
+        OUTPUT={params.prefix} \\
+        DBSNP={params.dbsnp} \\
+        Validation_Stringency=SILENT
     """
