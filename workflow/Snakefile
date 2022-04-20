@@ -182,6 +182,16 @@ rule all:
             join(workpath, "QC", "{batch}_variants.variant_calling_detail_metrics"),
             batch=ignore([batch_id], skip_qc),
         ),
+        # Somalier, relatedness and ancestry 
+        # @imported from rules/qc.smk
+        expand(
+            join(workpath, "somalier", "{name}.somalier"),
+            name=samples
+        ),
+        join(workpath, "somalier", "relatedness.samples.tsv"),
+        join(workpath, "somalier", "ancestry.somalier-ancestry.tsv"),
+        
+
 
 
 # Import rules
