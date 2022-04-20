@@ -170,9 +170,11 @@ def require(cmds, suggestions, path=None):
     for i in range(len(cmds)):
         available = which(cmds[i])
         if not available:
+            c = Colors
             error = True
-            err("""\x1b[6;37;41m\n\tFatal: {} is not in $PATH and is required during runtime!
-            └── Solution: please 'module load {}' and run again!\x1b[0m""".format(cmds[i], suggestions[i])
+            err("""\n{}{}Fatal: {} is not in $PATH and is required during runtime!{}
+            └── Possible solution: please 'module load {}' and run again!""".format(
+                c.bg_red, c.white, cmds[i], c.end, suggestions[i])
             )
 
     if error: fatal()
@@ -319,6 +321,36 @@ class Colors():
     bg_pink  = '\33[45m'
     bg_cyan  = '\33[46m'
     bg_white = '\33[47m'
+
+
+def hashed(l):
+    """Returns an MD5 checksum for a list of strings. The list is sorted to
+    ensure deterministic results prior to generating the MD5 checksum. This 
+    function can be used to generate a batch id from a list of input files.
+    It is worth noting that path should be removed prior to calculating the 
+    checksum/hash.
+    @Input:
+        l list[<str>]: List of strings to hash
+    @Output:
+        h <str>: MD5 checksum of the sorted list of strings
+    Example:
+        $ echo -e '1\n2\n3' > tmp
+        $ md5sum tmp
+        # c0710d6b4f15dfa88f600b0e6b624077  tmp
+        hashed([1,2,3])   # returns c0710d6b4f15dfa88f600b0e6b624077
+    """
+    # Sort list to ensure deterministic results
+    l = sorted(l)
+    # Convert everything to strings
+    l = [str(s) for s in l]
+    # Calculate an MD5 checksum of results
+    h = hashlib.md5()
+    # encode method ensure cross-compatiability 
+    # across python2 and python3 
+    h.update("{}\n".format("\n".join(l)).encode())
+    h = h.hexdigest()
+
+    return h
 
 
 if __name__ == '__main__':
