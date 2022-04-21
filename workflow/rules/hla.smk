@@ -1,10 +1,6 @@
 # Functions and rules for HLA typing
 from scripts.common import abstract_location, allocated
 
-# TODO: add hla_concat rule after discussing requirements,
-# the existing script makes multiple requests to APIs which
-# up-front user information
-
 
 rule hla:
     """
