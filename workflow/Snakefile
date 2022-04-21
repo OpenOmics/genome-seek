@@ -190,8 +190,12 @@ rule all:
         ),
         join(workpath, "somalier", "relatedness.samples.tsv"),
         join(workpath, "somalier", "ancestry.somalier-ancestry.tsv"),
-        
-
+        # Peddy, infer biological sex
+        # @imported from rules/cnv.smk
+        expand( 
+            join(workpath, "deepvariant", "VCFs", "{batch}_peddy.sex_check.csv"),        
+            batch=provided([batch_id], call_cnv),
+        ),
 
 
 # Import rules
@@ -199,3 +203,4 @@ include: join("rules", "trim_map.smk")
 include: join("rules", "germline.smk")
 include: join("rules", "qc.smk")
 include: join("rules", "hla.smk")
+include: join("rules", "cnv.smk")
