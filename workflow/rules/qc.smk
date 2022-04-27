@@ -1,5 +1,10 @@
 # Functions and rules for quality-control
-from scripts.common import abstract_location, allocated
+from scripts.common import (
+    abstract_location, 
+    allocated,
+    ignore,
+    provided 
+)
 
 # Pre alignment QC-related rules
 rule fc_lane:
@@ -416,4 +421,65 @@ rule somalier:
         --labels {params.ancestry_db}/ancestry-labels-1kg.tsv \\
         {params.ancestry_db}/*.somalier ++ \\
         {output.somalier}
+    """
+
+
+rule multiqc:
+    """
+    Reporting step to aggregate sample summary statistics and quality-control
+    information across all samples. This will be one of the last steps of the 
+    pipeline. The inputs listed here are to ensure that this step runs last. 
+    During runtime, MultiQC will recurively crawl through the working directory
+    and parse files that it supports.
+    @Input:
+        Lists of files to ensure this step runs last (gather)
+    @Output:
+        Interactive MulitQC report
+    """
+    input:
+        # FastQ Information, flowcell and lanes
+        expand(join(workpath,"rawQC","{name}.fastq.info.txt"), name=ignore(samples, skip_qc)),
+        # FastQC (before and after trimming)
+        expand(join(workpath,"rawQC","{name}.R1_fastqc.zip"), name=ignore(samples, skip_qc)),
+        expand(join(workpath,"QC","{name}.sorted_fastqc.html"), name=ignore(samples, skip_qc)),
+        # fastp, remove adapter sequences
+        expand(join(workpath,"fastqs","{name}.R1.trimmed.fastq.gz"), name=samples),
+        # FastQ Screen, contamination screening
+        expand(join(workpath,"FQscreen","{name}.R1.trimmed_screen.txt"), name=ignore(samples, skip_qc)),
+        # bwa-mem2, align to reference genome
+        expand(join(workpath, "BAM", "{name}.sorted.bam.bai"), name=samples),
+        # QualiMap2, bam quality control
+        expand(join(workpath,"QC","{name}","qualimapReport.html"), name=ignore(samples, skip_qc)),
+        # Samtools Flagstat, bam quality control
+        expand(join(workpath,"QC","{name}.samtools_flagstat.txt"), name=ignore(samples, skip_qc)),
+        # Deepvariant, call germline variants
+        expand(join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"), name=samples),
+        # GLnexus, jointly-called norm multi-sample VCF file
+        join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
+        # GATK4 SelectVariants, jointly-called norm per-sample VCF file
+        expand(join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz"), name=samples),
+        # BCFtools Stats, variant quality control
+        expand(join(workpath, "QC", "BCFStats", "{name}.germline.bcftools_stats.txt"), name=ignore(samples, skip_qc)),
+        # GATK4 VariantEval, variant quality control
+        expand(join(workpath, "QC", "VariantEval", "{name}.germline.eval.grp"), name=ignore(samples, skip_qc)),
+        # SNPeff, variant quality control and annotation
+        expand(join(workpath, "QC", "SNPeff", "{name}.germline.snpeff.ann.vcf"), name=samples),
+        # VCFtools, variant quality control 
+        expand(join(workpath, "QC", "{batch}_variants.het"), batch=ignore([batch_id], skip_qc)),
+        # Picards CollectVariantCallingMetrics, variant quality control
+        expand(join(workpath, "QC", "{batch}_variants.variant_calling_detail_metrics"), batch=ignore([batch_id], skip_qc))
+    output: 
+        report  = join(workpath, "QC", "MultiQC_Report.html"),
+    params: 
+        rname  = "multiqc",
+        workdir = workpath,
+    threads: int(allocated("threads", "multiqc", cluster))
+    envmodules: config['tools']['multiqc']
+    shell: """
+    multiqc --ignore '*/.singularity/*' \\
+        --ignore 'slurmfiles/' \\
+        --exclude peddy \\
+        -f --interactive \\
+        -n {output.report} \\
+        {params.workdir}
     """
