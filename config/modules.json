@@ -16,6 +16,7 @@
         "qualimap": "qualimap/2.2.1",
         "hla_la": "HLA-PRG-LA/1.0.1",
         "gatk4": "GATK/4.2.0.0",
+        "multiqc": "multiqc/1.11",
         "vcftools": "vcftools/0.1.16"
     }
 }
