@@ -168,19 +168,19 @@ rule all:
         # @imported from rules/qc.smk
         expand(
             join(workpath, "QC", "SNPeff", "{name}.germline.snpeff.ann.vcf"),
-            name=samples,
+            name=samples
         ),
         # VCFtools, variant quality control 
         # @imported from rules/qc.smk
         expand(
             join(workpath, "QC", "{batch}_variants.het"),
-            batch=ignore([batch_id], skip_qc),
+            batch=ignore([batch_id], skip_qc)
         ),
         # Picards CollectVariantCallingMetrics, variant quality control
         # @imported from rules/qc.smk
         expand(
             join(workpath, "QC", "{batch}_variants.variant_calling_detail_metrics"),
-            batch=ignore([batch_id], skip_qc),
+            batch=ignore([batch_id], skip_qc)
         ),
         # Somalier, relatedness and ancestry 
         # @imported from rules/qc.smk
@@ -194,8 +194,11 @@ rule all:
         # @imported from rules/cnv.smk
         expand( 
             join(workpath, "deepvariant", "VCFs", "{batch}_peddy.sex_check.csv"),        
-            batch=provided([batch_id], call_cnv),
+            batch=provided([batch_id], call_cnv)
         ),
+        # MultiQC, QC report and sample statistics
+        # @imported from rules/qc.smk 
+        join(workpath, "QC", "MultiQC_Report.html"),
 
 
 # Import rules
