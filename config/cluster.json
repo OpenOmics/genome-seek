@@ -3,7 +3,8 @@
 		"partition": "norm",
 		"threads": "4",
 		"mem": "32g",
-		"time": "4-00:00:00"
+		"time": "4-00:00:00",
+		"gres": "lscratch:32"
 	},
 	"bam": {
 		"threads": "2",
