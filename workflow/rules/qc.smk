@@ -95,7 +95,9 @@ rule fastq_screen:
         # Exposed Parameters: modify resources/fastq_screen.conf to change 
         # default locations to bowtie2 indices
         fastq_screen_config = config['references']['FASTQ_SCREEN_CONFIG'],
-    envmodules: config['tools']['fastq_screen']
+    envmodules: 
+        config['tools']['fastq_screen'],
+        config['tools']['bowtie']
     threads: int(allocated("threads", "fastq_screen", cluster))
     shell: """
     fastq_screen --conf {params.fastq_screen_config} \\
