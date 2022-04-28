@@ -631,7 +631,7 @@ def dryrun(outdir, config='config.json', snakefile=os.path.join('workflow', 'Sna
 
 
 def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None, 
-    threads=2,  jobname='pl:master', submission_script='runner',
+    threads=2,  jobname='pl:master', submission_script='run.sh',
     tmp_dir = '/lscratch/$SLURM_JOBID/'):
     """Runs the pipeline via selected executor: local or slurm.
     If 'local' is selected, the pipeline is executed locally on a compute node/instance.
@@ -725,7 +725,7 @@ def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None,
         #   --rerun-incomplete --stats "$3"/logfiles/runtime_statistics.json \
         #   --keep-remote --local-cores 30 2>&1 | tee -a "$3"/logfiles/master.log
         masterjob = subprocess.Popen([
-                str(os.path.join(outdir, 'resources', str(submission_script))), mode,
+                str(submission_script), mode,
                 '-j', jobname, '-b', str(bindpaths),
                 '-o', str(outdir), '-c', str(cache),
                 '-t', "'{}'".format(tmp_dir)

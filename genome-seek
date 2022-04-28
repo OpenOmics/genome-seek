@@ -144,6 +144,56 @@ def run(sub_args):
         print("\nDry-running {} pipeline:\n{}".format(_name, dryrun_output.decode("utf-8")))
         sys.exit(0)
 
+    # Step 4. Orchestrate pipeline execution,
+    # run pipeline in locally on a compute node
+    # for debugging purposes or submit the master
+    # job to the job scheduler, SLURM, and create 
+    # logging file
+    if not exists(os.path.join(sub_args.output, 'logfiles')):
+        # Create directory for logfiles
+        os.makedirs(os.path.join(sub_args.output, 'logfiles'))
+    if sub_args.mode == 'local':
+        log = os.path.join(sub_args.output, 'logfiles', 'snakemake.log')
+    else: 
+        log = os.path.join(sub_args.output, 'logfiles', 'master.log')
+    logfh = open(log, 'w')
+    mjob = runner(mode = sub_args.mode, 
+        outdir = sub_args.output, 
+        # additional_bind_paths = all_bind_paths,
+        alt_cache = sub_args.singularity_cache,  
+        threads = int(sub_args.threads),
+        jobname = sub_args.job_name,
+        submission_script=os.path.join(__home__, 'src', 'run.sh'),
+        logger = logfh,
+        additional_bind_paths = ",".join(bindpaths),
+        tmp_dir = sub_args.tmp_dir, 
+    )
+    
+    # Step 5. Wait for subprocess to complete,
+    # this is blocking and not asynchronous
+    if not sub_args.silent:
+        print("\nRunning {} pipeline in '{}' mode...".format(_name, sub_args.mode)) 
+    mjob.wait()
+    logfh.close()
+
+    # Step 6. Relay information about submission
+    # of the master job or the exit code of the 
+    # pipeline that ran in local mode
+    if sub_args.mode == 'local':
+        if int(mjob.returncode) == 0:
+            print('{} pipeline has successfully completed'.format(_name))
+        else:
+            fatal('{} pipeline failed. Please see {} for more information.'.format(_name,
+                os.path.join(sub_args.output, 'logfiles', 'snakemake.log')))
+    elif sub_args.mode == 'slurm':
+        jobid = open(os.path.join(sub_args.output, 'logfiles', 'mjobid.log')).read().strip()
+        if not sub_args.silent:
+            if int(mjob.returncode) == 0:
+                print('Successfully submitted master job: ', end="")
+            else:
+                fatal('Error occurred when submitting the master job.')
+        print(jobid)
+
 
 def cache(sub_args):
     """Caches remote resources or reference files stored on DockerHub and S3.
