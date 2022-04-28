@@ -19,6 +19,8 @@ rule fastp:
     output:
         r1=join(workpath,"fastqs","{name}.R1.trimmed.fastq.gz"),
         r2=join(workpath,"fastqs","{name}.R2.trimmed.fastq.gz"),
+        json=join(workpath,"fastqs","{name}.fastp.json"),
+        html=join(workpath,"fastqs","{name}.fastp.html")
     params:
         rname='trim',
     threads: int(allocated("threads", "fastp", cluster))
@@ -29,7 +31,9 @@ rule fastp:
         --in1 {input.r1} \\
         --in2 {input.r2} \\
         --out1 {output.r1} \\
-        --out2 {output.r2} 
+        --out2 {output.r2} \\
+        --json {output.json} \\
+        --html {output.html}
     """
 
 
