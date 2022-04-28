@@ -64,7 +64,7 @@ rule bwa_mem2:
     envmodules: 
         config['tools']['samtools'],
         config['tools']['bwa_mem2'],
-
+        config['tools']['samblaster']
     shell: """
     bwa-mem2 mem \\
         -t {threads} \\
