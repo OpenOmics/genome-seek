@@ -58,7 +58,8 @@ rule bwa_mem2:
     params:
         rname = "bwamem2",
         genome = config['references']['GENOME'],
-        sample = "{name}"
+        sample = "{name}",
+        sort_threads = int(int(allocated("threads", "bwa_mem2", cluster)) / 2),
     threads: 
         int(allocated("threads", "bwa_mem2", cluster))
     envmodules: 
@@ -75,7 +76,7 @@ rule bwa_mem2:
         {input.r1} \\
         {input.r2} \\
     | samblaster -M \\
-    | samtools sort -@{threads} \\
+    | samtools sort -@{params.sort_threads} \\
         --write-index \\
         -m 10G - \\
         -o {output.bam}
