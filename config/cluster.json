@@ -33,7 +33,7 @@
 	},
 	"bwa_mem2": {
 		"threads": "24",
-		"mem": "288G"
+		"mem": "336G"
 	},
 	"deepvariant": {
 		"threads": "18",
