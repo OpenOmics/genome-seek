@@ -79,5 +79,5 @@ rule bwa_mem2:
     | samtools sort -@{params.sort_threads} \\
         --write-index \\
         -m 10G - \\
-        -o {output.bam}
+        -o {output.bam}##idx##{output.bai}
     """
