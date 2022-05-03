@@ -59,7 +59,8 @@ rule bwa_mem2:
         rname = "bwamem2",
         genome = config['references']['GENOME'],
         sample = "{name}",
-        sort_threads = int(int(allocated("threads", "bwa_mem2", cluster)) / 2),
+        tmpdir = tmpdir,
+        sort_threads = int(int(allocated("threads", "bwa_mem2", cluster)) / 2)
     threads: 
         int(allocated("threads", "bwa_mem2", cluster))
     envmodules: 
@@ -67,6 +68,13 @@ rule bwa_mem2:
         config['tools']['bwa_mem2'],
         config['tools']['samblaster']
     shell: """
+    # Setups temporary directory for
+    # intermediate files with built-in 
+    # mechanism for deletion on exit
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+    tmp=$(mktemp -d -p "{params.tmpdir}")
+    trap 'rm -rf "${{tmp}}"' EXIT
+
     bwa-mem2 mem \\
         -t {threads} \\
         -K 100000000 \\
@@ -77,6 +85,7 @@ rule bwa_mem2:
         {input.r2} \\
     | samblaster -M \\
     | samtools sort -@{params.sort_threads} \\
+        -T ${{tmp}} \\
         --write-index \\
         -m 10G - \\
         -o {output.bam}##idx##{output.bai}
