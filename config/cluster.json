@@ -33,7 +33,8 @@
 	},
 	"bwa_mem2": {
 		"threads": "24",
-		"mem": "336G"
+		"mem": "336G",
+		"gres": "lscratch:256"
 	},
 	"deepvariant": {
 		"threads": "18",
@@ -80,17 +81,14 @@
 		"time": "12:00:00",
 		"mem": "24G"
 	},
-
 	"vcftools": {
 		"threads": "2",
 		"time": "12:00:00"
 	},
-
 	"collectvariantcallmetrics": {
 		"threads": "2",
 		"time": "12:00:00"
 	},
-
 	"qc": {
 		"threads": "2",
 		"partition": "norm",
@@ -102,12 +100,10 @@
 		"partition": "norm",
 		"time": "12:00:00"
 	},
-
 	"inbreeding": {
 		"threads": "8",
 		"partition": "norm"
 	},
-
 	"cnv_post": {
 		"threads": "8",
 		"partition": "norm",
