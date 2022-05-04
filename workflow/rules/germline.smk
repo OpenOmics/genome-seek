@@ -24,7 +24,7 @@ rule deepvariant:
     params: 
         rname  = "deepvar",
         genome = config['references']['GENOME'],
-        tmpdir = join(workpath, "deepvariant", "tmp", "{name}"),
+        tmpdir = tmpdir,
     message: "Running DeepVariant on '{input.bam}' input file"
     threads: int(allocated("threads", "deepvariant", cluster))
     container: config['images']['deepvariant']
@@ -32,6 +32,7 @@ rule deepvariant:
     # Setups temporary directory for
     # intermediate files with built-in 
     # mechanism for deletion on exit
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
     tmp=$(mktemp -d -p "{params.tmpdir}")
     trap 'rm -rf "${{tmp}}"' EXIT
 
