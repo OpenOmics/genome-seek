@@ -419,7 +419,7 @@ rule somalier:
     echo "Estimating ancestry."
     somalier ancestry \\
         --n-pcs=10 \\
-        -o {params.outdir})/ancestry \\
+        -o {params.outdir}/ancestry \\
         --labels {params.ancestry_db}/ancestry-labels-1kg.tsv \\
         {params.ancestry_db}/*.somalier ++ \\
         {output.somalier}
