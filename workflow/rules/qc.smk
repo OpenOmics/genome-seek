@@ -422,7 +422,15 @@ rule somalier:
         -o {params.outdir}/ancestry \\
         --labels {params.ancestry_db}/ancestry-labels-1kg.tsv \\
         {params.ancestry_db}/*.somalier ++ \\
-        {output.somalier}
+        {output.somalier} || {{
+    # Somalier ancestry error,
+    # usually due to not finding
+    # any sites compared to the 
+    # its references, expected 
+    # with sub-sampled datasets
+    echo "WARNING: Somalier ancestry failed..." 1>&2
+    touch {output.ancestry}
+    }}
     """
 
 
