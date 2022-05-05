@@ -19,13 +19,14 @@ rule peddy:
     input:
         vcf = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
     output:
+        ped  = temp(join(workpath, "deepvariant", "VCFs", "{batch}_batch.ped")),
         html = join(workpath, "deepvariant", "VCFs", "{batch}_peddy.html"),
         csv  = join(workpath, "deepvariant", "VCFs", "{batch}_peddy.sex_check.csv"),
-        ped  = temp(join(workpath, "deepvariant", "VCFs", "{batch}_batch.ped")),
     params:
         rname = "peddy",
-        prefix = join(workpath, "deepvariant", "VCFs", "{batch}"),
+        prefix = join(workpath, "deepvariant", "VCFs", "{batch}_peddy"),
         peddy_chr = config['references']['PEDDY_FILTER'],
+        intermediate = join(workpath, "deepvariant", "VCFs", "intermediate")
     message: "Running peddy on '{input.vcf}' input file"
     threads: int(allocated("threads", "peddy", cluster))
     envmodules: 
@@ -35,9 +36,10 @@ rule peddy:
     vcftools \\
         --gzvcf {input.vcf} \\
         --plink \\
-        --chr {params.peddy_chr} \\
-        --stdout \\
-    | cut -f1-6 > {output.ped}
+        --out {params.intermediate} \\
+        --chr {params.peddy_chr}
+    cut -f1-6 {params.intermediate}.ped \\
+    > {output.ped}
     peddy -p {threads} \\
         --prefix {params.prefix} \\
         {input.vcf} \\
