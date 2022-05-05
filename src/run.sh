@@ -221,6 +221,7 @@ function submit(){
 #SBATCH --output "$3/logfiles/snakemake.log"
 #SBATCH --error "$3/logfiles/snakemake.log"
 set -euo pipefail
+# Main process of pipeline
 snakemake --latency-wait 120 -s "$3/workflow/Snakefile" -d "$3" \\
   --use-singularity --singularity-args "'-B $4'" \\
   --use-envmodules --configfile="$3/config.json" \\
@@ -228,6 +229,8 @@ snakemake --latency-wait 120 -s "$3/workflow/Snakefile" -d "$3" \\
   --cluster "${CLUSTER_OPTS}" --keep-going --restart-times 3 -j 500 \\
   --rerun-incomplete --stats "$3/logfiles/runtime_statistics.json" \\
   --keep-remote --local-cores 14 2>&1
+# Create summary report
+snakemake -d "$3" --report "Snakemake_Report.html"
 EOF
     chmod +x kickoff.sh
     job_id=$(sbatch kickoff.sh | tee -a "$3"/logfiles/master.log)
