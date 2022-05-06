@@ -4,6 +4,7 @@
         "fastp": "fastp/0.23.1",
         "bowtie": "bowtie/2-2.4.5",
         "bcftools": "bcftools/1.9",
+        "canvas": "Canvas/1.40",
         "perl": "perl/5.24.3",
         "peddy": "peddy/0.3.1",
         "picard": "picard/2.20.8",
