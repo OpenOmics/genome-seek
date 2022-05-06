@@ -196,6 +196,12 @@ rule all:
             join(workpath, "deepvariant", "VCFs", "{batch}_peddy.sex_check.csv"),        
             batch=provided([batch_id], call_cnv)
         ),
+        # CANVAS, predicted germline CNVs
+        # @imported from rules/cnv.smk
+        expand( 
+            join(workpath, "CANVAS", "{name}", "CNV.vcf.gz"),        
+            name=provided(samples, call_cnv)
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
