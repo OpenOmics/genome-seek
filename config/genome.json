@@ -1,5 +1,9 @@
 {
     "references": {
+        "CANVAS_GENOME": "/data/NCBR/references/genome-seek/CANVAS/WholeGenomeFasta",
+        "CANVAS_KMER": "/data/NCBR/references/genome-seek/CANVAS/kmer.fa",
+        "CANVAS_FILTER": "/data/NCBR/references/genome-seek/CANVAS/filter13.bed",
+        "CANVAS_BALLELES": "/data/NCBR/references/genome-seek/CANVAS/dbsnp.vcf",
         "GENOME": "/data/NCBR/references/genome-seek/Homo_sapiens_assembly38.fasta",
         "FASTQ_SCREEN_CONFIG": "resources/fastq_screen.conf",
         "FASTQC_ADAPTERS": "resources/fastqc_adapters.tsv",
