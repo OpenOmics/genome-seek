@@ -15,7 +15,11 @@
 		"time": "48:00:00",
 		"mem": "72G",
 		"gres": "lscratch:256"
-
+	},
+	"canvas": {
+		"threads": "4",
+		"time": "18:00:00",
+		"mem": "48G"
 	},
 	"fastp": {
 		"threads": "32",
