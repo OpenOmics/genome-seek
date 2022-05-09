@@ -56,19 +56,24 @@ rule canvas:
     sample analysis. In the near future, we may move to this option.
     For more information about CANVAS, please read through the paper:
     https://academic.oup.com/bioinformatics/article/32/15/2375/1743834
+    Predicted CNVs from CANVAS are then filtered, annotated  and ranked
+    with AnnotSV. AnnotSV Github: https://github.com/lgmgeo/AnnotSV
     @Input:
         Per sample VCF file (scatter)
     @Output:
-        Per sample VCF with predicted CNVs
+        Per sample VCF with annotated and ranked CNVs
     """
     input:
-        vcf  = join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"),
+        vcf = join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"),
         bam = join(workpath, "BAM", "{name}.sorted.bam"),
         bai = join(workpath, "BAM", "{name}.sorted.bam.bai"),
         csv = join(workpath, "deepvariant", "VCFs", "{0}_peddy.sex_check.csv".format(batch_id)),
+        joint = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
     output:
         vcf = join(workpath, "CANVAS", "{name}", "CNV.vcf.gz"),
         ploidy = join(workpath, "CANVAS", "{name}", "ploidy.vcf"),
+        filtered  = join(workpath, "CANVAS", "{name}", "CNV.filtered.vcf"),
+        annotated = join(workpath, "CANVAS", "{name}", "{name}.segments.annotations.tsv"),
     params:
         rname  = "canvas",
         sample = "{name}",
@@ -79,10 +84,13 @@ rule canvas:
         canvas_kmer   = config['references']['CANVAS_KMER'],
         canvas_genome = config['references']['CANVAS_GENOME'],
         canvas_balleles = config['references']['CANVAS_BALLELES'],
+        annotsv_build = config['references']['ANNOTSV_BUILD'],
     message: "Running canvas on '{input.vcf}' input file"
     threads: int(allocated("threads", "canvas", cluster))
     envmodules: 
         config['tools']['canvas'],
+        config['tools']['bcftools'],
+        config['tools']['annotsv'],
     shell: """
     # Get biological sex
     # predicted by peddy 
@@ -115,4 +123,29 @@ rule canvas:
         -g {params.canvas_genome} \\
         -f {params.canvas_filter} \\
         --sample-b-allele-vcf={input.vcf}
+    
+    # Filter predicted CNVs
+    bcftools filter \\
+        --include 'FILTER="PASS" && INFO/SVTYPE="CNV"' \\
+        {output.vcf} \\
+    > {output.filtered}
+
+    # Rank and annotate CNVs
+    AnnotSV \\
+        -genomeBuild {params.annotsv_build} \\
+        -outputDir {params.outdir} \\
+        -outputFile {output.annotated} \\
+        -SVinputFile {output.filtered} \\
+        -vcfFiles {input.joint} \\
+        -vcfSamples {params.sample}
+    
+    # Check if AnnotSV silently failed
+    if [ -f "{output.annotated}" ]; then
+        # AnnotSV failed to process
+        # provided SVinputFile file, 
+        # usually due to passing an 
+        # empty filtered SV file
+        echo "WARNING: AnnotSV silently failed..." 1>&2
+        touch {output.annotated}
+    fi
     """

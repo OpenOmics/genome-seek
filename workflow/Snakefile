@@ -202,6 +202,12 @@ rule all:
             join(workpath, "CANVAS", "{name}", "CNV.vcf.gz"),        
             name=provided(samples, call_cnv)
         ),
+        # AnnotSV, annotated germline CNVs
+        # @imported from rules/cnv.smk
+        expand( 
+            join(workpath, "CANVAS", "{name}", "{name}.segments.annotations.tsv"),       
+            name=provided(samples, call_cnv)
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
