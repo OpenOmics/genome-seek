@@ -140,7 +140,7 @@ rule canvas:
         -vcfSamples {params.sample}
     
     # Check if AnnotSV silently failed
-    if [ -f "{output.annotated}" ]; then
+    if [ ! -f "{output.annotated}" ]; then
         # AnnotSV failed to process
         # provided SVinputFile file, 
         # usually due to passing an 
