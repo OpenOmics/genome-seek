@@ -62,7 +62,7 @@ rule canvas:
         Per sample VCF with predicted CNVs
     """
     input:
-        vcf = join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz"),
+        vcf  = join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"),
         bam = join(workpath, "BAM", "{name}.sorted.bam"),
         bai = join(workpath, "BAM", "{name}.sorted.bam.bai"),
         csv = join(workpath, "deepvariant", "VCFs", "{0}_peddy.sex_check.csv".format(batch_id)),
@@ -99,7 +99,7 @@ rule canvas:
         cp {params.male_ploidy} {output.ploidy}
     else
         # prediction is female
-        cp {params.male_ploidy} {output.ploidy}
+        cp {params.female_ploidy} {output.ploidy}
     fi
     sed -i 's/SAMPLENAME/{params.sample}/g' \\
         {output.ploidy}
