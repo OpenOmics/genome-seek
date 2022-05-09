@@ -78,6 +78,7 @@ rule canvas:
         rname  = "canvas",
         sample = "{name}",
         outdir = join(workpath, "CANVAS", "{name}"),
+        checkpoints   = join(workpath, "CANVAS", "{name}", "Checkpoints"),
         male_ploidy   = join(workpath, "resources", "male_ploidy.vcf"),
         female_ploidy = join(workpath, "resources", "female_ploidy.vcf"),
         canvas_filter = config['references']['CANVAS_FILTER'],
@@ -111,6 +112,13 @@ rule canvas:
     fi
     sed -i 's/SAMPLENAME/{params.sample}/g' \\
         {output.ploidy}
+
+    # Delete Canvas checkpoints
+    if [ -d {params.checkpoints} ]; then
+        # Forces Canvas to start 
+        # over from the beginning
+        rm -rf '{params.checkpoints}'
+    fi
 
     # CANVAS in Germline WGS mode
     export COMPlus_gcAllowVeryLargeObjects=1
