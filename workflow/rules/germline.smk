@@ -67,6 +67,7 @@ rule glnexus:
         norm  = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
     params: 
         rname  = "glnexus",
+        tmpdir =  tmpdir,
         gvcfdir = join(workpath, "deepvariant", "gVCFs"),
         memory  = allocated("mem", "glnexus", cluster).rstrip('G'),
         genome = config['references']['GENOME'],
@@ -74,12 +75,25 @@ rule glnexus:
     threads: int(allocated("threads", "glnexus", cluster))
     container: config['images']['glnexus']
     shell: """
+    # Setups temporary directory for
+    # intermediate files with built-in 
+    # mechanism for deletion on exit, 
+    # GLnexus tmpdir should NOT exist
+    # prior to running it. If it does
+    # exist prior to runnning, it will
+    # immediately error out.
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+    tmp_parent=$(mktemp -d -p "{params.tmpdir}")
+    tmp_dne=$(echo "${{tmp_parent}}"| sed 's@$@/GLnexus.DB@')
+    trap 'rm -rf "${{tmp_parent}}"' EXIT
+
     # Avoids ARG_MAX issue which will
     # limit max length of a command
     find {params.gvcfdir} -iname '*.g.vcf.gz' \\
     > {output.gvcfs}
 
     glnexus_cli \\
+        --dir ${{tmp_dne}} \\
         --config DeepVariant \\
         --list {output.gvcfs} \\
         --threads {threads} \\
