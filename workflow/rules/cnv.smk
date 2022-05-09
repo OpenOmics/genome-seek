@@ -57,7 +57,7 @@ rule canvas:
     For more information about CANVAS, please read through the paper:
     https://academic.oup.com/bioinformatics/article/32/15/2375/1743834
     @Input:
-        Per sample gVCF file (scatter)
+        Per sample VCF file (scatter)
     @Output:
         Per sample VCF with predicted CNVs
     """
