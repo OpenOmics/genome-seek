@@ -1,5 +1,6 @@
 {
     "tools": {
+        "annotsv": "annotsv/2.2",
         "fastqc": "fastqc/0.11.9",
         "fastp": "fastp/0.23.1",
         "bowtie": "bowtie/2-2.4.5",
