@@ -198,6 +198,10 @@ def setup(sub_args, ifiles, repo_path, output_path):
     config = add_user_information(config)
     config = add_rawdata_information(sub_args, config, ifiles)
 
+    # Override default OpenCRAVAT modules directory
+    if sub_args.oc_modules:
+        config['references']['OC_MODULES'] = sub_args.oc_modules
+
     # Resolves if an image needs to be pulled 
     # from an OCI registry or a local SIF exists
     config = image_cache(sub_args, config, repo_path)

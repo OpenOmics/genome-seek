@@ -9,6 +9,7 @@
         "FASTQ_SCREEN_CONFIG": "resources/fastq_screen.conf",
         "FASTQC_ADAPTERS": "resources/fastqc_adapters.tsv",
         "DBSNP": "/data/NCBR/references/genome-seek/GATK_resource_bundle/hg38bundle/dbsnp_138.hg38.vcf.gz",
+        "OC_MODULES": "/data/NCBR/references/genome-seek/OpenCRAVAT/modules",
         "PEDDY_FILTER": "chr22",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/data/NCBR/references/genome-seek/snpEff/4.3t/snpEff.config",

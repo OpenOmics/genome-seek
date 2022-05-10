@@ -245,14 +245,15 @@ def parsed_arguments(name, description):
         {0}: {1}
 
         {3}{4}Synopsis:{5}
-          $ {2} run [--help] [--mode {{local,slurm}}] [--job-name JOB_NAME] \\
-                            [--call-cnv] [--call-sv] [--call-hla] [--skip-qc] \\
-                            [ --dry-run] [--silent] [--sif-cache SIF_CACHE] \\ 
-                            [--singularity-cache SINGULARITY_CACHE] \\
-                            [--tmp-dir TMP_DIR] [--threads THREADS] \\
-                            [--batch-id BATCH_ID] \\
-                            --input INPUT [INPUT ...] \\
-                            --output OUTPUT
+          $ {2} run [--help] \\
+                [--mode {{slurm,local}}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \\
+                [--call-cnv] [--call-sv] [--call-hla] [--skip-qc] [--open-cravat] \\
+                [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \\
+                [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \\ 
+                [--singularity-cache SINGULARITY_CACHE] \\
+                [--dry-run] [--threads THREADS] \\
+                --input INPUT [INPUT ...] \\
+                --output OUTPUT
 
         Optional arguments are shown in square brackets above.
 
@@ -287,6 +288,11 @@ def parsed_arguments(name, description):
 
           --call-hla            Call HLA types.
                                   Example: --call-hla
+        
+         --open-cravat          Run OpenCRAVAT to annotate variants. See Annotation
+                                Options for more information about what modules are
+                                included by default and how to include more modules. 
+                                  Example: --open-cravat
           
           --skip-qc             Skips over quality control steps. When this option
                                 is provided the pipeline will not run any of its QC
@@ -308,6 +314,32 @@ def parsed_arguments(name, description):
                                 pipeline to be run with extra samples without
                                 overriding some of results of a previous run.
                                   Example: --batch-id WGS_2022-04-19
+
+        {3}{4}Anotation options:{5}
+         {6}@OpenCRAVAT{5}
+          --oc-annotators OC_ANNOTATORS 
+                                List of OpenCRAVAT annotators to use. Note that  
+                                one or more annotators can be provided. Multiple 
+                                annotators should be seperate with a space. By 
+                                default, the pipeline will annotator variants 
+                                using the following OpenCRAVAT modules. Please
+                                ensure these annotators are installed in the 
+                                OpenCRAVAT module directory before running in
+                                this option. A custom module installation path
+                                can be provided using the --oc-modules option.
+                                By default, the following annotators are used:
+                                   • encode_tfbs ccre_screen vista_enhancer 
+                                   • javierre_promoters genehancer gnomad
+                                   • ensembl_regulatory_build dbsnp_common 
+                                   • gnomad3 thousandgenomes cadd revel
+                                  Example: --oc-annotators dann dann_coding
+          --oc-modules OC_MODULES 
+                                Set path to OpenCRAVAT's modules directory. This 
+                                option overrides the default path any installed
+                                modules for OpenCRAVAT. Use this option if you 
+                                have your own custom installation of OpenCRAVAT
+                                modules.
+                                  Example: --oc-modules /data/$USER/CRAVAT/modules
 
         {3}{4}Orchestration options:{5}
           --mode {{slurm,local}}  
@@ -381,7 +413,7 @@ def parsed_arguments(name, description):
         {3}{4}Misc Options:{5}
           -h, --help            Show usage information, help message, and exit.
                                   Example: --help
-        """.format(styled_name, description, name, c.bold, c.url, c.end))
+        """.format(styled_name, description, name, c.bold, c.url, c.end, c.italic))
 
     # Display example usage in epilog
     run_epilog = textwrap.dedent("""\
@@ -422,7 +454,8 @@ def parsed_arguments(name, description):
 
     # Required Arguments
     # Input FastQ files
-    subparser_run.add_argument('--input',
+    subparser_run.add_argument(
+        '--input',
         # Check if the file exists and if it is readable
         type = lambda file: permissions(parser, file, os.R_OK),
         required = True,
@@ -430,8 +463,10 @@ def parsed_arguments(name, description):
         help = argparse.SUPPRESS
     )
 
-    # Output Directory (analysis working directory)
-    subparser_run.add_argument('--output',
+    # Output Directory, i.e 
+    # working directory
+    subparser_run.add_argument(
+        '--output',
         type = lambda option: os.path.abspath(os.path.expanduser(option)),
         required = True,
         help = argparse.SUPPRESS
@@ -482,18 +517,58 @@ def parsed_arguments(name, description):
         help = argparse.SUPPRESS
     )
 
+    # Run OpenCRAVAT
+    subparser_run.add_argument(
+        '--open-cravat',
+        action = 'store_true',
+        required = False,
+        default = False,
+        help = argparse.SUPPRESS
+    )
+
+    # OpenCRAVAT modules directory
+    subparser_run.add_argument(
+        '--oc-modules',
+        # Convert to absolute path and
+        # check if user can read from 
+        # directory.
+        type = lambda option: permissions(
+            parser, 
+            os.path.abspath(os.path.expanduser(option)), 
+            os.R_OK),
+        required = False,
+        default = '',
+        help = argparse.SUPPRESS
+    )
+
+    # OpenCRAVAT Variant Annotators
+    subparser_run.add_argument(
+        '--oc-annotators',
+        type = str,
+        nargs = '+',
+        required = False,
+        default = [
+            'cadd', 'ccre_screen', 'dbsnp_common', 'encode_tfbs', 
+            'ensembl_regulatory_build', 'genehancer', 'gnomad', 'gnomad3',
+            'javierre_promoters', 'revel', 'thousandgenomes', 'vista_enhancer'
+        ],
+        help = argparse.SUPPRESS
+    )
+
     # Batch Identifer
-    subparser_run.add_argument('--batch-id',
+    subparser_run.add_argument(
+        '--batch-id',
         type = lambda option: option.replace(' ', '_'),
         required = False,
         default = '',
         help = argparse.SUPPRESS
     )
 
-    # Execution Method
-    # Run locally on a compute node, 
-    # submit to SLURM job scheduler, etc.
-    subparser_run.add_argument('--mode',
+    # Execution Method, run locally 
+    # on a compute node or submit to 
+    # a supported job scheduler, etc.
+    subparser_run.add_argument(
+        '--mode',
         type = str,
         required = False,
         default = "slurm",
@@ -502,7 +577,8 @@ def parsed_arguments(name, description):
     )
 
     # Name of master job
-    subparser_run.add_argument('--job-name',
+    subparser_run.add_argument(
+        '--job-name',
         type = str,
         required = False,
         default = 'pl:{}'.format(name),
@@ -512,7 +588,8 @@ def parsed_arguments(name, description):
     # Dry-run
     # Do not execute the workflow, 
     # prints what steps remain
-    subparser_run.add_argument('--dry-run',
+    subparser_run.add_argument(
+        '--dry-run',
         action = 'store_true',
         required = False,
         default = False,
@@ -520,39 +597,49 @@ def parsed_arguments(name, description):
     )
 
     # Silent output mode
-    subparser_run.add_argument('--silent',
+    subparser_run.add_argument(
+        '--silent',
         action = 'store_true',
         required = False,
         default = False,
         help = argparse.SUPPRESS
     )
     
-    # Singularity cache directory (default uses output directory)
-    subparser_run.add_argument('--singularity-cache',
+    # Singularity cache directory,
+    # default uses output directory
+    subparser_run.add_argument(
+        '--singularity-cache',
         type = lambda option: check_cache(parser, os.path.abspath(os.path.expanduser(option))),
         required = False,
         help = argparse.SUPPRESS
     )
     
-    # Local SIF cache directory (default pull from Dockerhub) 
-    subparser_run.add_argument('--sif-cache',
+    # Local SIF cache directory, 
+    # default pull from Dockerhub
+    subparser_run.add_argument(
+        '--sif-cache',
         type = lambda option: os.path.abspath(os.path.expanduser(option)),
         required = False,
         help = argparse.SUPPRESS
     )
 
-    # Base directory to write temporary files 
-    subparser_run.add_argument('--tmp-dir',
+    # Base directory to write 
+    # temporary/intermediate files 
+    subparser_run.add_argument(
+        '--tmp-dir',
         type = str,
         required = False,
         default = '/lscratch/$SLURM_JOBID/',
         help = argparse.SUPPRESS
     )
 
-    # Number of threads for the pipeline's main proceess
-    # This is only applicable for local rules or when the 
-    # pipeline is running in local mode.
-    subparser_run.add_argument('--threads',
+    # Number of threads for the 
+    # pipeline's main proceess
+    # This is only applicable for 
+    # local rules or when running 
+    # in local mode.
+    subparser_run.add_argument(
+        '--threads',
         type = int,
         required = False,
         default = 2,
@@ -606,7 +693,8 @@ def parsed_arguments(name, description):
         """.format(name, __version__, c.bold, c.url, c.end))
 
     # Supressing help message of required args to overcome no sub-parser named groups
-    subparser_unlock = subparsers.add_parser('unlock',
+    subparser_unlock = subparsers.add_parser(
+        'unlock',
         help = 'Unlocks a previous runs output directory.',
         usage = argparse.SUPPRESS,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -617,7 +705,8 @@ def parsed_arguments(name, description):
 
     # Required Arguments
     # Output Directory (analysis working directory)
-    subparser_unlock.add_argument('--output',
+    subparser_unlock.add_argument(
+        '--output',
         type = str,
         required = True,
         help = argparse.SUPPRESS
@@ -690,7 +779,8 @@ def parsed_arguments(name, description):
         """.format(name, __version__, c.bold, c.url, c.end))
 
     # Supressing help message of required args to overcome no sub-parser named groups
-    subparser_cache = subparsers.add_parser('cache',
+    subparser_cache = subparsers.add_parser(
+        'cache',
         help = 'Cache remote resources locally.',
         usage = argparse.SUPPRESS,
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -701,7 +791,8 @@ def parsed_arguments(name, description):
 
     # Required Arguments
     # Output Directory (analysis working directory)
-    subparser_cache.add_argument('--sif-cache',
+    subparser_cache.add_argument(
+        '--sif-cache',
         type = lambda option: os.path.abspath(os.path.expanduser(option)),
         required = True,
         help = argparse.SUPPRESS
@@ -709,7 +800,8 @@ def parsed_arguments(name, description):
 
     # Optional Arguments
     # Dry-run cache command (do not pull any remote resources)
-    subparser_cache.add_argument('--dry-run',
+    subparser_cache.add_argument(
+        '--dry-run',
         action = 'store_true',
         required = False,
         default = False,
