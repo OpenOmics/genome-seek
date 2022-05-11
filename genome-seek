@@ -321,17 +321,11 @@ def parsed_arguments(name, description):
                                 List of OpenCRAVAT annotators to use. Note that  
                                 one or more annotators can be provided. Multiple 
                                 annotators should be seperate with a space. By 
-                                default, the pipeline will annotator variants 
-                                using the following OpenCRAVAT modules. Please
-                                ensure these annotators are installed in the 
-                                OpenCRAVAT module directory before running in
-                                this option. A custom module installation path
-                                can be provided using the --oc-modules option.
-                                By default, the following annotators are used:
-                                   • encode_tfbs ccre_screen vista_enhancer 
-                                   • javierre_promoters genehancer gnomad
-                                   • ensembl_regulatory_build dbsnp_common 
-                                   • gnomad3 thousandgenomes cadd revel
+                                default the pipeline will annotate variants using 
+                                modules in the resource bundle; however, a custom
+                                module installation path can be defined using the 
+                                --oc-modules option. The default list of OpenCRAVAT
+                                annotators can be here: 'config/oc_annotators.txt'.
                                   Example: --oc-annotators dann dann_coding
           --oc-modules OC_MODULES 
                                 Set path to OpenCRAVAT's modules directory. This 
@@ -547,10 +541,14 @@ def parsed_arguments(name, description):
         type = str,
         nargs = '+',
         required = False,
+        # Set default from config/oc_annotators.txt
+        # Skips over any empty lines and any lines 
+        # starting with comments, i.e. '#' 
         default = [
-            'cadd', 'ccre_screen', 'dbsnp_common', 'encode_tfbs', 
-            'ensembl_regulatory_build', 'genehancer', 'gnomad', 'gnomad3',
-            'javierre_promoters', 'revel', 'thousandgenomes', 'vista_enhancer'
+            l.strip() for l in open(
+                os.path.join('config', 'oc_annotators.txt'), 
+                'r'
+            ).readlines() if not l.strip().startswith('#') and l.strip()
         ],
         help = argparse.SUPPRESS
     )
