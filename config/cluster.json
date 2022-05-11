@@ -130,6 +130,11 @@
         "threads": "8",
         "partition": "norm"
     },
+    "manta": {
+        "threads": "32",
+        "mem": "96G",
+        "time": "1-00:00:00"
+    },
     "mergegvcfs": {
         "threads": "2",
         "mem": "96G",
