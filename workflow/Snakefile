@@ -20,12 +20,13 @@ from scripts.common import (
 today = str(datetime.datetime.today()).split()[0].replace('-', '')
 
 # Global workflow variables
-configfile: 'config.json'                 # CSI_wes_pipeline/resources/processing_references_biowulf_hg38.json
-samples  = config['samples']              # Base name of input samples
-workpath = config['project']['workpath']  # Pipeline's output directory
-filetype = config['project']['filetype']  # 'paired-end' or 'single-end' (not supported)
-tmpdir   = config['options']['tmp_dir']   # Temporary directory
-batch_id = config['options']['batch_id']  # Batch Identifer  
+configfile: 'config.json'                      # Generated from user input and config/*.json
+samples  = config['samples']                   # Base name of input samples
+workpath = config['project']['workpath']       # Pipeline's output directory
+filetype = config['project']['filetype']       # 'paired-end' or 'single-end' (not supported)
+tmpdir   = config['options']['tmp_dir']        # Temporary directory
+batch_id = config['options']['batch_id']       # Batch Identifer
+chunks   = config['references']['CHR_CHUNKS']  # Scatter on chromosomes or chunks
 
 # Analysis Options 
 call_cnv = str_bool(                      # Call copy number variation (CNVs),
@@ -39,6 +40,9 @@ call_hla = str_bool(                      # Call HLA types,
 )
 skip_qc  = str_bool(                      # Skip over QC steps,
     config['options']['skip_qc']          # default: False
+)
+run_oc  = str_bool(                      # Run OpenCRAVAT rules,
+    config['options']['open_cravat']     # default: False
 )
 
 # Read in resource information,
@@ -203,6 +207,18 @@ rule all:
             join(workpath, "MANTA", "{name}", "results", "variants", "diploidSV.vcf.gz"),       
             name=provided(samples, call_sv)
         ),
+        # GATK4 SelectVariants, jointly-called norm per-chrom VCF file
+        # @imported from rules/open_cravat.smk
+        expand( 
+            join(workpath, "OpenCRAVAT", "VCFs", "{chunk}.germline.vcf.gz"),
+            chunk=provided(chunks, run_oc)
+        ),
+        # OpenCRAVAT, annotation, rank and score variants
+        # @imported from rules/open_cravat.smk
+        expand( 
+            join(workpath, "OpenCRAVAT", "cravat_{chunk}.sqlite"),
+            chunk=provided(chunks, run_oc)
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
@@ -215,3 +231,4 @@ include: join("rules", "qc.smk")
 include: join("rules", "hla.smk")
 include: join("rules", "cnv.smk")
 include: join("rules", "sv.smk")
+include: join("rules", "open_cravat.smk")
