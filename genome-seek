@@ -325,7 +325,7 @@ def parsed_arguments(name, description):
                                 modules in the resource bundle; however, a custom
                                 module installation path can be defined using the 
                                 --oc-modules option. The default list of OpenCRAVAT
-                                annotators can be here: 'config/oc_annotators.txt'.
+                                annotators can be here: 'config/oc_annotators.cfg'.
                                   Example: --oc-annotators dann dann_coding
           --oc-modules OC_MODULES 
                                 Set path to OpenCRAVAT's modules directory. This 
@@ -546,7 +546,7 @@ def parsed_arguments(name, description):
         # starting with comments, i.e. '#' 
         default = [
             l.strip() for l in open(
-                os.path.join('config', 'oc_annotators.txt'), 
+                os.path.join(__home__, 'config', 'oc_annotators.cfg'), 
                 'r'
             ).readlines() if not l.strip().startswith('#') and l.strip()
         ],
