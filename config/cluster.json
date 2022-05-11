@@ -36,6 +36,11 @@
         "time": "18:00:00",
         "mem": "48G"
     },
+    "chrom_selectvariants": {
+        "threads": "2",
+        "mem": "24G",
+        "time": "12:00:00"
+    },
     "cnv_post": {
         "threads": "8",
         "partition": "norm",
@@ -151,6 +156,11 @@
         "time": "24:00:00",
         "mem": "96G",
         "gres": "lscratch:256"
+    },
+    "open_cravat": {
+        "threads": "16",
+        "mem": "48G",
+        "time": "18:00:00"
     },
     "ped": {
         "threads": "2",
