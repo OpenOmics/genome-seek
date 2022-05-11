@@ -535,7 +535,7 @@ def parsed_arguments(name, description):
         type = lambda option: permissions(
             parser, 
             os.path.abspath(os.path.expanduser(option)), 
-            os.R_OK),
+            os.R_OK) if option else '',
         required = False,
         default = '',
         help = argparse.SUPPRESS
