@@ -289,7 +289,7 @@ def parsed_arguments(name, description):
           --call-hla            Call HLA types.
                                   Example: --call-hla
         
-         --open-cravat          Run OpenCRAVAT to annotate variants. See Annotation
+          --open-cravat         Run OpenCRAVAT to annotate variants. See Annotation
                                 Options for more information about what modules are
                                 included by default and how to include more modules. 
                                   Example: --open-cravat
@@ -316,7 +316,7 @@ def parsed_arguments(name, description):
                                   Example: --batch-id WGS_2022-04-19
 
         {3}{4}Anotation options:{5}
-         {6}@OpenCRAVAT{5}
+        {6}@OpenCRAVAT{5}
           --oc-annotators OC_ANNOTATORS 
                                 List of OpenCRAVAT annotators to use. Note that  
                                 one or more annotators can be provided. Multiple 
