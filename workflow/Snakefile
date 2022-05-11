@@ -197,6 +197,12 @@ rule all:
             join(workpath, "CANVAS", "{name}", "{name}.segments.annotations.tsv"),       
             name=provided(samples, call_cnv)
         ),
+        # Manta, call structural variation (SV)
+        # @imported from rules/sv.smk
+        expand( 
+            join(workpath, "MANTA", "{name}", "results", "variants", "diploidSV.vcf.gz"),       
+            name=provided(samples, call_sv)
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
@@ -208,3 +214,4 @@ include: join("rules", "germline.smk")
 include: join("rules", "qc.smk")
 include: join("rules", "hla.smk")
 include: join("rules", "cnv.smk")
+include: join("rules", "sv.smk")
