@@ -1,4 +1,85 @@
 {
     "options": {
+        "cravat_filters": {
+            "primary":{
+                "maf": "0.001",
+                "so" : "EXL,FSI,FSD,MIS,SPL,MLO,STG,STL,TAB,IND,INI"
+            },
+            "secondary":{
+                "revel" :{
+                    "col": "score",
+                    "relation": ">=",
+                    "value": "0.5"
+                },
+                "cadd":{
+                    "col": "phred",
+                    "relation" : ">=",
+                    "value" : "20"
+                }
+            },
+            "not_used":{
+                "vest" : {
+                    "col" : "score",
+                    "relation" : ">=",
+                    "value" : "0.6"
+                },
+                "sift":{
+                    "col": "prediction",
+                    "relation" : "IN",
+                    "value" : "Damaging"
+                },
+                "exact_test":{
+                    "col" : "P",
+                    "relation" : "<=",
+                    "value" : "0.01"
+                },
+                "clinvar":{
+                    "col" : "sig",
+                    "relation" : "IN",
+                    "value" : "Pathogenic,Conflicting interpretations of pathogenicity,Likely pathogenic,drug response"
+                },
+                "phastcons" : {
+                    "col" : "phastcons30_mamm_r",
+                    "relation" : ">=",
+                    "value" : "0.6" 
+                },
+                "siphy" : {
+                    "col" : "logodds_rank",
+                    "relation" : ">=",
+                    "value" : "0.6"
+                },
+                "fathmm_xf_coding":{
+                    "col" : ".fathmm_xf_coding_pred",
+                    "relation" : "IN",
+                    "value" : "Damaging"
+                },
+                "spliceai":{
+                    "col" : "multiple",
+                    "cols" : "ds_dl,ds_al",
+                    "relation" : ">=,>=",
+                    "value" : "0.5,0.5"
+                },
+                "cgc" : {
+                    "col": "class",
+                    "relation" : "IS NOT",
+                    "value" : "NULL"
+                },
+                "cgl" : {
+                    "col": "class",
+                    "relation" : "IS NOT",
+                    "value" : "NULL"
+                },
+                "cosmic":{
+                    "col": "variant_count",
+                    "relation" : ">=",
+                    "value": "10"
+                },
+                "civic":{
+                    "col" : "clinical_a_score",
+                    "relation" : "IS NOT",
+                    "value" : "NULL"
+                }
+            }
+        }
     }
 }
