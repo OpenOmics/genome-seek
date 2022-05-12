@@ -1,0 +1,108 @@
+# Project Information
+site_name: genome-seek
+site_author: Skyler Kuhn
+site_description: >-
+  Clinical whole genome sequencing pipeline
+
+# Repository
+repo_name: OpenOmics/genome-seek
+repo_url: https://github.com/OpenOmics/genome-seek
+edit_uri: https://github.com/OpenOmics/genome-seek/edit/main/docs/
+
+# Extra
+extra_css:
+  - css/extra.css
+
+# Copyright
+copyright: Copyright &copy; 2022 NCBR
+
+# Configuration
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.top
+    - toc.integrate 
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+    - scheme: slate
+      primary: red
+      accent: red
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+  logo: assets/icons/doc-book.svg
+  favicon: assets/favicon/favicon.ico
+
+# Plugins
+plugins:
+  - search
+  - git-revision-date
+  - minify:
+      minify_html: true
+
+
+# Customization
+extra:
+  social:
+    - icon: fontawesome/solid/users
+      link: https://ncbr.ncifcrf.gov/
+    - icon: fontawesome/brands/github
+      link: https://github.com/OpenOmics
+    - icon: fontawesome/brands/docker
+      link: https://hub.docker.com/orgs/nciccbr/repositories
+  version:
+    provider: mike
+
+
+# Extensions
+markdown_extensions:
+  - markdown.extensions.admonition
+  - markdown.extensions.attr_list
+  - markdown.extensions.def_list
+  - markdown.extensions.footnotes
+  - markdown.extensions.meta
+  - markdown.extensions.toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: squidfunk
+      repo: mkdocs-material
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Page Tree
+nav:
+  - About: index.md
+  - Commands: 
+    - genome-seek run: usage/run.md
+    - genome-seek unlock: usage/unlock.md
+    - genome-seek cache: usage/cache.md
+  - FAQ:
+    - General Questions: faq/questions.md
+  - License: license.md
