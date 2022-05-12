@@ -277,3 +277,31 @@ python3 {params.filter_2}
 echo 'Running column fixing script'
 python3 {params.fixed}
 """
+
+
+rule merge_sqlite:
+    """
+    Merges the filtered, chromosone chunked SQL-lite files. The OpenCRAVAT run 
+    command was scattered on each chromosomes (creating chunks) to speed up its
+    run time. The step merges the resulting filtered, chunked SQL-lite objects 
+    into one SQL-lite file. This creates the final SQL-lite file that can be 
+    used with OpenCRAVAT's user interface.
+    @Input:
+        Filtered, fixed chromosome chunked SQL-lite OpenCravat results (gather)
+    @Output:
+        Merged and filtered SQL-lite OpenCravat results
+    """
+    input: 
+        dbs = expand(join(workpath, "OpenCRAVAT", "filter", "cravat_{chunk}.fixed.sqlite"), chunk=chunks),
+    output: 
+        merged = join(workpath, "OpenCRAVAT", "cravat.merged.sqlite"),
+    params: 
+        rname  = "ocmerge",
+    message: "Running OpenCRAVAT mergesqlite on '{input.dbs}' input files"
+    threads: int(allocated("threads", "merge_sqlite", cluster))
+    envmodules: config['tools']['open_cravat']
+    shell: """
+    oc util mergesqlite \\
+        -o {output.merged} \\
+        {input.dbs} 
+    """

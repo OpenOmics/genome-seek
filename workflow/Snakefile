@@ -225,6 +225,9 @@ rule all:
             join(workpath, "OpenCRAVAT", "filter", "cravat_{chunk}.fixed.sqlite"),
             chunk=provided(chunks, run_oc)
         ),
+        # Merge OpenCRAVAT, merges fitlered SQL-lite files
+        # @imported from rules/open_cravat.smk
+        provided([join(workpath, "OpenCRAVAT", "cravat.merged.sqlite")], run_oc),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
