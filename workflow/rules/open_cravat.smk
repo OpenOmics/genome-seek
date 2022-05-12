@@ -235,7 +235,7 @@ import sqlite3
 import os
 import pandas as pd
 
-conn = sqlite3.connect("{output.fixed}"")
+conn = sqlite3.connect("{output.fixed}")
 conn.isolation_level = None
 cursor = conn.cursor()
 depth = pd.read_sql_query('SELECT base__uid,vcfinfo__tot_reads,vcfinfo__af from variant', conn, index_col = 'base__uid')
