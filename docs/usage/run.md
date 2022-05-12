@@ -111,7 +111,7 @@ Each of the following arguments are optional, and do not need to be provided.
 
 Each of the following arguments are optional, and do not need to be provided. 
 
-### 2.3.1 OpenCRAVAT
+#### 2.3.1 OpenCRAVAT
 
   `--oc-annotators OC_ANNOTATORS`            
 > **List of OpenCRAVAT annotators to use.**  
@@ -241,6 +241,8 @@ module load singularity snakemake
 # Step 2A.) Dry-run the pipeline
 ./genome-seek run --input .tests/*.R?.fastq.gz \
                   --output /data/$USER/output \
+                  --call-cnv --call-sv \
+                  --call-hla --open-cravat \
                   --mode slurm \
                   --dry-run
 
@@ -250,5 +252,7 @@ module load singularity snakemake
 # the pipeline in this mode.
 ./genome-seek run --input .tests/*.R?.fastq.gz \
                   --output /data/$USER/output \
+                  --call-cnv --call-sv \
+                  --call-hla --open-cravat \
                   --mode slurm
 ```

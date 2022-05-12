@@ -4,7 +4,7 @@
 
 ---
 ## Overview
-Welcome to genome-seek' documentation! This guide is the main source of documentation for users that are getting started with the [Whole genome sequencing pipeline](https://github.com/OpenOmics/genome-seek/). 
+Welcome to genome-seek's documentation! This guide is the main source of documentation for users that are getting started with the [whole genome sequencing pipeline](https://github.com/OpenOmics/genome-seek/). 
 
 The **`./genome-seek`** pipeline is composed several inter-related sub commands to setup and run the pipeline across different systems. Each of the available sub commands perform different functions: 
 
@@ -12,7 +12,7 @@ The **`./genome-seek`** pipeline is composed several inter-related sub commands 
  * [<code>genome-seek <b>unlock</b></code>](usage/unlock.md): Unlocks a previous runs output directory.
  * [<code>genome-seek <b>cache</b></code>](usage/cache.md): Cache remote resources locally, coming soon!
 
-genome-seek is a comprehensive clinical WGS pipeline that is focused on speed. Each tool in the pipeline was benchmarked and selected due to its low run times without sacrificing accuracy or precision. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest-level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
+**genome-seek** is a comprehensive clinical WGS pipeline that is focused on speed. Each tool in the pipeline was benchmarked and selected due to its low run times without sacrificing accuracy or precision. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest-level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
 
 The pipeline is compatible with data generated from Illumina short-read sequencing technologies. As input, it accepts a set of FastQ files and can be run locally on a compute instance, on-premise using a cluster, or on the cloud (feature coming soon!). A user can define the method or mode of execution. The pipeline can submit jobs to a cluster using a job scheduler like SLURM, or run on AWS using Tibanna (feature coming soon!). A hybrid approach ensures the pipeline is accessible to all users.
 
