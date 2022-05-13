@@ -130,6 +130,7 @@
     "hla": {
         "threads": "8",
         "partition": "norm",
+        "time": "14:00:00",
         "mem": "96G"
     },
     "inbreeding": {
@@ -188,6 +189,7 @@
     },
     "qualimap": {
         "threads": "8",
+        "time": "14:00:00",
         "mem": "96G"
     },
     "samtools_flagstats": {
