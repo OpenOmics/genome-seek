@@ -28,7 +28,7 @@
     },
     "bwa_mem2": {
         "threads": "24",
-        "mem": "336G",
+        "mem": "230G",
         "gres": "lscratch:256"
     },
     "canvas": {
