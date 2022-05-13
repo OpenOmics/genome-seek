@@ -26,6 +26,11 @@
         "mem": "72G",
         "gres": "lscratch:256"
     },
+    "bcftools_stats": {
+        "threads": "2",
+        "time": "6:00:00",
+        "mem": "16G"
+    },
     "bwa_mem2": {
         "threads": "24",
         "mem": "230G",
@@ -83,6 +88,10 @@
         "mem": "32G",
         "time": "12:00:00"
     },
+    "fc_lane": {
+        "threads": "4",
+        "time": "12:00:00"
+    },
     "filter_cnv": {
         "threads": "2",
         "time": "2:00:00",
@@ -115,7 +124,7 @@
     "glnexus": {
         "threads": "24",
         "mem": "240G",
-        "time": "8-00:00:00"
+        "time": "4-00:00:00"
     },
     "gtype_refinement": {
         "threads": "2",
@@ -137,6 +146,10 @@
         "threads": "8",
         "partition": "norm"
     },
+    "peddy": {
+        "threads": "4",
+        "time": "8:00:00"
+    },
     "manta": {
         "threads": "32",
         "mem": "96G",
@@ -152,6 +165,11 @@
         "mem": "96G",
         "time": "5-00:00:00",
         "gres": "lscratch:768"
+    },
+    "multiqc": {
+        "threads": "4",
+        "mem": "16G",
+        "time": "8:00:00"
     },
     "namesort": {
         "threads": "16",
@@ -199,6 +217,9 @@
     },
     "snpeff": {
         "mem": "24G",
+        "time": "12:00:00"
+    },
+    "somalier": {
         "time": "12:00:00"
     },
     "vcftools": {
