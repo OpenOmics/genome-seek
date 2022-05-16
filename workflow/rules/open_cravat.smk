@@ -157,7 +157,7 @@ cat << EOF > {params.filter_1}
 import sqlite3
 import os
 
-maf = {params.maf_thres}
+maf = str({params.maf_thres})
 mafc = str(1 - float({params.maf_thres}))
 so = "{params.so}"
 conn = sqlite3.connect("{output.filter_1}")
