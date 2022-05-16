@@ -136,6 +136,7 @@ rule cravat_filter:
     params: 
         rname  = "ocfilter",
         chrom  = "{chunk}",
+        annot  = config['options']['oc_annotators'],
         scripts  = join(workpath, "OpenCRAVAT", "scripts"),
         filter_1 = join(workpath, "OpenCRAVAT", "scripts", "filter_1_{chunk}.py"),
         filter_2 = join(workpath, "OpenCRAVAT", "scripts", "filter_2_{chunk}.py"),
@@ -185,7 +186,12 @@ conn = sqlite3.connect("{output.filter_2}")
 conn.isolation_level = None
 cursor = conn.cursor()
 filter = {params.secondary}
-        
+
+
+def keep(dd, used_annotators):
+    final_annotators = {{annotator: dd[annotator] for annotator in used_annotators}}
+    return final_annotators
+
 def filtercol(dd, annot):
     if dd['relation']=='IN':
         return annot + '__' + dd['col'] + ' ' + dd['relation'] + ' ("' + '", "'.join(dd['value'].split(',')) + '")'
@@ -214,7 +220,20 @@ def filterunit_null(annot):
         return(' AND '.join([annot + '__' + cols[i] + ' IS NULL' for i in range(len(cols))]))
     else:
         return(annot + '__' + dd['col'] + ' IS NULL')
-        
+
+# Find the intersect of provided annotators
+# and filter annotators, cannot filter on a
+# set of annotators that do not exist. 
+oc_run_annotators = set("{params.annot}".split())
+filter_annotators = set(filter.keys())
+keep_annotators = oc_run_annotators.intersection(filter_annotators)
+
+if len(keep_annotators) == 0:
+    print('WARNING: No filter annotators were provided that match oc run annotators', file=sys.stderr)
+
+# Filter to avoid SQL filtering issues
+filter = keep(filter, keep_annotators)
+
 filter_query_nonnull = ' OR '.join([filterunit(annot) for annot in filter.keys()])
 filter_query_null = ' AND '.join([filterunit_null(annot) for annot in filter.keys()])
 filter_query = filter_query_nonnull + ' OR (' + filter_query_null + ')'
