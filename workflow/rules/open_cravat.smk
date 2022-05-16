@@ -65,6 +65,9 @@ rule open_cravat:
     threads: int(allocated("threads", "open_cravat", cluster))
     envmodules: config['tools']['open_cravat']
     shell: """
+    # Environment variable for modules dir
+    export OC_MODULES="{params.module}"
+ 
     oc run \\
         -t vcf \\
         -x \\
