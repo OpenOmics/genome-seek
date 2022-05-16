@@ -183,9 +183,9 @@
         "gres": "lscratch:256"
     },
     "open_cravat": {
-        "threads": "16",
+        "threads": "20",
         "mem": "48G",
-        "time": "18:00:00"
+        "time": "12:00:00"
     },
     "ped": {
         "threads": "2",
