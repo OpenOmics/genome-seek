@@ -179,6 +179,7 @@ EOF
 # Filters based on filters in config
 cp {output.filter_1} {output.filter_2}
 cat << EOF > {params.filter_2}
+import pandas as pd
 import sqlite3
 import os
 
@@ -186,7 +187,6 @@ conn = sqlite3.connect("{output.filter_2}")
 conn.isolation_level = None
 cursor = conn.cursor()
 filter = {params.secondary}
-
 
 def keep(dd, used_annotators):
     final_annotators = {{annotator: dd[annotator] for annotator in used_annotators}}
@@ -210,7 +210,6 @@ def filterunit(annot):
     else:
         return(filtercol(dd, annot))
 
-    
 def filterunit_null(annot):
     dd = filter[annot]
     if dd['col'].lower()=='multiple':
@@ -221,18 +220,42 @@ def filterunit_null(annot):
     else:
         return(annot + '__' + dd['col'] + ' IS NULL')
 
-# Find the intersect of provided annotators
-# and filter annotators, cannot filter on a
-# set of annotators that do not exist. 
-oc_run_annotators = set("{params.annot}".split())
-filter_annotators = set(filter.keys())
-keep_annotators = oc_run_annotators.intersection(filter_annotators)
+# Find the intersect of annotators listed
+# in colnames of the SQLite variants table 
+# and annotators in filter config. Must run
+# this step, if a module in OpenCRAVAT does
+# not have any annotations for a provided set
+# of variants, then that modules annotations 
+# may not exist in the SQLite table.
+df = pd.read_sql_query("SELECT * FROM variant", conn)
+table_var_annotators = set([col for col in df.columns])
+filter_annotators = []
+column2module = {{}}
+for ann in set(filter.keys()):
+    try:
+        # Multiple column filters
+        col_names = filter[ann]['cols']
+        col_names = [c.strip() for c in col_names.split(',')]
+    except KeyError:
+        # One column filter 
+        col_names = [filter[ann]['col'].strip()]
+    for col in col_names:
+        coln = '{{}}__{{}}'.format(ann, col)
+        filter_annotators.append(coln)
+        column2module[coln] = ann
 
+filter_annotators = set(filter_annotators)
+tmp_annotators = table_var_annotators.intersection(filter_annotators)
+keep_annotators = set([column2module[ann] for ann in tmp_annotators])
+
+# Sanity check 
 if len(keep_annotators) == 0:
-    print('WARNING: No filter annotators were provided that match oc run annotators', file=sys.stderr)
+    print('WARNING: No filter annotators were provided that match oc run annotators.', file=sys.stderr)
+    print('WARNING: The next filtering step may fail.', file=sys.stderr)
 
 # Filter to avoid SQL filtering issues
 filter = keep(filter, keep_annotators)
+print('Apply final filters to SQLite: ', filter)
 
 filter_query_nonnull = ' OR '.join([filterunit(annot) for annot in filter.keys()])
 filter_query_null = ' AND '.join([filterunit_null(annot) for annot in filter.keys()])
