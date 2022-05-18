@@ -1,7 +1,8 @@
 {
     "images": {
+        "base": "/data/NCBR/dev/SIFs/ccbr_wes_base_v0.1.0.sif",
         "deepvariant": "/data/NCBR/dev/SIFs/deepvariant_1.3.0-gpu.sif",
         "glnexus": "/data/NCBR/dev/SIFs/glnexus_v1.4.1.sif",
-        "base": "/data/NCBR/dev/SIFs/ccbr_wes_base_v0.1.0.sif"
+        "open_cravat": "/data/NCBR/dev/SIFs/ncbr_opencravat_latest.sif" 
     }
 }
