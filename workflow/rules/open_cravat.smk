@@ -63,7 +63,8 @@ rule open_cravat:
         module = config['references']['OC_MODULES'],
     message: "Running OpenCRAVAT run on '{input.vcf}' input file"
     threads: int(allocated("threads", "open_cravat", cluster))
-    envmodules: config['tools']['open_cravat']
+    # envmodules: config['tools']['open_cravat']
+    container: config['images']['open_cravat']
     shell: """
     # Environment variable for modules dir
     export OC_MODULES="{params.module}"
@@ -344,7 +345,8 @@ rule merge_sqlite:
         rname  = "ocmerge",
     message: "Running OpenCRAVAT mergesqlite on '{input.dbs}' input files"
     threads: int(allocated("threads", "merge_sqlite", cluster))
-    envmodules: config['tools']['open_cravat']
+    # envmodules: config['tools']['open_cravat']
+    container: config['images']['open_cravat']
     shell: """
     oc util mergesqlite \\
         -o {output.merged} \\
