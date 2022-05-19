@@ -65,6 +65,7 @@ rule glnexus:
         gvcfs = join(workpath, "deepvariant", "VCFs", "gvcfs.list"),
         bcf   = join(workpath, "deepvariant", "VCFs", "joint.bcf"),
         norm  = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
+        jvcf  = join(workpath, "deepvariant", "VCFs", "joint.glnexus.vcf.gz"),
     params: 
         rname  = "glnexus",
         tmpdir =  tmpdir,
@@ -107,10 +108,21 @@ rule glnexus:
         -o {output.norm} \\
         {output.bcf}
 
+    bcftools view \\
+        -Oz \\
+        --threads {threads} \\
+        -o {output.jvcf} \\
+        {output.bcf}
+
     bcftools index \\
         -f -t \\
         --threads {threads} \\
         {output.norm}
+    
+    bcftools index \\
+        -f -t \\
+        --threads {threads} \\
+        {output.jvcf}
     """
 
 
