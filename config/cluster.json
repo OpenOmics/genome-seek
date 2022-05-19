@@ -158,7 +158,7 @@
     "merge_sqlite": {
         "threads": "4",
         "mem": "120G",
-        "time": "1-00:00:00"
+        "time": "2-00:00:00"
     },
     "mergegvcfs": {
         "threads": "2",
