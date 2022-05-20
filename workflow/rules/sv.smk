@@ -36,10 +36,10 @@ rule manta:
     threads: int(allocated("threads", "manta", cluster))
     envmodules: config['tools']['manta']
     shell: """
-    # Workflow script cannot exist
-    # before running the config step
-    if [ -f "{params.workflow}" ]; then
-        rm "{params.workflow}"
+    # Delete previous attempts output
+    # directory to ensure hard restart
+    if [ -d "{params.outdir}" ]; then
+        rm -rf "{params.outdir}"
     fi
 
     # Configure Manta SV workflow 
