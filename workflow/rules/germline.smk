@@ -27,7 +27,8 @@ rule deepvariant:
         tmpdir = tmpdir,
     message: "Running DeepVariant on '{input.bam}' input file"
     threads: int(allocated("threads", "deepvariant", cluster))
-    container: config['images']['deepvariant']
+    envmodules: config['tools']['deepvariant']
+    # container: config['images']['deepvariant']
     shell: """
     # Setups temporary directory for
     # intermediate files with built-in 
