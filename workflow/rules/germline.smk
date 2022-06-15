@@ -103,6 +103,7 @@ rule glnexus:
     > {output.bcf}
 
     bcftools norm \\
+        -m - \\
         -Oz \\
         --threads {threads} \\
         -f {params.genome} \\
