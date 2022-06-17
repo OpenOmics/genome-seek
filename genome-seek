@@ -288,6 +288,15 @@ def parsed_arguments(name, description):
 
           --call-hla            Call HLA types.
                                   Example: --call-hla
+
+          --call-somatic        Call somatic variants. By default, the pipeline will 
+                                perform somatic variant calling for each sample in a 
+                                tumor-only mode; however, if a tumor - normal pairs 
+                                file is provided then the pipeline will call somatic 
+                                variants using its matched normal. See the Somatic 
+                                Options section below for more information about the
+                                somatic variant calling pipeline and its options.
+                                  Example: --call-somatic
         
           --open-cravat         Run OpenCRAVAT to annotate variants. See Annotation
                                 Options for more information about what modules are
@@ -314,6 +323,27 @@ def parsed_arguments(name, description):
                                 pipeline to be run with extra samples without
                                 overriding some of results of a previous run.
                                   Example: --batch-id WGS_2022-04-19
+
+        {3}{4}Somatic options:{5}
+          --pairs               Tumor-normal pairs file. The tumor-normal pairs file 
+                                is used to pair a tumor sample with its match normal 
+                                sample. This file should only be provided when calling 
+                                somatic variants. Please see the option above for more 
+                                info about calling somatic mutations. By default the 
+                                --call-somatic option will call somatic variants for 
+                                each sample in a tumor-only mode. This tab delimited 
+                                file contains two columns with the names of tumor and 
+                                normal pairs, one per line. The header of the file 
+                                needs to be Tumor for the tumor column and Normal for 
+                                the normal column. The base name of each sample should 
+                                be listed in the pairs file. The base name of a given 
+                                sample can be determined by removing the extension 
+                                from the sample's R1 FastQ file, eg '.R1.fastq.gz'.
+                                  Contents of example pairs file:
+                                    Tumor    Normal
+                                    Sample4_CRL1622_S31  Sample10_ARK1_S37
+                                    Sample4_CRL1622_S31  Sample11_ACI_158_S38
+                                  Example: --pairs /data/$USER/pairs.tsv
 
         {3}{4}Anotation options:{5}
         {6}@OpenCRAVAT{5}
@@ -400,8 +430,8 @@ def parsed_arguments(name, description):
                                   Example: --tmp-dir '/scratch/$USER/'
           --threads THREADS     
                                 Max number of threads for local processes. It is
-                                recommended setting this vaule to the maximum number of
-                                CPUs available on the host machine, default: 2.
+                                recommended setting this vaule to the maximum number 
+                                of CPUs available on the host machine, default: 2.
                                   Example: --threads: 16
         
         {3}{4}Misc Options:{5}
