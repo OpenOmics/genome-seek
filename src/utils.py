@@ -368,7 +368,11 @@ def pairs(tn_file, delim='\t'):
         sample and its value is the matched normal sample
     """
     fh = open(tn_file, 'r')
-    header = [col.lower() for col in next(fh).strip().split(delim)]
+    try:
+        header = [col.lower() for col in next(fh).strip().split(delim)]
+    except StopIteration:
+        err('Error: tumor-normal pairs file, {}, is empty!'.format(tn_file))
+        fatal('Please add tumor-normal pairs to the file and try again.')
     try:
         # Get index of tumor and normal 
         # column for parsing the file
