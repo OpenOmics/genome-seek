@@ -353,6 +353,62 @@ def hashed(l):
     return h
 
 
+def pairs(tn_file, delim='\t'): 
+    """Reads in a tumor-normal pairs file into a dictionary. 
+    Tumor-normal pairs file. The tumor-normal pairs file is 
+    used to pair a tumor sample with its match normal sample.
+    This tab delimited file contains two columns with the names 
+    of tumor and normal pairs, one per line. The header of the 
+    file needs to be Tumor for the tumor column and Normal for 
+    the normal column.
+    @param tn_file <str>:
+        Path to tumor-normal file.
+    @return tn_pairs <dict[str]>:
+        Dictionary containing TN pairs, where each key is tumor 
+        sample and its value is the matched normal sample
+    """
+    fh = open(tn_file, 'r')
+    header = [col.lower() for col in next(fh).strip().split(delim)]
+    try:
+        # Get index of tumor and normal 
+        # column for parsing the file
+        t_index = header.index('tumor')
+        n_index = header.index('normal')
+    except ValueError:
+        # Tumor, normal columns are not 
+        # annotated in the pairs file
+        err('Error: {} is missing its required column names!'.format(tn_file))
+        fatal('Please add a header with Tumor and Normal columns and try again.')
+
+    # Parse the tumor, normal pairs file 
+    tn_pairs = {} 
+    for line in fh:
+        linelist = [l.strip() for l in line.split(delim)]
+        try:
+            normal = linelist[n_index]
+        except IndexError:
+            # No matching normal sample,
+            # perform tumor-only somatic
+            # variant calling
+            normal = ""
+        try:
+            tumor = linelist[t_index]
+            if not tumor: continue  # skipover empty string
+        except IndexError:
+            # No tumor sample, only call 
+            # germline variants, skipover
+            # sample so it is not added 
+            continue
+
+        # Add TN pair to dictionary
+        tn_pairs[tumor] = normal
+
+    # Close open file handle
+    fh.close()
+
+    return tn_pairs
+
+
 if __name__ == '__main__':
     # Calculate MD5 checksum of entire file 
     print('{}  {}'.format(md5sum(sys.argv[0]), sys.argv[0]))
