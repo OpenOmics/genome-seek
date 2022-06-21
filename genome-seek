@@ -48,6 +48,7 @@ from src.utils import (
     exists,
     fatal,
     hashed,
+    pairs,
     permissions,
     check_cache,
     require)
@@ -136,6 +137,56 @@ def run(sub_args):
         sub_args,
         config = config
     )
+    config['bindpaths'] = bindpaths
+
+    # Step 4. Set tumor-normal pair information
+    tn_pairs = {}  # No somatic variant calling 
+    if sub_args.call_somatic:
+        if sub_args.pairs:
+            # Read in tumor, normal pairs file
+            # If normal is missing for a sample,
+            # then call it in tumor-only mode.
+            # If a sample only has a normal, 
+            # then only call germline variants.
+            tn_pairs = pairs(sub_args.pairs)
+        else:
+            # Run all samples in tumor-only mode
+            tn_pairs = {s: '' for s in config['samples']}
+        
+        # Check base names in the pairs 
+        # file against base names from 
+        # input FastQ files
+        user_inputs = set(config['samples'])
+        tumors = list(tn_pairs.keys())
+        # Remove empty strings for the 
+        # tumor-only samples 
+        normals = [s for s in tn_pairs.values() if s]
+        pair_inputs = set(tumors + normals)
+
+        extra = pair_inputs - user_inputs
+        if extra:
+            # User provided samples in the 
+            # pairs file, which were not 
+            # in the --input option list
+            err(
+                "Error: Could not match some samples in the '--pairs' file "
+                "against provided '--input' samples! Extra samples were provided.\n"
+                "Set of extra samples in pairs file, {}:\n{}".format(
+                    sub_args.pairs,
+                    extra
+                )
+            )
+            fatal('Please remove extra samples and try again!')
+
+    # Add TN pair information where 
+    # keys = tumor AND values = normal,
+    # tumor-only samples have values set 
+    # to an empty string
+    config['pairs'] = tn_pairs
+
+    # Save config to output directory
+    with open(os.path.join(sub_args.output, 'config.json'), 'w') as fh:
+        json.dump(config, fh, indent = 4, sort_keys = True)
 
     # Optional Step: Dry-run pipeline
     if sub_args.dry_run:
@@ -144,7 +195,7 @@ def run(sub_args):
         print("\nDry-running {} pipeline:\n{}".format(_name, dryrun_output.decode("utf-8")))
         sys.exit(0)
 
-    # Step 4. Orchestrate pipeline execution,
+    # Step 5. Orchestrate pipeline execution,
     # run pipeline in locally on a compute node
     # for debugging purposes or submit the master
     # job to the job scheduler, SLURM, and create 
@@ -169,14 +220,14 @@ def run(sub_args):
         tmp_dir = sub_args.tmp_dir, 
     )
     
-    # Step 5. Wait for subprocess to complete,
+    # Step 6. Wait for subprocess to complete,
     # this is blocking and not asynchronous
     if not sub_args.silent:
         print("\nRunning {} pipeline in '{}' mode...".format(_name, sub_args.mode)) 
     mjob.wait()
     logfh.close()
 
-    # Step 6. Relay information about submission
+    # Step 7. Relay information about submission
     # of the master job or the exit code of the 
     # pipeline that ran in local mode
     if sub_args.mode == 'local':
@@ -247,9 +298,9 @@ def parsed_arguments(name, description):
         {3}{4}Synopsis:{5}
           $ {2} run [--help] \\
                 [--mode {{slurm,local}}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \\
-                [--call-cnv] [--call-sv] [--call-hla] [--skip-qc] [--open-cravat] \\
-                [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \\
-                [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \\ 
+                [--call-cnv] [--call-sv] [--call-hla] [--call-somatic] [--open-cravat] \\
+                [--skip-qc] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \\
+                [--pairs PAIRS] [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \\ 
                 [--singularity-cache SINGULARITY_CACHE] \\
                 [--dry-run] [--threads THREADS] \\
                 --input INPUT [INPUT ...] \\
@@ -532,12 +583,31 @@ def parsed_arguments(name, description):
         help = argparse.SUPPRESS
     )
 
+    # Call somatic variants
+    subparser_run.add_argument(
+        '--call-somatic',
+        action = 'store_true',
+        required = False,
+        default = False,
+        help = argparse.SUPPRESS
+    )
+
     # Skip QC
     subparser_run.add_argument(
         '--skip-qc',
         action = 'store_true',
         required = False,
         default = False,
+        help = argparse.SUPPRESS
+    )
+
+    # Tumor-normal pairs file
+    subparser_run.add_argument(
+        '--pairs',
+        # Check if the file exists and if it is readable
+        type = lambda file: permissions(parser, file, os.R_OK),
+        required = False,
+        default = None,
         help = argparse.SUPPRESS
     )
 
