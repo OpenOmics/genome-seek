@@ -102,10 +102,10 @@
         "mem": "48g",
         "time": "24:00:00"
     },
-    "gatk_recal": {
-        "threads": "24",
-        "time": "48:00:00",
-        "mem": "72G"
+    "gatk_scatter_recal": {
+        "threads": "4",
+        "time": "24:00:00",
+        "mem": "48G"
     },
     "gatk_selectvariants": {
         "threads": "2",
