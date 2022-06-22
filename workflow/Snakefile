@@ -38,6 +38,9 @@ call_sv = str_bool(                       # Call structural variation (SV),
 call_hla = str_bool(                      # Call HLA types,
     config['options']['call_hla']         # default: False
 )
+call_somatic = str_bool(                  # Call somatic variants,
+    config['options']['call_somatic']     # default: False
+)
 skip_qc  = str_bool(                      # Skip over QC steps,
     config['options']['skip_qc']          # default: False
 )
@@ -228,6 +231,12 @@ rule all:
         # Merge OpenCRAVAT, merges fitlered SQL-lite files
         # @imported from rules/open_cravat.smk
         provided([join(workpath, "OpenCRAVAT", "cravat.merged.sqlite")], run_oc),
+        # GATK3 Indel Realignment
+        # @imported from rules/gatk_recal.smk
+        expand( 
+            join(workpath, "BAM", "{name}.intervals"),
+            name=provided(samples, call_somatic)
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
@@ -241,3 +250,4 @@ include: join("rules", "hla.smk")
 include: join("rules", "cnv.smk")
 include: join("rules", "sv.smk")
 include: join("rules", "open_cravat.smk")
+include: join("rules", "gatk_recal.smk")
