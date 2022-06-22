@@ -189,3 +189,16 @@ def str_bool(s):
         # Provided value could not be
         # type casted into a boolean
         raise TypeError('Fatal: cannot type cast {} into a boolean'.format(val))
+
+
+def joint_option(prefix, valueslist):
+    """Joins a list while adding a common prefix.
+    Example:
+      joint_option('-i', [1,2,3])
+      '-i 1 -i 2 -i 3'
+    """
+    s = ""
+    for v in valueslist:
+        s += "{} {} ".format(prefix, v)
+    s = s.rstrip()
+    return s
