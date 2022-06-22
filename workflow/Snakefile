@@ -27,6 +27,7 @@ filetype = config['project']['filetype']       # 'paired-end' or 'single-end' (n
 tmpdir   = config['options']['tmp_dir']        # Temporary directory
 batch_id = config['options']['batch_id']       # Batch Identifer
 chunks   = config['references']['CHR_CHUNKS']  # Scatter on chromosomes or chunks
+recals   = list(config['references']['NRECALS'].keys()) # Scatter recal on chromosome sets
 
 # Analysis Options 
 call_cnv = str_bool(                      # Call copy number variation (CNVs),
@@ -236,6 +237,13 @@ rule all:
         expand( 
             join(workpath, "BAM", "{name}.intervals"),
             name=provided(samples, call_somatic)
+        ),
+        # GATK4 recalibration table for BQSR
+        # @imported from rules/gatk_recal.smk
+        expand( 
+            join(workpath, "BAM", "{name}_{recal}_data.grp"),
+            name=provided(samples, call_somatic),
+            recal=provided(recals, call_somatic)
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
