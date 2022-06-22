@@ -8,8 +8,8 @@ rule gatk_realign:
     """
     Data-processing step to realign indels. This step has been removed 
     in GATK/4.X as it has been integrated into the GATK variant callers; 
-    however, However, regardless of how you perform realignment, it is 
-    still preferred. More discussion on this topic can be found here:
+    however, regardless of how you perform realignment, it is still 
+    preferred. More discussion on this topic can be found here:
     https://github.com/broadinstitute/gatk/issues/3104
     """
     input:
@@ -45,50 +45,38 @@ rule gatk_realign:
     """
 
 
-# rule gatk_recal:
-#     """
-#     Base quality recalibration (BQSR), part of the GATK Best Practices.
-#     The idea is that each sequencer/run will have systematic biases.
-#     BQSR learns about these biases using known sites of variation (common SNPs),
-#     and uses it to adjust base quality on all sites, including novel sites of
-#     variation.  Since base quality is taken into account during variant calling,
-#     this will help pick up real variants in low depth or otherwise noisy loci.
-#     @Input:
-#         Aligned reads in BAM format (scatter)
-#     @Output:
-#         Aligned reads in BAM format, with altered quality scores
-#     """
-#     input:
-#         bam = join(output_bamdir, "preprocessing", "{samples}.raw_map.bam"),
-#         bai = join(output_bamdir, "preprocessing", "{samples}.raw_map.bai"),
-#     output:
-#         bam = join(input_bamdir, "{samples}.input.bam"),
-#         re =  temp(join(output_bamdir, "preprocessing", "{samples}_recal_data.grp"))
-#     params: 
-#         genome = config['references']['GENOME'],
-#         knowns = config['references']['KNOWNRECAL'],
-#         ver_gatk = config['tools']['gatk4']['version'],
-#         chrom = chroms,
-#         intervals = intervals_file,
-#         rname = 'recal'
-#     envmodules:
-#         'GATK/4.2.0.0'
-#     container:
-#         config['images']['wes_base']
-#     threads: 24
-#     shell: """
-#     gatk --java-options '-Xmx48g' BaseRecalibrator \\
-#         --input {input.bam} \\
-#         --reference {params.genome} \\
-#         {params.knowns} \\
-#         --output {output.re} \\
-#         --intervals {params.intervals}
-#     
-#     gatk --java-options '-Xmx48g' ApplyBQSR \\
-#         --reference {params.genome} \\
-#         --input {input.bam} \\
-#         --bqsr-recal-file {output.re} \\
-#         --output {output.bam} \\
-#         --use-jdk-inflater \\
-#         --use-jdk-deflater
-#     """
+rule gatk_scatter_recal:
+    """
+    Base quality recalibration (BQSR), part of the GATK Best Practices.
+    The idea is that each sequencer/run will have systematic biases.
+    BQSR learns about these biases using known sites of variation (common SNPs),
+    and uses it to adjust base quality on all sites, including novel sites of
+    variation.  Since base quality is taken into account during variant calling,
+    this will help pick up real variants in low depth or otherwise noisy loci.
+    @Input:
+        Aligned reads in BAM format (scatter-per-sample-per-chrset)
+    @Output:
+        Recalibration table for BQSR
+    """
+    input:
+        bam = join(workpath, "BAM", "{name}.realign.bam"),
+    output:
+        recal =  join(workpath, "BAM", "{name}_{recal}_data.grp")
+    params: 
+        genome = config['references']['GENOME'],
+        knowns = joint_option('--known-sites', config['references']['KNOWNRECAL']),
+        intervals = lambda w: joint_option('-L', config['references']['NRECALS'][w.recal]),
+        memory = allocated("mem", "gatk_scatter_recal", cluster).lower().rstrip('g'),
+        rname = '{recal}'
+    envmodules:
+        config['tools']['gatk4'],
+    threads: int(allocated("threads", "gatk_scatter_recal", cluster))
+    shell: """
+    gatk --java-options '-Xmx{params.memory}g' BaseRecalibrator \\
+        --input {input.bam} \\
+        --reference {params.genome} \\
+        {params.knowns} \\
+        --output {output.recal} \\
+        {params.intervals}
+    """
+    
