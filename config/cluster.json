@@ -99,7 +99,8 @@
     },
     "gatk_realign": {
         "threads": "2",
-        "time": "48:00:00"
+        "mem": "48g",
+        "time": "24:00:00"
     },
     "gatk_recal": {
         "threads": "24",
