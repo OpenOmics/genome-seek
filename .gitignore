@@ -166,3 +166,8 @@ wgs_*/
 # Temp files
 *.tmp
 **/*.tmp
+
+# Test script and test 
+# output directories
+test.sh
+test_*/
