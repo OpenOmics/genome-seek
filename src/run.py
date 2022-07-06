@@ -313,7 +313,12 @@ def resolve_additional_bind_paths(search_paths):
 
     for index, paths in indexed_paths.items():
         # Find common paths for each path index
-        common_paths.append(os.path.dirname(os.path.commonprefix(paths)))
+        p = os.path.dirname(os.path.commonprefix(paths))
+        if p == os.sep:
+            # Aviods adding / to bind list when
+            # given /tmp or /scratch as input 
+            p = os.path.commonprefix(paths)
+        common_paths.append(p)
 
     return list(set(common_paths))
 
@@ -344,6 +349,7 @@ def bind(sub_args, config):
     working_directory =  os.path.realpath(config['project']['workpath'])
     genome_bind_paths = resolve_additional_bind_paths(bindpaths)
     bindpaths = [working_directory] + rawdata_bind_paths +  genome_bind_paths
+    bindpaths = set([p for p in bindpaths if p != os.sep])
 
     return bindpaths
 
