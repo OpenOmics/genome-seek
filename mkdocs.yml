@@ -14,7 +14,7 @@ extra_css:
   - css/extra.css
 
 # Copyright
-copyright: Copyright &copy; 2022 NCBR
+copyright: Copyright &copy; 2022 OpenOmics
 
 # Configuration
 theme:
@@ -24,15 +24,13 @@ theme:
     - navigation.top
     - toc.integrate 
   palette:
+    # Palette toggle for light mode 
     - scheme: default
-      primary: indigo
-      accent: indigo
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
+    # Palette toggle for dark mode
     - scheme: slate
-      primary: red
-      accent: red
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
@@ -46,7 +44,6 @@ plugins:
   - minify:
       minify_html: true
 
-
 # Customization
 extra:
   social:
@@ -58,7 +55,6 @@ extra:
       link: https://hub.docker.com/orgs/nciccbr/repositories
   version:
     provider: mike
-
 
 # Extensions
 markdown_extensions:

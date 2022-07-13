@@ -1,8 +1,28 @@
-# genome-seek 🔬  [![docs](https://github.com/OpenOmics/genome-seek/workflows/docs/badge.svg)](https://github.com/OpenOmics/genome-seek/actions) [![GitHub issues](https://img.shields.io/github/issues/OpenOmics/genome-seek?color=brightgreen)](https://github.com/OpenOmics/genome-seek/issues)  [![GitHub license](https://img.shields.io/github/license/OpenOmics/genome-seek)](https://github.com/OpenOmics/genome-seek/blob/main/LICENSE) 
+<div align="center">
 
-> **_Clinical whole genome sequencing pipeline_**. This is the home of the pipeline, genome-seek. Its long-term goals: to accurately call germline and somatic variants, to infer CNVs, and to boldly annotate variants like no pipeline before!
+  <h1 style="font-size: 250%">genome-seek 🔬</h1>
 
----
+  <b><i>Whole Genome Clinical Sequencing Pipeline</i></b><br> 
+  <a href="https://github.com/OpenOmics/genome-seek/actions/workflows/main.yaml">
+    <img alt="tests" src="https://github.com/OpenOmics/genome-seek/workflows/tests/badge.svg">
+  </a>
+  <a href="https://github.com/OpenOmics/genome-seek/actions/workflows/docs.yml">
+    <img alt="docs" src="https://github.com/OpenOmics/genome-seek/workflows/docs/badge.svg">
+  </a>
+  <a href="https://github.com/OpenOmics/genome-seek/issues">
+    <img alt="GitHub issues" src="https://img.shields.io/github/issues/OpenOmics/genome-seek?color=brightgreen">
+  </a>
+  <a href="https://github.com/OpenOmics/genome-seek/blob/main/LICENSE">
+    <img alt="GitHub license" src="https://img.shields.io/github/license/OpenOmics/genome-seek">
+  </a>
+
+  <p>
+    This is the home of the pipeline, genome-seek. Its long-term goals: to accurately call germline and somatic variants, to infer SVs & CNVs, and to boldly annotate variants like no pipeline before!
+  </p>
+
+</div>  
+
+
 ## Overview
 Welcome to genome-seek's documentation! This guide is the main source of documentation for users that are getting started with the [whole genome sequencing pipeline](https://github.com/OpenOmics/genome-seek/). 
 

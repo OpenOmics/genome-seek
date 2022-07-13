@@ -10,3 +10,9 @@
 .heart {
   animation: heart 1500ms infinite;
 }
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        #1A1B23DE;
+  --md-typeset-a-color:         #b1b9ed;
+}
+
