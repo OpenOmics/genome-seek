@@ -6,6 +6,7 @@
 ```bash
 # Clone the Repository
 git clone https://github.com/OpenOmics/genome-seek.git
+cd genome-seek/
 # Create a virtual environment
 python3 -m venv .venv
 # Activate the virtual environment
