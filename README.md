@@ -1,6 +1,15 @@
-# genome-seek 🔬 [![tests](https://github.com/OpenOmics/genome-seek/workflows/tests/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/main.yaml) [![docs](https://github.com/OpenOmics/genome-seek/workflows/docs/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/docs.yml) [![GitHub issues](https://img.shields.io/github/issues/OpenOmics/genome-seek?color=brightgreen)](https://github.com/OpenOmics/genome-seek/issues)  [![GitHub license](https://img.shields.io/github/license/OpenOmics/genome-seek)](https://github.com/OpenOmics/genome-seek/blob/main/LICENSE) 
+<div align="center">
+   
+  <h1>genome-seek 🔬</h1>
+  
+  **_Whole Genome Clinical Sequencing Pipeline._**
 
-> **_Whole Genome Clinical Sequencing Pipeline_**. This is the home of the pipeline, genome-seek. Its long-term goals: to accurately call germline and somatic variants, to infer SVs & CNVs, and to boldly annotate variants like no pipeline before!
+  [![tests](https://github.com/OpenOmics/genome-seek/workflows/tests/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/main.yaml) [![docs](https://github.com/OpenOmics/genome-seek/workflows/docs/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/docs.yml) [![GitHub issues](https://img.shields.io/github/issues/OpenOmics/genome-seek?color=brightgreen)](https://github.com/OpenOmics/genome-seek/issues)  [![GitHub license](https://img.shields.io/github/license/OpenOmics/genome-seek)](https://github.com/OpenOmics/genome-seek/blob/main/LICENSE) 
+  
+  <i>
+    This is the home of the pipeline, genome-seek. Its long-term goals: to accurately call germline and somatic variants, to infer SVs & CNVs, and to boldly annotate variants like no pipeline before!
+  </i>
+</div>
 
 ## Overview
 Welcome to genome-seek! Before getting started, we highly recommend reading through [genome-seek's documentation](https://openomics.github.io/genome-seek/).
