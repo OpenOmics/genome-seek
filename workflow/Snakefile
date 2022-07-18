@@ -28,6 +28,9 @@ tmpdir   = config['options']['tmp_dir']        # Temporary directory
 batch_id = config['options']['batch_id']       # Batch Identifer
 chunks   = config['references']['CHR_CHUNKS']  # Scatter on chromosomes or chunks
 recals   = list(config['references']['NRECALS'].keys()) # Scatter recal on chromosome sets
+tumors   = list(config['pairs'].keys())        # List of tumor samples
+normals  = list(config['pairs'].items())       # List of normal samples
+tumor2normal =  config['pairs']                # Dict to map a tumor to its normal
 
 # Analysis Options 
 call_cnv = str_bool(                      # Call copy number variation (CNVs),
@@ -257,6 +260,14 @@ rule all:
             join(workpath, "BAM", "{name}.recal.bam"),
             name=provided(samples, call_somatic),
         ),
+
+        # Call Somatics variants with Octopus,
+        # scattered on chromosomes to speed up
+        expand( 
+            join(workpath, "octopus", "chunks", "{chunk}", "{name}.vcf.gz"),
+            chunk=provided(chunks, call_somatic),
+            name=provided(tumors, call_somatic),
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
@@ -271,3 +282,4 @@ include: join("rules", "cnv.smk")
 include: join("rules", "sv.smk")
 include: join("rules", "open_cravat.smk")
 include: join("rules", "gatk_recal.smk")
+include: join("rules", "somatic.smk")
