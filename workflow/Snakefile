@@ -238,10 +238,17 @@ rule all:
             join(workpath, "BAM", "{name}.intervals"),
             name=provided(samples, call_somatic)
         ),
-        # GATK4 recalibration table for BQSR
+        # Scatterd GATK4 recalibration tables for ApplyBQSR
         # @imported from rules/gatk_recal.smk
         expand( 
             join(workpath, "BAM", "{name}_{recal}_data.grp"),
+            name=provided(samples, call_somatic),
+            recal=provided(recals, call_somatic)
+        ),
+        # Gathered GATK4 recalibration table for ApplyBQSR
+        # @imported from rules/gatk_recal.smk
+        expand( 
+            join(workpath, "BAM", "{name}_gathered_recal_data.grp"),
             name=provided(samples, call_somatic),
             recal=provided(recals, call_somatic)
         ),

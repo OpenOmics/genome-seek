@@ -47,7 +47,7 @@ rule gatk_realign:
 
 rule gatk_scatter_recal:
     """
-    Base quality recalibration (BQSR), part of the GATK Best Practices.
+    Scatters base quality recalibration (BQSR), part of the GATK Best Practices.
     The idea is that each sequencer/run will have systematic biases.
     BQSR learns about these biases using known sites of variation (common SNPs),
     and uses it to adjust base quality on all sites, including novel sites of
@@ -79,4 +79,40 @@ rule gatk_scatter_recal:
         --output {output.recal} \\
         {params.intervals}
     """
-    
+
+
+rule gatk_gather_recal:
+    """
+    Gathers base quality recalibration (BQSR), part of the GATK Best Practices.
+    The BaseRecalibrator is scatter on sets of chromosomes for a given sample 
+    to decrease the overall runtime of this step, since it is slow. This rule 
+    gathers the per-sample-per-chrset BaseRecalibrator results prior to applying 
+    the base recalibration with ApplyBQSR.  
+    @Input:
+        Recalibration tables for BQSR (gather-per-sample-per-chrset)
+    @Output:
+        Merged recalibration table for ApplyBQSR 
+    """
+    input:
+        grps  =  expand(join(workpath, "BAM", "{{name}}_{recal}_data.grp"), recal=recals),
+    output:
+        lsl   = join(workpath, "BAM", "{name}.recals.list"),
+        recal = join(workpath, "BAM", "{name}_gathered_recal_data.grp")
+    params: 
+        sample = "{name}",
+        bams   = join(workpath, "BAM"),
+        memory = allocated("mem", "gatk_gather_recal", cluster).lower().rstrip('g'),
+        rname = 'gather_recal'
+    envmodules:
+        config['tools']['gatk4'],
+    threads: int(allocated("threads", "gatk_gather_recal", cluster))
+    shell: """
+    # Create GatherBQSR list
+    find {params.bams} -iname '{params.sample}_recal*_data.grp' \\
+        > {output.lsl}
+    # Gather per sample BQSR results
+    gatk --java-options '-Xmx{params.memory}g' GatherBQSRReports \\
+        --use-jdk-inflater --use-jdk-deflater \\
+        -I {output.lsl} \\
+        -O {output.recal}
+    """
