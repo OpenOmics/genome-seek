@@ -35,6 +35,8 @@
         "MANTA_CALLREGIONS": "/data/OpenOmics/references/genome-seek/Manta/Homo_sapiens_assembly38_main_chromosomes.bed.gz",
         "OC_LIFTOVER": "hg38",
         "OC_MODULES": "/data/OpenOmics/references/genome-seek/OpenCRAVAT/modules",
+        "OCTOPUS_FOREST_MODEL": "/data/OpenOmics/references/genome-seek/Octopus/somatic.v0.7.4.forest",
+        "OCTOPUS_ERROR_MODEL": "PCR-FREE.NOVASEQ",
         "PEDDY_FILTER": "chr22",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/data/OpenOmics/references/genome-seek/snpEff/4.3t/snpEff.config",

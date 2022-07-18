@@ -198,6 +198,11 @@
         "mem": "48G",
         "time": "12:00:00"
     },
+    "octopus": {
+        "threads": "24",
+        "mem": "48G",
+        "time": "18:00:00"
+    },
     "ped": {
         "threads": "2",
         "partition": "norm",
