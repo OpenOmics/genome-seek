@@ -22,7 +22,7 @@ rule gatk_realign:
         genome = config['references']['GENOME'],
         knowns = joint_option('-known', config['references']['KNOWNINDELS']),
         memory = allocated("mem", "gatk_realign", cluster).lower().rstrip('g'),
-        rname = "realign"
+        rname  = "realign"
     threads: 
         int(allocated("threads", "gatk_realign", cluster))
     envmodules: 
@@ -102,7 +102,7 @@ rule gatk_gather_recal:
         sample = "{name}",
         bams   = join(workpath, "BAM"),
         memory = allocated("mem", "gatk_gather_recal", cluster).lower().rstrip('g'),
-        rname = 'gather_recal'
+        rname  = 'gather_recal'
     envmodules:
         config['tools']['gatk4'],
     threads: int(allocated("threads", "gatk_gather_recal", cluster))
@@ -115,4 +115,37 @@ rule gatk_gather_recal:
         --use-jdk-inflater --use-jdk-deflater \\
         -I {output.lsl} \\
         -O {output.recal}
+    """
+
+
+rule gatk_apply_recal:
+    """
+    Applies base quality recalibration (BQSR), part of the GATK Best Practices.
+    The gathered BQSR results are applied to the realigned BAM file. The scatter-
+    gathering of BQSR was done to reduce run times. 
+    @Input:
+        Merged recalibration table for ApplyBQSR
+        Realigned BAM file
+    @Output:
+        Realigned, recalibrated BAM file 
+    """
+    input:
+        bam   = join(workpath, "BAM", "{name}.realign.bam"),
+        recal = join(workpath, "BAM", "{name}_gathered_recal_data.grp"),
+    output:
+        bam   = join(workpath, "BAM", "{name}.recal.bam"),
+    params: 
+        genome = config['references']['GENOME'],     
+        memory = allocated("mem", "gatk_apply_recal", cluster).lower().rstrip('g'),
+        rname  = 'apply_recal'
+    envmodules:
+        config['tools']['gatk4'],
+    threads: int(allocated("threads", "gatk_apply_recal", cluster))
+    shell: """
+    gatk --java-options '-Xmx{params.memory}g' ApplyBQSR \\
+        --use-jdk-inflater --use-jdk-deflater \\
+        --reference {params.genome} \\
+        --bqsr-recal-file {input.recal} \\
+        --input {input.bam} \\
+        --output {output.bam}
     """

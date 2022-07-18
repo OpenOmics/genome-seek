@@ -112,6 +112,11 @@
         "time": "24:00:00",
         "mem": "28G"
     },
+    "gatk_apply_recal": {
+        "threads": "4",
+        "time": "24:00:00",
+        "mem": "48G"
+    },
     "gatk_selectvariants": {
         "threads": "2",
         "mem": "24G",

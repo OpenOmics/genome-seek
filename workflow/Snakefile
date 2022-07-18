@@ -250,7 +250,12 @@ rule all:
         expand( 
             join(workpath, "BAM", "{name}_gathered_recal_data.grp"),
             name=provided(samples, call_somatic),
-            recal=provided(recals, call_somatic)
+        ),
+        # Apply GATK4 recalibration to BAM file
+        # @imported from rules/gatk_recal.smk
+        expand( 
+            join(workpath, "BAM", "{name}.recal.bam"),
+            name=provided(samples, call_somatic),
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
