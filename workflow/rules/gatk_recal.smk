@@ -134,6 +134,7 @@ rule gatk_apply_recal:
         recal = join(workpath, "BAM", "{name}_gathered_recal_data.grp"),
     output:
         bam   = join(workpath, "BAM", "{name}.recal.bam"),
+        bai   = join(workpath, "BAM", "{name}.recal.bam.bai"),
     params: 
         genome = config['references']['GENOME'],     
         memory = allocated("mem", "gatk_apply_recal", cluster).lower().rstrip('g'),
@@ -148,4 +149,6 @@ rule gatk_apply_recal:
         --bqsr-recal-file {input.recal} \\
         --input {input.bam} \\
         --output {output.bam}
+
+    samtools index -@ {threads} {output.bam} {output.bai}
     """
