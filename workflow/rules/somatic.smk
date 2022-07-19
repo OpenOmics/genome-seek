@@ -38,14 +38,14 @@ rule octopus:
         tumor = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
-        vcf = join(workpath, "octopus", "chunks", "{chunk}", "{name}.vcf.gz"),
+        vcf = join(workpath, "octopus", "chunks", "{region}", "{name}.vcf.gz"),
     params: 
         genome = config['references']['GENOME'],
         rname  = "octopus",
-        chunk = "{chunk}",
+        chunk = "{region}",
         tumor = "{name}",
         wd = workpath,
-        tmpdir = join(workpath, "octopus", "chunks", "{chunk}", "{name}_tmp"),
+        tmpdir = join(workpath, "octopus", "chunks", "{region}", "{name}_tmp"),
         model = config['references']['OCTOPUS_FOREST_MODEL'],
         error = config['references']['OCTOPUS_ERROR_MODEL'],
         normal_option = lambda w: "--normal-sample {0}".format(tumor2normal[w.name]) if tumor2normal[w.name] else "",
@@ -78,7 +78,7 @@ rule octopus_merge:
         Per sample somatic variants in VCF format  
     """
     input:
-        vcfs = expand(join(workpath, "octopus", "chunks", "{chunk}", "{{name}}.vcf.gz"), chunk=chunks),
+        vcfs = expand(join(workpath, "octopus", "chunks", "{region}", "{{name}}.vcf.gz"), region=regions),
     output:
         vcf = join(workpath, "octopus", "{name}.vcf"),
         lsl = join(workpath, "octopus", "{name}.list"),

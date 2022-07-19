@@ -26,7 +26,8 @@ workpath = config['project']['workpath']       # Pipeline's output directory
 filetype = config['project']['filetype']       # 'paired-end' or 'single-end' (not supported)
 tmpdir   = config['options']['tmp_dir']        # Temporary directory
 batch_id = config['options']['batch_id']       # Batch Identifer
-chunks   = config['references']['CHR_CHUNKS']  # Scatter on chromosomes or chunks
+chunks   = config['references']['CHR_CHUNKS']  # Scatter on chromosomes, chr1, ...
+regions  = config['references']['CHR_REGIONS'] # Scatter on regions: chr1:1-30000001, ...
 recals   = list(config['references']['NRECALS'].keys()) # Scatter recal on chromosome sets
 tumors   = list(config['pairs'].keys())        # List of tumor samples
 normals  = list(config['pairs'].items())       # List of normal samples
@@ -263,17 +264,16 @@ rule all:
         ),
 
         # Call somatic variants with Octopus,
-        # scattered and merged on chromosomes 
+        # scattered and merged on regions
         # to speed up overall run time
         # @imported from rules/somatic.smk
         expand( 
-            join(workpath, "octopus", "chunks", "{chunk}", "{name}.vcf.gz"),
-            chunk=provided(chunks, call_somatic),
+            join(workpath, "octopus", "chunks", "{region}", "{name}.vcf.gz"),
+            region=provided(regions, call_somatic),
             name=provided(tumors, call_somatic),
         ),
         expand( 
             join(workpath, "octopus", "{name}.vcf"),
-            chunk=provided(chunks, call_somatic),
             name=provided(tumors, call_somatic),
         ),
         # Manta, call somatic structural variation (SV),
