@@ -53,6 +53,7 @@ rule octopus:
         config['images']['octopus']
     shell: """
     octopus --threads {threads} \\
+        -C cancer \\
         --working-directory {params.wd} \\
         --temp-directory-prefix {params.tmpdir} \\
         -R {params.genome} \\
