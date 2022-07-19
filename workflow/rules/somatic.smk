@@ -1,6 +1,7 @@
 # Functions and rules for processing data
 from scripts.common import abstract_location, allocated, joint_option
 
+
 # Helper functions for tumor, normal pairs 
 def get_normal_recal_bam(wildcards):
     """
@@ -61,4 +62,41 @@ rule octopus:
         --sequence-error-model {params.error} \\
         --annotations AC AD AF \\
         -T {params.chunk}
+    """
+
+
+rule octopus_merge:
+    """
+    Data-processing step to merge scatter variant calls from Octopus. Octopus 
+    is scattered across genomic intervals or chunks to reduce its overall runtime. 
+    @Input:
+        Somatic variants in VCF format (gather-per-sample-per-chunks)
+    @Output:
+        Per sample somatic variants in VCF format  
+    """
+    input:
+        vcfs = expand(join(workpath, "octopus", "chunks", "{chunk}", "{{name}}.vcf.gz"), chunk=chunks),
+    output:
+        vcf = join(workpath, "octopus", "{name}.vcf"),
+        lsl = join(workpath, "octopus", "{name}.list"),
+    params: 
+        genome = config['references']['GENOME'],
+        rname  = "octomerge",
+        tumor  = "{name}",
+        octopath = join(workpath, "octopus", "chunks")
+    threads: 
+        int(allocated("threads", "octopus_merge", cluster))
+    container: 
+        config['tools']['bcftools']
+    shell: """
+    # Create list of chunks to merge
+    find {params.octopath} -iname '{params.tumor}.vcf.gz' \\
+        > {output.lsl}
+    # Merge octopus chunk calls 
+    bcftools concat \\
+        -d exact \\
+        -a \\
+        -f {output.lsl} \\
+        -o {output.vcf} \\
+        -O v
     """

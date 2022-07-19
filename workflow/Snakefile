@@ -263,8 +263,14 @@ rule all:
 
         # Call Somatics variants with Octopus,
         # scattered on chromosomes to speed up
+        # @imported from rules/somatic.smk
         expand( 
             join(workpath, "octopus", "chunks", "{chunk}", "{name}.vcf.gz"),
+            chunk=provided(chunks, call_somatic),
+            name=provided(tumors, call_somatic),
+        ),
+        expand( 
+            join(workpath, "octopus", "{name}.vcf"),
             chunk=provided(chunks, call_somatic),
             name=provided(tumors, call_somatic),
         ),
