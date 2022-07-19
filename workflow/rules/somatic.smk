@@ -1,6 +1,9 @@
 # Functions and rules for processing data
-from scripts.common import abstract_location, allocated, joint_option
-
+from scripts.common import (
+    abstract_location, 
+    allocated, 
+    joint_option
+)
 
 # Helper functions for tumor, normal pairs 
 def get_normal_recal_bam(wildcards):
@@ -15,7 +18,6 @@ def get_normal_recal_bam(wildcards):
     else:
         # Runs in tumor-only mode
         return []
-
 
 # Data processing rules for calling somatic variants
 rule octopus:

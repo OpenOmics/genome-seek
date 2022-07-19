@@ -208,10 +208,11 @@ rule all:
             join(workpath, "CANVAS", "{name}", "{name}.segments.annotations.tsv"),       
             name=provided(samples, call_cnv)
         ),
-        # Manta, call structural variation (SV)
+        # Manta, call germline structural variation (SV),
+        # only runs when provided --call-sv
         # @imported from rules/sv.smk
         expand( 
-            join(workpath, "MANTA", "{name}", "results", "variants", "diploidSV.vcf.gz"),       
+            join(workpath, "MANTA", "germline", "{name}", "results", "variants", "diploidSV.vcf.gz"),       
             name=provided(samples, call_sv)
         ),
         # GATK4 SelectVariants, jointly-called norm per-chrom VCF file
@@ -261,8 +262,9 @@ rule all:
             name=provided(samples, call_somatic),
         ),
 
-        # Call Somatics variants with Octopus,
-        # scattered on chromosomes to speed up
+        # Call somatic variants with Octopus,
+        # scattered and merged on chromosomes 
+        # to speed up overall run time
         # @imported from rules/somatic.smk
         expand( 
             join(workpath, "octopus", "chunks", "{chunk}", "{name}.vcf.gz"),
@@ -273,6 +275,13 @@ rule all:
             join(workpath, "octopus", "{name}.vcf"),
             chunk=provided(chunks, call_somatic),
             name=provided(tumors, call_somatic),
+        ),
+        # Manta, call somatic structural variation (SV),
+        # only runs if provided --call-somatic AND --call-sv
+        # @imported from rules/sv.smk
+        expand( 
+            join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.vcf.gz"),
+            name=provided(provided(tumors, call_somatic), call_sv),
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
