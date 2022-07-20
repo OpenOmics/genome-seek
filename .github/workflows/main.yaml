@@ -25,7 +25,8 @@ jobs:
         /opt2/.tests/WT_S4_R1.001.fastq.gz /opt2/.tests/WT_S4_R2.001.fastq.gz \
         --output /opt2/output --mode local --pairs /opt2/.tests/pairs.tsv \
         --call-hla --call-sv --call-cnv --call-somatic --open-cravat \
-        --oc-annotators encode_tfbs ccre_screen vista_enhancer gnomad3 thousandgenomes cadd --dry-run
+        --oc-annotators encode_tfbs ccre_screen vista_enhancer gnomad3 thousandgenomes cadd \
+        --pon /opt2/.tests/1000g_pon.hg38.vcf.gz --dry-run
     - name: Dry Run with test data, skip QC
       run: |
         docker run -v $PWD:/opt2 snakemake/snakemake:v5.24.2 \
