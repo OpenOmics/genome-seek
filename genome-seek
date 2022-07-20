@@ -300,8 +300,8 @@ def parsed_arguments(name, description):
                 [--mode {{slurm,local}}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \\
                 [--call-cnv] [--call-sv] [--call-hla] [--call-somatic] [--open-cravat] \\
                 [--skip-qc] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \\
-                [--pairs PAIRS] [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \\ 
-                [--singularity-cache SINGULARITY_CACHE] \\
+                [--pairs PAIRS] [--pon PANEL_OF_NORMALS] [--tmp-dir TMP_DIR] [--silent] \\
+                [--sif-cache SIF_CACHE] [--singularity-cache SINGULARITY_CACHE] \\
                 [--dry-run] [--threads THREADS] \\
                 --input INPUT [INPUT ...] \\
                 --output OUTPUT
@@ -376,7 +376,7 @@ def parsed_arguments(name, description):
                                   Example: --batch-id WGS_2022-04-19
 
         {3}{4}Somatic options:{5}
-          --pairs               Tumor-normal pairs file. The tumor-normal pairs file 
+          --pairs PAIRS         Tumor-normal pairs file. The tumor-normal pairs file 
                                 is used to pair a tumor sample with its match normal 
                                 sample. This file should only be provided when calling 
                                 somatic variants. Please see the option above for more 
@@ -395,6 +395,17 @@ def parsed_arguments(name, description):
                                     Sample4_CRL1622_S31  Sample10_ARK1_S37
                                     Sample4_CRL1622_S31  Sample11_ACI_158_S38
                                   Example: --pairs /data/$USER/pairs.tsv
+          --pon PANEL_OF_NORMALS
+                                Panel of normals (PON). A VCF file of containing
+                                sites observed in normal tissue. Normal in this
+                                context refers to samples derived from healthy
+                                tissue that is NOT believed to have any somatic
+                                alterations. By default, the pipeline will use a
+                                PON included with its resource bundle. You can
+                                provide your own PON with this option. The PON 
+                                should be gzipped, AND there should be a tabix 
+                                index for the PON in the same directory.
+                                  Example: --pon 1000g_pon.hg38.vcf.gz
 
         {3}{4}Anotation options:{5}
         {6}@OpenCRAVAT{5}
@@ -606,6 +617,25 @@ def parsed_arguments(name, description):
         '--pairs',
         # Check if the file exists and if it is readable
         type = lambda file: permissions(parser, file, os.R_OK),
+        required = False,
+        default = None,
+        help = argparse.SUPPRESS
+    )
+
+    # Custom Panel of Normals
+    subparser_run.add_argument(
+        '--pon',
+        # Check if the file exists and if it is readable AND
+        # check if its tabix index exist and it is readable
+        type = lambda file: re.sub(
+            '\.tbi$',
+            '',
+            permissions(
+                parser, 
+                "{}.tbi".format(permissions(parser, file, os.R_OK)), 
+                os.R_OK
+            )
+        ),
         required = False,
         default = None,
         help = argparse.SUPPRESS
