@@ -1,4 +1,4 @@
 Tumor	Normal
-HG002
-HG003	HG002
-HG004
+WT_S1
+WT_S3	WT_S2
+WT_S4
