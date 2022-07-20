@@ -184,6 +184,11 @@ def run(sub_args):
     # to an empty string
     config['pairs'] = tn_pairs
 
+    # Step 5. Override default references
+    if sub_args.pon: 
+        # Use custom provided PON
+        config['references']['PON'] = sub_args.pon
+
     # Save config to output directory
     with open(os.path.join(sub_args.output, 'config.json'), 'w') as fh:
         json.dump(config, fh, indent = 4, sort_keys = True)
@@ -195,7 +200,7 @@ def run(sub_args):
         print("\nDry-running {} pipeline:\n{}".format(_name, dryrun_output.decode("utf-8")))
         sys.exit(0)
 
-    # Step 5. Orchestrate pipeline execution,
+    # Step 6. Orchestrate pipeline execution,
     # run pipeline in locally on a compute node
     # for debugging purposes or submit the master
     # job to the job scheduler, SLURM, and create 
@@ -220,7 +225,7 @@ def run(sub_args):
         tmp_dir = sub_args.tmp_dir, 
     )
     
-    # Step 6. Wait for subprocess to complete,
+    # Step 7. Wait for subprocess to complete,
     # this is blocking and not asynchronous
     if not sub_args.silent:
         print("\nRunning {} pipeline in '{}' mode...".format(_name, sub_args.mode)) 
