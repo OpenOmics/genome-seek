@@ -268,12 +268,12 @@ rule all:
         # to speed up overall run time
         # @imported from rules/somatic.smk
         expand( 
-            join(workpath, "octopus", "chunks", "{region}", "{name}.vcf.gz"),
+            join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}.vcf.gz"),
             region=provided(regions, call_somatic),
             name=provided(tumors, call_somatic),
         ),
         expand( 
-            join(workpath, "octopus", "{name}.vcf"),
+            join(workpath, "octopus", "somatic", "{name}.vcf"),
             name=provided(tumors, call_somatic),
         ),
         # Manta, call somatic structural variation (SV),
@@ -286,6 +286,7 @@ rule all:
         # Mutect2, call somatic variants,
         # scattered and merged on chroms
         # to speed up overall run time
+        # @imported from rules/somatic.smk
         expand( 
             join(workpath, "mutect2", "chrom_split", "{name}.{chrom}.vcf"),
             name=provided(tumors, call_somatic),

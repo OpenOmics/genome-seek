@@ -20,7 +20,7 @@ def get_normal_recal_bam(wildcards):
         return []
 
 # Data processing rules for calling somatic variants
-rule octopus:
+rule octopus_somatic:
     """
     Data-processing step to call somatic variants. Octopus is a bayesian 
     haplotype-based mutation caller. Octopus takes inspiration from particle 
@@ -38,14 +38,14 @@ rule octopus:
         tumor = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
-        vcf = join(workpath, "octopus", "chunks", "{region}", "{name}.vcf.gz"),
+        vcf = join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}.vcf.gz"),
     params: 
         genome = config['references']['GENOME'],
-        rname  = "octopus",
+        rname  = "octosomatic",
         chunk = "{region}",
         tumor = "{name}",
         wd = workpath,
-        tmpdir = join(workpath, "octopus", "chunks", "{region}", "{name}_tmp"),
+        tmpdir = join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
         model = config['references']['OCTOPUS_FOREST_MODEL'],
         error = config['references']['OCTOPUS_ERROR_MODEL'],
         # Building optional argument for paired normal 
@@ -53,7 +53,7 @@ rule octopus:
             tumor2normal[w.name]
         ) if tumor2normal[w.name] else "",
     threads: 
-        int(allocated("threads", "octopus", cluster))
+        int(allocated("threads", "octopus_somatic", cluster))
     container: 
         config['images']['octopus']
     shell: """
@@ -81,16 +81,16 @@ rule octopus_merge:
         Per sample somatic variants in VCF format  
     """
     input:
-        vcfs = expand(join(workpath, "octopus", "chunks", "{region}", "{{name}}.vcf.gz"), region=regions),
+        vcfs = expand(join(workpath, "octopus", "somatic", "chunks", "{region}", "{{name}}.vcf.gz"), region=regions),
     output:
-        vcf  = join(workpath, "octopus", "{name}.vcf"),
-        lsl  = join(workpath, "octopus", "{name}.list"),
-        norm = join(workpath, "octopus", "{name}.norm.vcf.gz"),
+        vcf  = join(workpath, "octopus", "somatic", "{name}.vcf"),
+        lsl  = join(workpath, "octopus", "somatic", "{name}.list"),
+        norm = join(workpath, "octopus", "somatic", "{name}.norm.vcf.gz"),
     params: 
         genome = config['references']['GENOME'],
         rname  = "octomerge",
         tumor  = "{name}",
-        octopath = join(workpath, "octopus", "chunks")
+        octopath = join(workpath, "octopus", "somatic", "chunks")
     threads: 
         int(allocated("threads", "octopus_merge", cluster))
     container: 
