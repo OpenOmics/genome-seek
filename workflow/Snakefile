@@ -283,6 +283,14 @@ rule all:
             join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.vcf.gz"),
             name=provided(provided(tumors, call_somatic), call_sv),
         ),
+        # Mutect2, call somatic variants,
+        # scattered and merged on chroms
+        # to speed up overall run time
+        expand( 
+            join(workpath, "mutect2", "chrom_split", "{name}.{chrom}.vcf"),
+            name=provided(tumors, call_somatic),
+            chrom=provided(chunks, call_somatic),
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),

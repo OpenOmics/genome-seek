@@ -48,7 +48,10 @@ rule octopus:
         tmpdir = join(workpath, "octopus", "chunks", "{region}", "{name}_tmp"),
         model = config['references']['OCTOPUS_FOREST_MODEL'],
         error = config['references']['OCTOPUS_ERROR_MODEL'],
-        normal_option = lambda w: "--normal-sample {0}".format(tumor2normal[w.name]) if tumor2normal[w.name] else "",
+        # Building optional argument for paired normal 
+        normal_option = lambda w: "--normal-sample {0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "octopus", cluster))
     container: 
@@ -70,7 +73,7 @@ rule octopus:
 
 rule octopus_merge:
     """
-    Data-processing step to merge scatter variant calls from Octopus. Octopus 
+    Data-processing step to merge scattered variant calls from Octopus. Octopus 
     is scattered across genomic intervals or chunks to reduce its overall runtime. 
     @Input:
         Somatic variants in VCF format (gather-per-sample-per-chunks)
@@ -102,4 +105,54 @@ rule octopus_merge:
         -f {output.lsl} \\
         -o {output.vcf} \\
         -O v
+    """
+
+
+rule gatk_mutect2:
+    """Data-processing step to call somatic short mutations via local assembly 
+    of haplotypes. Short mutations include single nucleotide (SNA) and insertion 
+    and deletion (indel) alterations. The caller uses a Bayesian somatic genotyping 
+    model that differs from the original MuTect (which is depreicated). Mutect2 is 
+    scatter per chromosome to decrease its overall runtime. More information about 
+    Mutect2 can be found on the Broad's website: https://gatk.broadinstitute.org/
+    @Input:
+        Realigned, recalibrated BAM file (scatter-per-sample-per-chrom)
+    @Output:
+        Per sample somatic variants in VCF format  
+    """
+    input: 
+        tumor = join(workpath, "BAM", "{name}.recal.bam"),
+        normal = get_normal_recal_bam,
+    output:
+        vcf   = join(workpath, "mutect2", "chrom_split", "{name}.{chrom}.vcf"),
+        orien = join(workpath, "mutect2", "chrom_split", "{name}.{chrom}.f1r2.tar.gz"),
+        stats = join(workpath, "mutect2", "chrom_split", "{name}.{chrom}.vcf.stats")
+    params:
+        tumor  = '{name}',
+        chrom  = '{chrom}',
+        rname  = 'mutect2',
+        genome = config['references']['GENOME'],
+        pon = config['references']['PON'],
+        germsource = config['references']['GNOMAD'],
+        # Building optional argument for paired normal
+        normal_option = lambda w: "-normal {0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+        i_option = lambda w: "-I {0}.recal.bam".format(
+            join(workpath, "BAM", tumor2normal[w.name])
+        ) if tumor2normal[w.name] else "",
+    threads: 
+        int(allocated("threads", "gatk_mutect2", cluster))
+    envmodules:
+        config['tools']['gatk4']
+    shell: """
+    gatk Mutect2 \\
+        -R {params.genome} \\
+        -I {input.tumor} {params.i_option} {params.normal_option} \\
+        --panel-of-normals {params.pon} \\
+        --germline-resource {params.germsource} \\
+        -L {params.chrom} \\
+        -O {output.vcf} \\
+        --f1r2-tar-gz {output.orien} \\
+        --independent-mates
     """
