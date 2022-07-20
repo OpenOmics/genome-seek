@@ -112,6 +112,7 @@ rule manta_somatic:
 
     # Configure Manta somatic SV workflow 
     configManta.py {params.normal_option} \\
+        --callRegions {params.regions} \\
         --tumorBam {input.tumor} \\
         --referenceFasta {params.genome} \\
         --runDir {params.outdir} \\
