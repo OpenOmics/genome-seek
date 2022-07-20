@@ -83,8 +83,9 @@ rule octopus_merge:
     input:
         vcfs = expand(join(workpath, "octopus", "chunks", "{region}", "{{name}}.vcf.gz"), region=regions),
     output:
-        vcf = join(workpath, "octopus", "{name}.vcf"),
-        lsl = join(workpath, "octopus", "{name}.list"),
+        vcf  = join(workpath, "octopus", "{name}.vcf"),
+        lsl  = join(workpath, "octopus", "{name}.list"),
+        norm = join(workpath, "octopus", "{name}.norm.vcf.gz"),
     params: 
         genome = config['references']['GENOME'],
         rname  = "octomerge",
@@ -100,11 +101,20 @@ rule octopus_merge:
         > {output.lsl}
     # Merge octopus chunk calls 
     bcftools concat \\
+        --threads {threads} \\
         -d exact \\
         -a \\
         -f {output.lsl} \\
         -o {output.vcf} \\
         -O v
+    # Normalize Octopus VCF
+    bcftools norm \\
+        -m - \\
+        -Oz \\
+        --threads {threads} \\
+        -f {params.genome} \\
+        -o {output.norm} \\
+        {output.vcf}
     """
 
 
