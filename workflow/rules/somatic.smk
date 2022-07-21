@@ -118,7 +118,7 @@ rule octopus_merge:
     """
 
 
-rule gatk_mutect2:
+rule gatk_scatter_mutect2:
     """Data-processing step to call somatic short mutations via local assembly 
     of haplotypes. Short mutations include single nucleotide (SNA) and insertion 
     and deletion (indel) alterations. The caller uses a Bayesian somatic genotyping 
@@ -152,7 +152,7 @@ rule gatk_mutect2:
             join(workpath, "BAM", tumor2normal[w.name])
         ) if tumor2normal[w.name] else "",
     threads: 
-        int(allocated("threads", "gatk_mutect2", cluster))
+        int(allocated("threads", "gatk_scatter_mutect2", cluster))
     envmodules:
         config['tools']['gatk4']
     shell: """
@@ -165,6 +165,43 @@ rule gatk_mutect2:
         -O {output.vcf} \\
         --f1r2-tar-gz {output.orien} \\
         --independent-mates
+    """
+
+
+rule gatk_gather_mutect2:
+    """Data-processing step to gather chromosome chunked somatic mutation calls 
+    from Mutect2. This step uses CombineVariants from GATK3 since it has not been
+    ported to GATK4 and picard MergeVcfs does not merge genotypes (not functionally
+    eqiuvalent). Mutect2 is scatter per chromosome to decrease its overall runtime.
+    @Input:
+        Per sample somatic variants in VCF format (gather-per-sample-per-chrom)
+    @Output:
+        Gathered sample somatic variants in VCF format  
+    """
+    input: 
+        vcf = expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.vcf"), chrom=chunks),
+    output:
+        vcf = join(workpath, "mutect2", "{name}_mutect2.vcf"),
+    params:
+        rname  = 'merge_mutect2',
+        genome = config['references']['GENOME'],
+        memory = allocated("mem", "gatk_gather_mutect2", cluster).lower().rstrip('g'),
+        # Building optional argument for paired normal
+        multi_variant_option = joint_option(
+            '--variant',
+            expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.vcf"), chrom=chunks),
+        ),
+    threads: 
+        int(allocated("threads", "gatk_gather_mutect2", cluster))
+    envmodules:
+        config['tools']['gatk3']
+    shell: """
+    GATK -m {params.memory}G CombineVariants \\
+        -R {params.genome} \\
+        --filteredrecordsmergetype KEEP_UNCONDITIONAL \\
+        --assumeIdenticalSamples \\
+        -o {output.vcf} \\
+        {params.multi_variant_option}
     """
 
 

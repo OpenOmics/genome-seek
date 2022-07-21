@@ -294,6 +294,10 @@ rule all:
             chrom=provided(chunks, call_somatic),
         ),
         expand( 
+            join(workpath, "mutect2", "{name}_mutect2.vcf"),
+            name=provided(tumors, call_somatic),
+        ),
+        expand( 
             join(workpath, "mutect2", "{name}.read-orientation-model.tar.gz"),
             name=provided(tumors, call_somatic),
         ),

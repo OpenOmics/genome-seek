@@ -107,6 +107,16 @@
         "mem": "48g",
         "time": "24:00:00"
     },
+    "gatk_scatter_mutect2": {
+        "threads": "4",
+        "time": "18:00:00",
+        "mem": "48G"
+    },
+    "gatk_gather_mutect2": {
+        "threads": "4",
+        "time": "18:00:00",
+        "mem": "48G"
+    },
     "gatk_scatter_recal": {
         "threads": "4",
         "time": "24:00:00",
