@@ -191,19 +191,22 @@ rule all:
         ),
         join(workpath, "somalier", "relatedness.samples.tsv"),
         join(workpath, "somalier", "ancestry.somalier-ancestry.tsv"),
-        # Peddy, infer biological sex
+        # Peddy, infer biological sex,
+        # only runs when provided --call-cnv
         # @imported from rules/cnv.smk
         expand( 
             join(workpath, "deepvariant", "VCFs", "{batch}_peddy.sex_check.csv"),        
             batch=provided([batch_id], call_cnv)
         ),
-        # CANVAS, predicted germline CNVs
+        # CANVAS, predicted germline CNVs,
+        # only runs when provided --call-cnv
         # @imported from rules/cnv.smk
         expand( 
             join(workpath, "CANVAS", "{name}", "CNV.vcf.gz"),        
             name=provided(samples, call_cnv)
         ),
-        # AnnotSV, annotated germline CNVs
+        # AnnotSV, annotated germline CNVs,
+        # only runs when provided --call-cnv
         # @imported from rules/cnv.smk
         expand( 
             join(workpath, "CANVAS", "{name}", "{name}.segments.annotations.tsv"),       
@@ -216,25 +219,29 @@ rule all:
             join(workpath, "MANTA", "germline", "{name}", "results", "variants", "diploidSV.vcf.gz"),       
             name=provided(samples, call_sv)
         ),
-        # GATK4 SelectVariants, jointly-called norm per-chrom VCF file
+        # GATK4 SelectVariants, jointly-called norm per-chrom VCF file,
+        # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         expand( 
             join(workpath, "OpenCRAVAT", "VCFs", "{chunk}.germline.vcf.gz"),
             chunk=provided(chunks, run_oc)
         ),
-        # OpenCRAVAT, annotation, rank and score variants
+        # OpenCRAVAT, annotation, rank and score variants,
+        # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         expand( 
             join(workpath, "OpenCRAVAT", "cravat_{chunk}.sqlite"),
             chunk=provided(chunks, run_oc)
         ),
-        # Filter OpenCRAVAT, filters SQL-lite file
+        # Filter OpenCRAVAT, filters SQL-lite file,
+        # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         expand( 
             join(workpath, "OpenCRAVAT", "filter", "cravat_{chunk}.fixed.sqlite"),
             chunk=provided(chunks, run_oc)
         ),
-        # Merge OpenCRAVAT, merges fitlered SQL-lite files
+        # Merge OpenCRAVAT, merges fitlered SQL-lite files,
+        # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         provided([join(workpath, "OpenCRAVAT", "cravat.merged.sqlite")], run_oc),
         # GATK3 Indel Realignment
@@ -243,20 +250,23 @@ rule all:
             join(workpath, "BAM", "{name}.intervals"),
             name=provided(samples, call_somatic)
         ),
-        # Scatterd GATK4 recalibration tables for ApplyBQSR
+        # Scatterd GATK4 recalibration tables for ApplyBQSR,
+        # only runs if provided --call-somatic 
         # @imported from rules/gatk_recal.smk
         expand( 
             join(workpath, "BAM", "{name}_{recal}_data.grp"),
             name=provided(samples, call_somatic),
             recal=provided(recals, call_somatic)
         ),
-        # Gathered GATK4 recalibration table for ApplyBQSR
+        # Gathered GATK4 recalibration table for ApplyBQSR,
+        # only runs if provided --call-somatic 
         # @imported from rules/gatk_recal.smk
         expand( 
             join(workpath, "BAM", "{name}_gathered_recal_data.grp"),
             name=provided(samples, call_somatic),
         ),
-        # Apply GATK4 recalibration to BAM file
+        # Apply GATK4 recalibration to BAM file,
+        # only runs if provided --call-somatic 
         # @imported from rules/gatk_recal.smk
         expand( 
             join(workpath, "BAM", "{name}.recal.bam"),
@@ -265,7 +275,8 @@ rule all:
 
         # Call somatic variants with Octopus,
         # scattered and merged on regions
-        # to speed up overall run time
+        # to speed up overall run time,
+        # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
             join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}.vcf.gz"),
