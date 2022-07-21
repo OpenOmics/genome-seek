@@ -166,3 +166,58 @@ rule gatk_mutect2:
         --f1r2-tar-gz {output.orien} \\
         --independent-mates
     """
+
+
+rule gatk_learnReadOrientationModel:
+    """Data-processing step to learn read orientation artifacts for Mutect2's bias
+    filter. If you suspect any of your samples of substitution errors that occur on
+    a single strand before sequencing you should definitely use Mutect2's orientation 
+    bias filter. This applies to all FFPE tumor samples and samples sequenced with 
+    Illumina Novaseq machines, among others. You can run the filter even when you're 
+    not suspicious. It won't hurt accuracy and the CPU cost is now quite small. 
+    In this step, we are also gathering the chromosome chunked stats output with 
+    MergeMutectStats to save overhead for job submission. FilterMutectCalls will 
+    need an aggregated stats file at run time. More iformation about Mutect2 can
+    be found on the Broad's website: https://gatk.broadinstitute.org/
+    @Input:
+        Mutect2 --f1r2-tar-gz output (gather-per-sample-per-chrom)
+        Mutect2 --stats output       (gather-per-sample-per-chrom)
+    @Output:
+        Per sample stats file for FilterMutectCalls
+        Per sample read orientation model for GetPileupSummaries -> FilterMutectCalls
+    """
+    input: 
+        orien = expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.f1r2.tar.gz"), chrom=chunks),
+        stats = expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.vcf.stats"),  chrom=chunks),
+    output:
+        orien = join(workpath, "mutect2", "{name}.read-orientation-model.tar.gz"),
+        stats = join(workpath, "mutect2", "{name}.vcf.stats"),
+    params:
+        tumor  = '{name}',
+        rname  = 'learnReadOrien',
+        genome = config['references']['GENOME'],
+        # Building multi arguments for chrom chunks
+        multi_stats_option = joint_option(
+            '-stats',
+            expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.vcf.stats"), chrom=chunks)
+        ),
+        multi_orien_option = joint_option(
+            '--input',
+            expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.f1r2.tar.gz"), chrom=chunks)
+        ),
+    threads: 
+        int(allocated("threads", "gatk_learnReadOrientationModel", cluster))
+    envmodules:
+        config['tools']['gatk4']
+    shell: """
+    # Gather Mutect2 stats
+    gatk MergeMutectStats \\
+        {params.multi_stats_option} \\
+        -O {output.stats} &
+    # Learn read orientaion model
+    # for artifact filtering 
+    gatk LearnReadOrientationModel \\
+        --output {output.orien} \\
+        {params.multi_orien_option} &
+    wait
+    """

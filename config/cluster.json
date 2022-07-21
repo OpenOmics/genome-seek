@@ -97,6 +97,11 @@
         "time": "2:00:00",
         "mem": "1G"
     },
+    "gatk_learnReadOrientationModel": {
+        "threads": "6",
+        "mem": "32G",
+        "time": "10:00:00"
+    },
     "gatk_realign": {
         "threads": "2",
         "mem": "48g",

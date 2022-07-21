@@ -285,12 +285,17 @@ rule all:
         ),
         # Mutect2, call somatic variants,
         # scattered and merged on chroms
-        # to speed up overall run time
+        # to speed up overall run time,
+        # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
             join(workpath, "mutect2", "chrom_split", "{name}.{chrom}.vcf"),
             name=provided(tumors, call_somatic),
             chrom=provided(chunks, call_somatic),
+        ),
+        expand( 
+            join(workpath, "mutect2", "{name}.read-orientation-model.tar.gz"),
+            name=provided(tumors, call_somatic),
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
