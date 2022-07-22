@@ -30,8 +30,11 @@ chunks   = config['references']['CHR_CHUNKS']  # Scatter on chromosomes, chr1, .
 regions  = config['references']['CHR_REGIONS'] # Scatter on regions: chr1:1-30000001, ...
 recals   = list(config['references']['NRECALS'].keys()) # Scatter recal on chromosome sets
 tumors   = list(config['pairs'].keys())        # List of tumor samples
-normals  = list(config['pairs'].items())       # List of normal samples
+normals  = list(set(config['pairs'].values())) # List of normal samples
+normals  = [n for n in normals if n]           # Remove tumor-onlys, i.e. empty strings
 tumor2normal =  config['pairs']                # Dict to map a tumor to its normal
+# List of tumor samples with a paired normal
+tumorWnormal = [t for t in tumors if tumor2normal[t]]
 
 # Analysis Options 
 call_cnv = str_bool(                      # Call copy number variation (CNVs),
@@ -311,6 +314,14 @@ rule all:
         expand( 
             join(workpath, "mutect2", "{name}.read-orientation-model.tar.gz"),
             name=provided(tumors, call_somatic),
+        ),
+        expand( 
+            join(workpath, "mutect2", "{name}.tumorPileup.table"),
+            name=provided(tumors, call_somatic),
+        ),
+        expand( 
+            join(workpath, "mutect2", "{name}.normalPileup.table"),
+            name=provided(tumorWnormal, call_somatic),
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 

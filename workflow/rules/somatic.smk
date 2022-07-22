@@ -214,7 +214,7 @@ rule gatk_learnReadOrientationModel:
     not suspicious. It won't hurt accuracy and the CPU cost is now quite small. 
     In this step, we are also gathering the chromosome chunked stats output with 
     MergeMutectStats to save overhead for job submission. FilterMutectCalls will 
-    need an aggregated stats file at run time. More iformation about Mutect2 can
+    need an aggregated stats file at run time. More information about Mutect2 can
     be found on the Broad's website: https://gatk.broadinstitute.org/
     @Input:
         Mutect2 --f1r2-tar-gz output (gather-per-sample-per-chrom)
@@ -257,4 +257,74 @@ rule gatk_learnReadOrientationModel:
         --output {output.orien} \\
         {params.multi_orien_option} &
     wait
+    """
+
+
+rule gatk_tumorPileup:
+    """Data-processing step to summarize read support for a set number of known 
+    tumor variant sites in a tumor, normal pair to estimate contamination with 
+    GATK4 CalculateContamination. This is a part of a series of steps to call 
+    somatic mutations using GATK4 Mutect2. More information about Mutect2 can
+    be found on the Broad's website: https://gatk.broadinstitute.org/
+    @Input:
+        Realigned, recalibrated BAM file for a tumor in a TN pair
+    @Output:
+        PileupSummaries of tumor for CalculateContamination -> FilterMutectCalls
+    """
+    input:
+        tumor = join(workpath, "BAM", "{name}.recal.bam"),
+    output:
+        summary = join(workpath, "mutect2", "{name}.tumorPileup.table"),
+    params:
+        tumor  = '{name}',
+        rname  = 'tumorPileup',
+        genome = config['references']['GENOME'],
+        gsnp   = config['references']['1000GSNP'],
+        memory = allocated("mem", "gatk_tumorPileup", cluster).lower().rstrip('g'),
+    threads: 
+        int(allocated("threads", "gatk_tumorPileup", cluster))
+    envmodules:
+        config['tools']['gatk4']
+    shell: """
+    gatk --java-options '-Xmx{params.memory}g' GetPileupSummaries \\
+        -I {input.tumor} \\
+        -V {params.gsnp} \\
+        -L {params.gsnp} \\
+        -O {output.summary}
+    """
+
+
+rule gatk_normalPileup:
+    """Data-processing step to summarize read support for a set number of known 
+    normal variant sites in a tumor, normal pair to estimate contamination with 
+    GATK4 CalculateContamination. This is a part of a series of steps to call 
+    somatic mutations using GATK4 Mutect2. This rule is only called if a given 
+    sample has a paired normal. More information about Mutect2 can be found on 
+    the Broad's website: https://gatk.broadinstitute.org/
+    @Input:
+        Realigned, recalibrated BAM file for a normal in a TN pair
+    @Output:
+        PileupSummaries of normal for CalculateContamination -> FilterMutectCalls
+    """
+    input: 
+        tumor = join(workpath, "BAM", "{name}.recal.bam"),
+        normal = get_normal_recal_bam,
+    output:
+        summary = join(workpath, "mutect2", "{name}.normalPileup.table"),
+    params:
+        tumor  = '{name}',
+        rname  = 'normalPileup',
+        genome = config['references']['GENOME'],
+        gsnp   = config['references']['1000GSNP'],
+        memory = allocated("mem", "gatk_tumorPileup", cluster).lower().rstrip('g'),
+    threads: 
+        int(allocated("threads", "gatk_normalPileup", cluster))
+    envmodules:
+        config['tools']['gatk4']
+    shell: """
+    gatk --java-options '-Xmx{params.memory}g' GetPileupSummaries \\
+        -I {input.normal} \\
+        -V {params.gsnp} \\
+        -L {params.gsnp} \\
+        -O {output.summary}
     """

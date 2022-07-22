@@ -89,6 +89,7 @@
 			"SITES_VCF": "/data/OpenOmics/references/genome-seek/somalier/sites.hg38.vcf.gz",
 			"NCBI_BUILD": "GRCh38",
 			"SPECIES": "homo_sapiens"
-		}
+		},
+        "1000GSNP": "/data/OpenOmics/references/genome-seek/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
     }
 }
