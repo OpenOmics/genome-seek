@@ -67,7 +67,7 @@ rule gatk_scatter_recal:
         knowns = joint_option('--known-sites', config['references']['KNOWNRECAL']),
         intervals = lambda w: joint_option('-L', config['references']['NRECALS'][w.recal]),
         memory = allocated("mem", "gatk_scatter_recal", cluster).lower().rstrip('g'),
-        rname = '{recal}'
+        rname = 'scatter_recal'
     envmodules:
         config['tools']['gatk4'],
     threads: int(allocated("threads", "gatk_scatter_recal", cluster))
