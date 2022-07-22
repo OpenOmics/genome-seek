@@ -141,6 +141,7 @@ rule gatk_apply_recal:
         rname  = 'apply_recal'
     envmodules:
         config['tools']['gatk4'],
+        config['tools']['samtools'],
     threads: int(allocated("threads", "gatk_apply_recal", cluster))
     shell: """
     gatk --java-options '-Xmx{params.memory}g' ApplyBQSR \\
