@@ -102,12 +102,12 @@
         "mem": "32G",
         "time": "10:00:00"
     },
-    "gatk_gatk_normalPileup": {
+    "gatk_normalPileup": {
         "threads": "4",
         "mem": "48g",
         "time": "18:00:00"
     },
-    "gatk_gatk_tumorPileup": {
+    "gatk_tumorPileup": {
         "threads": "4",
         "mem": "48g",
         "time": "18:00:00"
