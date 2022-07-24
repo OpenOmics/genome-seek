@@ -45,7 +45,7 @@ rule octopus_somatic:
         chunk = "{region}",
         tumor = "{name}",
         wd = workpath,
-        tmpdir = join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
+        tmpdir = join("octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
         model = config['references']['OCTOPUS_FOREST_MODEL'],
         error = config['references']['OCTOPUS_ERROR_MODEL'],
         # Building optional argument for paired normal 
