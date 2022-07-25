@@ -100,12 +100,12 @@
     "gatk_contamination": {
         "threads": "4",
         "mem": "32G",
-        "time": "18:00:00"
+        "time": "6:00:00"
     },
     "gatk_filter_mutect2": {
         "threads": "4",
         "mem": "32G",
-        "time": "12:00:00"
+        "time": "6:00:00"
     },
     "gatk_learnReadOrientationModel": {
         "threads": "6",
