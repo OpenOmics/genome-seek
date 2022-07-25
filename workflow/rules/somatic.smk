@@ -383,8 +383,9 @@ rule gatk_contamination:
 
 rule gatk_filter_mutect2:
     """Data-processing step to filter somatic SNVs and indels called by Mutect2 
-    using the learned read orientation model. More information about Mutect2 can
-    be found on the Broad's website: https://gatk.broadinstitute.org/
+    using the learned read orientation model. VCFtools is used to further filter 
+    the VCF file remove any sites that have a filter tag. More information about 
+    Mutect2 can be found on the Broad's website: https://gatk.broadinstitute.org/
     @Input:
         Per sample somatic variants from CombineVariants
         Per sample stats file from MergeMutectStats
@@ -392,6 +393,7 @@ rule gatk_filter_mutect2:
         Estimated contamination table from CalculateContamination 
     @Output:
         Per sample VCF of filtered somatic SNVs and indels
+        Per sample VCF of final, filtered somatic SNVs and indels
     """
     input:
         vcf   = join(workpath, "mutect2", "{name}_mutect2.vcf"),
@@ -399,7 +401,8 @@ rule gatk_filter_mutect2:
         stats = join(workpath, "mutect2", "{name}.vcf.stats"),
         summary = join(workpath, "mutect2", "{name}.contamination.table"),
     output:
-        vcf = join(workpath, "mutect2", "{name}.filtered.vcf"),
+        vcf   = join(workpath, "mutect2", "{name}.filtered.vcf"),
+        final = join(workpath, "mutect2", "{name}.filtered.final.vcf"),
     params:
         rname  = 'filtmutect2',
         genome = config['references']['GENOME'],
@@ -408,6 +411,7 @@ rule gatk_filter_mutect2:
     envmodules:
         config['tools']['gatk4']
     shell: """
+    # Mutect2 orien bias filter
     gatk FilterMutectCalls \\
         -R {params.genome} \\
         -V {input.vcf} \\
@@ -415,4 +419,12 @@ rule gatk_filter_mutect2:
         --contamination-table {input.summary} \\
         -O {output.vcf} \\
         --stats {input.stats} 
+    # Remove remaining sites 
+    # with a filter tag 
+    vcftools \\
+        --vcf {output.vcf} \\
+        --recode \\
+        --remove-filtered-all \\
+        --stdout \\
+    > {output.final}
     """
