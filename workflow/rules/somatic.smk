@@ -109,6 +109,7 @@ rule octopus_merge:
         -O v
     # Normalize Octopus VCF
     bcftools norm \\
+        -c w \\
         -m - \\
         -Oz \\
         --threads {threads} \\
