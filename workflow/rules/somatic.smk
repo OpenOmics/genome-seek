@@ -93,7 +93,7 @@ rule octopus_merge:
         octopath = join(workpath, "octopus", "somatic", "chunks")
     threads: 
         int(allocated("threads", "octopus_merge", cluster))
-    container: 
+    envmodules:
         config['tools']['bcftools']
     shell: """
     # Create list of chunks to merge
