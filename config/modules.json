@@ -4,7 +4,7 @@
         "fastqc": "fastqc/0.11.9",
         "fastp": "fastp/0.23.1",
         "bowtie": "bowtie/2-2.4.5",
-        "bcftools": "bcftools/1.10",
+        "bcftools": "bcftools/1.13",
         "canvas": "Canvas/1.40",
         "deepvariant": "deepvariant/1.4.0",
         "perl": "perl/5.24.3",
