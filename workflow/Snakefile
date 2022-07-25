@@ -323,6 +323,14 @@ rule all:
             join(workpath, "mutect2", "{name}.normalPileup.table"),
             name=provided(tumorWnormal, call_somatic),
         ),
+        expand( 
+            join(workpath, "mutect2", "{name}.contamination.table"),
+            name=provided(tumors, call_somatic),
+        ),
+        expand( 
+            join(workpath, "mutect2", "{name}.filtered.vcf"),
+            name=provided(tumors, call_somatic),
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),

@@ -19,6 +19,22 @@ def get_normal_recal_bam(wildcards):
         # Runs in tumor-only mode
         return []
 
+def get_normal_pileup_table(wildcards):
+    """
+    Returns a tumor samples paired normal pileup
+    See config['pairs'] for tumor, normal pairs.
+    """
+    tumor = wildcards.name
+    normal = tumor2normal[tumor]
+    if normal:
+        # Runs in a tumor, normal mode
+        # Paired normal pileup contains
+        # the tumor sample's name in file
+        return join(workpath, "mutect2", "{0}.normalPileup.table".format(tumor))
+    else:
+        # Runs in tumor-only mode
+        return []
+
 # Data processing rules for calling somatic variants
 rule octopus_somatic:
     """
@@ -35,7 +51,7 @@ rule octopus_somatic:
         Somatic variants in VCF format  
     """
     input:
-        tumor = join(workpath, "BAM", "{name}.recal.bam"),
+        tumor  = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
         vcf = join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}.vcf.gz"),
@@ -132,7 +148,7 @@ rule gatk_scatter_mutect2:
         Per sample somatic variants in VCF format  
     """
     input: 
-        tumor = join(workpath, "BAM", "{name}.recal.bam"),
+        tumor  = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
         vcf   = join(workpath, "mutect2", "chrom_split", "{name}.{chrom}.vcf"),
@@ -308,7 +324,7 @@ rule gatk_normalPileup:
         PileupSummaries of normal for CalculateContamination -> FilterMutectCalls
     """
     input: 
-        tumor = join(workpath, "BAM", "{name}.recal.bam"),
+        tumor  = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
         summary = join(workpath, "mutect2", "{name}.normalPileup.table"),
@@ -328,4 +344,75 @@ rule gatk_normalPileup:
         -V {params.gsnp} \\
         -L {params.gsnp} \\
         -O {output.summary}
+    """
+
+
+rule gatk_contamination:
+    """Data-processing step to calculate the fraction of reads coming from 
+    cross-sample contamination. More information about Mutect2 can be found 
+    on the Broad's website: https://gatk.broadinstitute.org/
+    @Input:
+        PileupSummaries of tumor for CalculateContamination 
+        PileupSummaries of normal for CalculateContamination (optional)
+    @Output:
+        Estimated contamination table for FilterMutectCalls
+    """
+    input: 
+        tumor  = join(workpath, "mutect2", "{name}.tumorPileup.table"),
+        normal = get_normal_pileup_table,
+    output:
+        summary = join(workpath, "mutect2", "{name}.contamination.table"),
+    params:
+        tumor  = '{name}',
+        rname  = 'calcontaim',
+        genome = config['references']['GENOME'],
+        # Building optional argument for paired normal
+        normal_option = lambda w: "--matched-normal {0}".format(
+            join(workpath, "mutect2", "{0}.normalPileup.table".format(w.name))
+        ) if tumor2normal[w.name] else "",
+    threads: 
+        int(allocated("threads", "gatk_contamination", cluster))
+    envmodules:
+        config['tools']['gatk4']
+    shell: """
+    gatk CalculateContamination \\
+        -I {input.tumor} {params.normal_option} \\
+        -O {output.summary}
+    """
+
+
+rule gatk_filter_mutect2:
+    """Data-processing step to filter somatic SNVs and indels called by Mutect2 
+    using the learned read orientation model. More information about Mutect2 can
+    be found on the Broad's website: https://gatk.broadinstitute.org/
+    @Input:
+        Per sample somatic variants from CombineVariants
+        Per sample stats file from MergeMutectStats
+        Per sample read orientation from LearnReadOrientationModel
+        Estimated contamination table from CalculateContamination 
+    @Output:
+        Per sample VCF of filtered somatic SNVs and indels
+    """
+    input:
+        vcf   = join(workpath, "mutect2", "{name}_mutect2.vcf"),
+        orien = join(workpath, "mutect2", "{name}.read-orientation-model.tar.gz"),
+        stats = join(workpath, "mutect2", "{name}.vcf.stats"),
+        summary = join(workpath, "mutect2", "{name}.contamination.table"),
+    output:
+        vcf = join(workpath, "mutect2", "{name}.filtered.vcf"),
+    params:
+        rname  = 'filtmutect2',
+        genome = config['references']['GENOME'],
+    threads: 
+        int(allocated("threads", "gatk_filter_mutect2", cluster))
+    envmodules:
+        config['tools']['gatk4']
+    shell: """
+    gatk FilterMutectCalls \\
+        -R {params.genome} \\
+        -V {input.vcf} \\
+        --ob-priors {input.orien} \\
+        --contamination-table {input.summary} \\
+        -O {output.vcf} \\
+        --stats {input.stats} 
     """
