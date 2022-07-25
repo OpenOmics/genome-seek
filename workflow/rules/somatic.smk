@@ -409,7 +409,8 @@ rule gatk_filter_mutect2:
     threads: 
         int(allocated("threads", "gatk_filter_mutect2", cluster))
     envmodules:
-        config['tools']['gatk4']
+        config['tools']['gatk4'],
+        config['tools']['vcftools'],
     shell: """
     # Mutect2 orien bias filter
     gatk FilterMutectCalls \\
