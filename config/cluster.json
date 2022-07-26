@@ -293,6 +293,11 @@
     "somalier": {
         "time": "12:00:00"
     },
+    "strelka": {
+        "threads": "16",
+        "mem": "64G",
+        "time": "24:00:00"
+    },
     "vcftools": {
         "threads": "2",
         "time": "12:00:00"

@@ -338,6 +338,13 @@ rule all:
             join(workpath, "muse", "{name}.muse.vcf"),
             name=provided(tumors, call_somatic),
         ),
+        # Strelka, call somatic variants,
+        # only runs if provided --call-somatic 
+        # @imported from rules/somatic.smk
+        expand( 
+            join(workpath, "strelka", "{name}", "{name}.filtered.vcf"),
+            name=provided(tumors, call_somatic),
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),

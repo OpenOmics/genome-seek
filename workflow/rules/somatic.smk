@@ -450,7 +450,7 @@ rule muse:
         txt = join(workpath, "muse", "{name}.MuSE.txt"),
         vcf = join(workpath, "muse", "{name}.muse.vcf"),
     params:
-        tumor  = '{name}',
+        tumor  = join(workpath, "muse", "{name}"),
         rname  = 'muse',
         genome = config['references']['GENOME'],
         dbsnp  = config['references']['DBSNP'],
@@ -477,4 +477,81 @@ rule muse:
         -I {output.txt} \\
         -O {output.vcf} \\
         -D {params.dbsnp}
+    """
+
+
+rule strelka:
+    """Data-processing step to call somatic mutations with Strelka. This tool is 
+    optimized for rapid clinical analysis of germline variation in small cohorts 
+    and somatic variation in tumor/normal sample pairs. More information about 
+    strelka can be found here: https://github.com/Illumina/strelka
+    @Input:
+        Realigned, recalibrated BAM file for a normal in a TN pair
+    @Output:
+        Per sample VCF of somatic variants
+    """
+    input: 
+        tumor  = join(workpath, "BAM", "{name}.recal.bam"),
+        normal = get_normal_recal_bam,
+    output:
+        snps   = join(workpath, "strelka", "{name}", "results", "variants", "somatic.snvs.vcf.gz"),
+        indels = join(workpath, "strelka", "{name}", "results", "variants", "somatic.indels.vcf.gz"),
+        vcf    = join(workpath, "strelka", "{name}", "{name}.vcf"),
+        filt   = join(workpath, "strelka", "{name}", "{name}.filtered.vcf"),
+    params:
+        tumor  = '{name}',
+        rname  = 'strelka',
+        outdir = join(workpath, "strelka", "{name}"),
+        workflow = join(workpath, "strelka", "{name}", "runWorkflow.py"),
+        regions  = config['references']['MANTA_CALLREGIONS'],
+        genome   = config['references']['GENOME'],
+        pon      = config['references']['PON'],
+        memory   = allocated("mem", "strelka", cluster).rstrip('G'),
+        # Building optional argument for paired normal
+        normal_option = lambda w: "--normalBam {0}.recal.bam".format(
+            join(workpath, "BAM", tumor2normal[w.name])
+        ) if tumor2normal[w.name] else "",
+    threads: 
+        int(allocated("threads", "strelka", cluster))
+    envmodules:
+        config['tools']['strelka'],
+        config['tools']['gatk3']
+    shell: """
+    # Delete previous attempts output
+    # directory to ensure hard restart
+    if [ -d "{params.outdir}" ]; then
+        rm -rf "{params.outdir}"
+    fi
+
+    # Configure Strelka somatic workflow
+    configureStrelkaSomaticWorkflow.py \\
+        --referenceFasta {params.genome} \\
+        --tumorBam {input.tumor} {params.normal_option} \\
+        --runDir {params.outdir} \\
+        --callRegions {params.regions}
+
+    # Call somatic variants with Strelka
+    echo "Starting Strelka workflow..."
+    {params.workflow} \\
+        -m local \\
+        -j {threads} \\
+        -g {params.memory} 
+    
+    # Combine and filter results
+    echo "Running CombineVariants..."
+    GATK -m {params.memory}G CombineVariants \\
+        -R {params.genome} \\
+        --variant {output.snps} \\
+        --variant {output.indels} \\
+        --assumeIdenticalSamples \\
+        --filteredrecordsmergetype KEEP_UNCONDITIONAL \\
+        -o {output.vcf}
+    
+    echo "Running SelectVariants..."
+    GATK -m {params.memory}G SelectVariants \\
+        -R {params.genome} \\
+        --variant {output.vcf} \\
+        --discordance {params.pon} \\
+        --excludeFiltered \\
+        -o {output.filt}
     """
