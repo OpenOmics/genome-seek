@@ -13,6 +13,7 @@
         "samtools": "samtools/1.15",
         "snpeff": "snpEff/4.3t",
         "manta": "manta/1.6.0",
+        "muse": "muse/2.0",
         "open_cravat": "opencravat/2.2.5",
         "bwa_mem2": "bwa-mem2/2.2.1",
         "samblaster": "samblaster/0.1.25",

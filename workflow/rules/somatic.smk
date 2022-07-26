@@ -429,3 +429,52 @@ rule gatk_filter_mutect2:
         --stdout \\
     > {output.final}
     """
+
+
+rule muse:
+    """Data-processing step to call somatic mutations with MuSE. This tool is 
+    unique in accounting for tumor heterogeneity using a sample-specific error 
+    model that improves sensitivity and specificity in mutation calling from 
+    sequencing data.
+    More information about MuSE can be found here: 
+    https://github.com/wwylab/MuSE
+    @Input:
+        Realigned, recalibrated BAM file for a normal in a TN pair
+    @Output:
+        Per sample VCF of somatic variants
+    """
+    input: 
+        tumor  = join(workpath, "BAM", "{name}.recal.bam"),
+        normal = get_normal_recal_bam,
+    output:
+        txt = join(workpath, "muse", "{name}.MuSE.txt"),
+        vcf = join(workpath, "muse", "{name}.muse.vcf"),
+    params:
+        tumor  = '{name}',
+        rname  = 'muse',
+        genome = config['references']['GENOME'],
+        dbsnp  = config['references']['DBSNP'],
+        # Building optional argument for paired normal
+        normal_option = lambda w: "{0}.recal.bam".format(
+            join(workpath, "BAM", tumor2normal[w.name])
+        ) if tumor2normal[w.name] else "",
+    threads: 
+        int(allocated("threads", "muse", cluster))
+    envmodules:
+        config['tools']['muse']
+    shell: """
+    # Prefilter and calculate position
+    # specific summary statistics 
+    MuSE call \\
+        -n {threads} \\
+        -f {params.genome} \\
+        -O {params.tumor} \\
+        {input.tumor} {params.normal_option} 
+    # Calculate cutoffs from a 
+    # sample specific error model
+    MuSE sump \\
+        -G \\
+        -I {output.txt} \\
+        -O {output.vcf} \\
+        -D {params.dbsnp}
+    """

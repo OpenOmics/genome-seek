@@ -222,6 +222,11 @@
         "mem": "16G",
         "time": "8:00:00"
     },
+    "muse":{
+        "threads": "32",
+        "mem": "96G",
+        "time": "12:00:00"
+    },
     "namesort": {
         "threads": "16",
         "mem": "72G",
