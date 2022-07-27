@@ -290,6 +290,10 @@ rule all:
             join(workpath, "octopus", "somatic", "{name}.vcf"),
             name=provided(tumors, call_somatic),
         ),
+        expand( 
+            join(workpath, "octopus", "germline", "{name}.vcf"),
+            name=provided(normals, call_somatic),
+        ),
         # Manta, call somatic structural variation (SV),
         # only runs if provided --call-somatic AND --call-sv
         # @imported from rules/sv.smk

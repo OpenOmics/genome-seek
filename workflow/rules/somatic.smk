@@ -62,7 +62,7 @@ rule octopus_somatic:
         tumor = "{name}",
         wd = workpath,
         tmpdir = join("octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
-        model = config['references']['OCTOPUS_FOREST_MODEL'],
+        model = config['references']['OCTOPUS_SOMATIC_FOREST_MODEL'],
         error = config['references']['OCTOPUS_ERROR_MODEL'],
         # Building optional argument for paired normal 
         normal_option = lambda w: "--normal-sample {0}".format(
@@ -81,7 +81,6 @@ rule octopus_somatic:
         -I {input.normal} {input.tumor} {params.normal_option} \\
         -o {output.vcf} \\
         --somatic-forest-model {params.model} \\
-        --sequence-error-model {params.error} \\
         --annotations AC AD AF \\
         -T {params.chunk}
     """
@@ -132,6 +131,50 @@ rule octopus_merge:
         -f {params.genome} \\
         -o {output.norm} \\
         {output.vcf}
+    """
+
+
+rule octopus_germline:
+    """
+    Data-processing step to call germline variants in normals. Many somatic downstream 
+    tools take germline calls as part of their input. This rule should only be run with 
+    normal samples in tumor, normal pairs. This is why it is included in the somatic.smk
+    file. Germline calling with Octopus is significantly faster than calling somatic 
+    variants, and as so, there is no need to scatter the calls. More information about 
+    Octopus canbe found here: https://github.com/luntergroup/octopus
+    @Input:
+        Realigned, recalibrated BAM file of a normal
+    @Output:
+        Germline variants in VCF format  
+    """
+    input:
+        normal  = join(workpath, "BAM", "{name}.recal.bam"),
+    output:
+        vcf  = join(workpath, "octopus", "germline", "{name}.vcf"),
+    params: 
+        genome = config['references']['GENOME'],
+        rname  = "octogermline",
+        normal = "{name}",
+        wd = workpath,
+        tmpdir = join("octopus", "germline", "{name}_tmp"),
+        model = config['references']['OCTOPUS_GERMLINE_FOREST_MODEL'],
+        error = config['references']['OCTOPUS_ERROR_MODEL'],
+        # Regions to evaluate: chr1 to chrM
+        chroms = "{0}".format(" ".join(config['references']['CHR_CHUNKS']))
+    threads: 
+        int(allocated("threads", "octopus_normal", cluster))
+    container: 
+        config['images']['octopus']
+    shell: """
+    octopus --threads {threads} \\
+        --working-directory {params.wd} \\
+        --temp-directory-prefix {params.tmpdir} \\
+        -R {params.genome} \\
+        -I {input.normal} \\
+        -o {output.vcf} \\
+        --forest-model {params.model} \\
+        --annotations AC AD AF \\
+        -T {params.chroms}
     """
 
 
