@@ -287,11 +287,11 @@ rule all:
             name=provided(tumors, call_somatic),
         ),
         expand( 
-            join(workpath, "octopus", "somatic", "{name}.vcf"),
+            join(workpath, "octopus", "somatic", "{name}.octopus.vcf"),
             name=provided(tumors, call_somatic),
         ),
         expand( 
-            join(workpath, "octopus", "germline", "{name}.vcf"),
+            join(workpath, "octopus", "germline", "{name}.octopus.vcf"),
             name=provided(normals, call_somatic),
         ),
         # Manta, call somatic structural variation (SV),
@@ -312,41 +312,37 @@ rule all:
             chrom=provided(chunks, call_somatic),
         ),
         expand( 
-            join(workpath, "mutect2", "{name}_mutect2.vcf"),
+            join(workpath, "mutect2", "somatic","{name}.read-orientation-model.tar.gz"),
             name=provided(tumors, call_somatic),
         ),
         expand( 
-            join(workpath, "mutect2", "{name}.read-orientation-model.tar.gz"),
+            join(workpath, "mutect2", "somatic", "{name}.tumorPileup.table"),
             name=provided(tumors, call_somatic),
         ),
         expand( 
-            join(workpath, "mutect2", "{name}.tumorPileup.table"),
-            name=provided(tumors, call_somatic),
-        ),
-        expand( 
-            join(workpath, "mutect2", "{name}.normalPileup.table"),
+            join(workpath, "mutect2", "somatic", "{name}.normalPileup.table"),
             name=provided(tumorWnormal, call_somatic),
         ),
         expand( 
-            join(workpath, "mutect2", "{name}.contamination.table"),
+            join(workpath, "mutect2", "somatic", "{name}.contamination.table"),
             name=provided(tumors, call_somatic),
         ),
         expand( 
-            join(workpath, "mutect2", "{name}.filtered.final.vcf"),
+            join(workpath, "mutect2", "somatic", "{name}.mutect2.vcf"),
             name=provided(tumors, call_somatic),
         ),
         # MuSE, call somatic variants,
         # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
-            join(workpath, "muse", "{name}.muse.vcf"),
+            join(workpath, "muse", "somatic", "{name}.muse.vcf"),
             name=provided(tumors, call_somatic),
         ),
         # Strelka, call somatic variants,
         # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
-            join(workpath, "strelka", "{name}", "{name}.filtered.vcf"),
+            join(workpath, "strelka", "somatic", "{name}.strelka.vcf"),
             name=provided(tumors, call_somatic),
         ),
         # MultiQC, QC report and sample statistics

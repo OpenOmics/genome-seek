@@ -30,7 +30,7 @@ def get_normal_pileup_table(wildcards):
         # Runs in a tumor, normal mode
         # Paired normal pileup contains
         # the tumor sample's name in file
-        return join(workpath, "mutect2", "{0}.normalPileup.table".format(tumor))
+        return join(workpath, "mutect2", "somatic", "{0}.normalPileup.table".format(tumor))
     else:
         # Runs in tumor-only mode
         return []
@@ -62,6 +62,7 @@ rule octopus_somatic:
         tumor = "{name}",
         wd = workpath,
         tmpdir = join("octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
+        tmppath = join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
         model = config['references']['OCTOPUS_SOMATIC_FOREST_MODEL'],
         error = config['references']['OCTOPUS_ERROR_MODEL'],
         # Building optional argument for paired normal 
@@ -73,6 +74,7 @@ rule octopus_somatic:
     container: 
         config['images']['octopus']
     shell: """
+    mkdir -p '{params.tmppath}'
     octopus --threads {threads} \\
         -C cancer \\
         --working-directory {params.wd} \\
@@ -98,9 +100,8 @@ rule octopus_merge:
     input:
         vcfs = expand(join(workpath, "octopus", "somatic", "chunks", "{region}", "{{name}}.vcf.gz"), region=regions),
     output:
-        vcf  = join(workpath, "octopus", "somatic", "{name}.vcf"),
         lsl  = join(workpath, "octopus", "somatic", "{name}.list"),
-        norm = join(workpath, "octopus", "somatic", "{name}.norm.vcf.gz"),
+        vcf  = join(workpath, "octopus", "somatic", "{name}.octopus.vcf"),
     params: 
         genome = config['references']['GENOME'],
         rname  = "octomerge",
@@ -122,15 +123,6 @@ rule octopus_merge:
         -f {output.lsl} \\
         -o {output.vcf} \\
         -O v
-    # Normalize Octopus VCF
-    bcftools norm \\
-        -c w \\
-        -m - \\
-        -Oz \\
-        --threads {threads} \\
-        -f {params.genome} \\
-        -o {output.norm} \\
-        {output.vcf}
     """
 
 
@@ -150,7 +142,7 @@ rule octopus_germline:
     input:
         normal  = join(workpath, "BAM", "{name}.recal.bam"),
     output:
-        vcf  = join(workpath, "octopus", "germline", "{name}.vcf"),
+        vcf  = join(workpath, "octopus", "germline", "{name}.octopus.vcf"),
     params: 
         genome = config['references']['GENOME'],
         rname  = "octogermline",
@@ -241,7 +233,7 @@ rule gatk_gather_mutect2:
     input: 
         vcf = expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.vcf"), chrom=chunks),
     output:
-        vcf = join(workpath, "mutect2", "{name}_mutect2.vcf"),
+        vcf = temp(join(workpath, "mutect2", "somatic", "{name}.mutect2.tmp.vcf")),
     params:
         rname  = 'merge_mutect2',
         genome = config['references']['GENOME'],
@@ -287,8 +279,8 @@ rule gatk_learnReadOrientationModel:
         orien = expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.f1r2.tar.gz"), chrom=chunks),
         stats = expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.vcf.stats"),  chrom=chunks),
     output:
-        orien = join(workpath, "mutect2", "{name}.read-orientation-model.tar.gz"),
-        stats = join(workpath, "mutect2", "{name}.vcf.stats"),
+        orien = join(workpath, "mutect2", "somatic", "{name}.read-orientation-model.tar.gz"),
+        stats = join(workpath, "mutect2", "somatic", "{name}.vcf.stats"),
     params:
         tumor  = '{name}',
         rname  = 'learnReadOrien',
@@ -334,7 +326,7 @@ rule gatk_tumorPileup:
     input:
         tumor = join(workpath, "BAM", "{name}.recal.bam"),
     output:
-        summary = join(workpath, "mutect2", "{name}.tumorPileup.table"),
+        summary = join(workpath, "mutect2", "somatic", "{name}.tumorPileup.table"),
     params:
         tumor  = '{name}',
         rname  = 'tumorPileup',
@@ -370,7 +362,7 @@ rule gatk_normalPileup:
         tumor  = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
-        summary = join(workpath, "mutect2", "{name}.normalPileup.table"),
+        summary = join(workpath, "mutect2", "somatic", "{name}.normalPileup.table"),
     params:
         tumor  = '{name}',
         rname  = 'normalPileup',
@@ -401,17 +393,17 @@ rule gatk_contamination:
         Estimated contamination table for FilterMutectCalls
     """
     input: 
-        tumor  = join(workpath, "mutect2", "{name}.tumorPileup.table"),
+        tumor  = join(workpath, "mutect2", "somatic", "{name}.tumorPileup.table"),
         normal = get_normal_pileup_table,
     output:
-        summary = join(workpath, "mutect2", "{name}.contamination.table"),
+        summary = join(workpath, "mutect2", "somatic", "{name}.contamination.table"),
     params:
         tumor  = '{name}',
         rname  = 'calcontaim',
         genome = config['references']['GENOME'],
         # Building optional argument for paired normal
         normal_option = lambda w: "--matched-normal {0}".format(
-            join(workpath, "mutect2", "{0}.normalPileup.table".format(w.name))
+            join(workpath, "mutect2", "somatic", "{0}.normalPileup.table".format(w.name))
         ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "gatk_contamination", cluster))
@@ -426,9 +418,8 @@ rule gatk_contamination:
 
 rule gatk_filter_mutect2:
     """Data-processing step to filter somatic SNVs and indels called by Mutect2 
-    using the learned read orientation model. VCFtools is used to further filter 
-    the VCF file remove any sites that have a filter tag. More information about 
-    Mutect2 can be found on the Broad's website: https://gatk.broadinstitute.org/
+    using the learned read orientation model. More information about Mutect2 can 
+    be found on the Broad's website: https://gatk.broadinstitute.org/
     @Input:
         Per sample somatic variants from CombineVariants
         Per sample stats file from MergeMutectStats
@@ -436,16 +427,14 @@ rule gatk_filter_mutect2:
         Estimated contamination table from CalculateContamination 
     @Output:
         Per sample VCF of filtered somatic SNVs and indels
-        Per sample VCF of final, filtered somatic SNVs and indels
     """
     input:
-        vcf   = join(workpath, "mutect2", "{name}_mutect2.vcf"),
-        orien = join(workpath, "mutect2", "{name}.read-orientation-model.tar.gz"),
-        stats = join(workpath, "mutect2", "{name}.vcf.stats"),
-        summary = join(workpath, "mutect2", "{name}.contamination.table"),
+        vcf     = join(workpath, "mutect2", "somatic", "{name}.mutect2.tmp.vcf"),
+        orien   = join(workpath, "mutect2", "somatic", "{name}.read-orientation-model.tar.gz"),
+        stats   = join(workpath, "mutect2", "somatic", "{name}.vcf.stats"),
+        summary = join(workpath, "mutect2", "somatic", "{name}.contamination.table"),
     output:
-        vcf   = join(workpath, "mutect2", "{name}.filtered.vcf"),
-        final = join(workpath, "mutect2", "{name}.filtered.final.vcf"),
+        vcf   = join(workpath, "mutect2", "somatic", "{name}.mutect2.vcf"),
     params:
         rname  = 'filtmutect2',
         genome = config['references']['GENOME'],
@@ -463,14 +452,6 @@ rule gatk_filter_mutect2:
         --contamination-table {input.summary} \\
         -O {output.vcf} \\
         --stats {input.stats} 
-    # Remove remaining sites 
-    # with a filter tag 
-    vcftools \\
-        --vcf {output.vcf} \\
-        --recode \\
-        --remove-filtered-all \\
-        --stdout \\
-    > {output.final}
     """
 
 
@@ -490,10 +471,13 @@ rule muse:
         tumor  = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
-        txt = join(workpath, "muse", "{name}.MuSE.txt"),
-        vcf = join(workpath, "muse", "{name}.muse.vcf"),
+        txt    = join(workpath, "muse", "somatic", "{name}.MuSE.txt"),
+        vcf    = temp(join(workpath, "muse", "somatic", "{name}.muse.tmp.vcf")),
+        header = temp(join(workpath, "muse", "somatic", "{name}.samples")),
+        final  = join(workpath, "muse", "somatic", "{name}.muse.vcf"),
     params:
-        tumor  = join(workpath, "muse", "{name}"),
+        tumor  = join(workpath, "muse", "somatic", "{name}"),
+        rename = "{name}",
         rname  = 'muse',
         genome = config['references']['GENOME'],
         dbsnp  = config['references']['DBSNP'],
@@ -501,10 +485,16 @@ rule muse:
         normal_option = lambda w: "{0}.recal.bam".format(
             join(workpath, "BAM", tumor2normal[w.name])
         ) if tumor2normal[w.name] else "",
+        # Creating optional reheader for paired normal,
+        # resolves to "\nNORMAL\t${normalName}"
+        normal_header = lambda w: "\\nNORMAL\\t{0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "muse", cluster))
     envmodules:
-        config['tools']['muse']
+        config['tools']['muse'],
+        config['tools']['bcftools']
     shell: """
     # Prefilter and calculate position
     # specific summary statistics 
@@ -520,6 +510,14 @@ rule muse:
         -I {output.txt} \\
         -O {output.vcf} \\
         -D {params.dbsnp}
+    # Reheading TUMOR/NORMAL in VCF 
+    # with real sample names
+    echo -e "TUMOR\\t{params.rename}{params.normal_header}" \\
+    > {output.header} 
+    bcftools reheader \\
+        -o {output.final} \\
+        -s {output.header} \\
+        {output.vcf}
     """
 
 
@@ -539,8 +537,9 @@ rule strelka:
     output:
         snps   = join(workpath, "strelka", "{name}", "results", "variants", "somatic.snvs.vcf.gz"),
         indels = join(workpath, "strelka", "{name}", "results", "variants", "somatic.indels.vcf.gz"),
-        vcf    = join(workpath, "strelka", "{name}", "{name}.vcf"),
-        filt   = join(workpath, "strelka", "{name}", "{name}.filtered.vcf"),
+        vcf    = temp(join(workpath, "strelka", "{name}", "{name}.tmp.vcf")),
+        header = temp(join(workpath, "strelka", "{name}", "{name}.samples")),
+        final  = join(workpath, "strelka", "somatic", "{name}.strelka.vcf"),
     params:
         tumor  = '{name}',
         rname  = 'strelka',
@@ -554,32 +553,35 @@ rule strelka:
         normal_option = lambda w: "--normalBam {0}.recal.bam".format(
             join(workpath, "BAM", tumor2normal[w.name])
         ) if tumor2normal[w.name] else "",
+        # Creating optional reheader for paired normal,
+        # resolves to "\nNORMAL\t${normalName}"
+        normal_header = lambda w: "\\nNORMAL\\t{0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "strelka", cluster))
     envmodules:
         config['tools']['strelka'],
-        config['tools']['gatk3']
+        config['tools']['gatk3'],
+        config['tools']['bcftools']
     shell: """
     # Delete previous attempts output
     # directory to ensure hard restart
     if [ -d "{params.outdir}" ]; then
         rm -rf "{params.outdir}"
     fi
-
     # Configure Strelka somatic workflow
     configureStrelkaSomaticWorkflow.py \\
         --referenceFasta {params.genome} \\
         --tumorBam {input.tumor} {params.normal_option} \\
         --runDir {params.outdir} \\
         --callRegions {params.regions}
-
     # Call somatic variants with Strelka
     echo "Starting Strelka workflow..."
     {params.workflow} \\
         -m local \\
         -j {threads} \\
         -g {params.memory} 
-    
     # Combine and filter results
     echo "Running CombineVariants..."
     GATK -m {params.memory}G CombineVariants \\
@@ -589,12 +591,12 @@ rule strelka:
         --assumeIdenticalSamples \\
         --filteredrecordsmergetype KEEP_UNCONDITIONAL \\
         -o {output.vcf}
-    
-    echo "Running SelectVariants..."
-    GATK -m {params.memory}G SelectVariants \\
-        -R {params.genome} \\
-        --variant {output.vcf} \\
-        --discordance {params.pon} \\
-        --excludeFiltered \\
-        -o {output.filt}
+    # Reheading TUMOR/NORMAL in 
+    # VCF with real sample names
+    echo -e "TUMOR\\t{params.tumor}{params.normal_header}" \\
+    > {output.header} 
+    bcftools reheader \\
+        -o {output.final} \\
+        -s {output.header} \\
+        {output.vcf}
     """
