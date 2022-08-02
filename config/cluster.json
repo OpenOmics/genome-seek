@@ -298,6 +298,16 @@
         "mem": "32G",
         "time": "6:00:00"
     },
+    "somatic_split_normal": {
+        "threads": "2",
+        "mem": "16G",
+        "time": "4:00:00"
+    },
+    "somatic_split_tumor": {
+        "threads": "2",
+        "mem": "16G",
+        "time": "4:00:00"
+    },
     "strelka": {
         "threads": "16",
         "mem": "64G",

@@ -283,7 +283,6 @@ rule all:
             join(workpath, "BAM", "{name}.recal.bam"),
             name=provided(samples, call_somatic),
         ),
-
         # Call somatic variants with Octopus,
         # scattered and merged on regions
         # to speed up overall run time,
@@ -353,13 +352,28 @@ rule all:
             join(workpath, "strelka", "somatic", "{name}.strelka.vcf"),
             name=provided(tumors, call_somatic),
         ),
-        # Filter and normalize somatic caller VCFs
+        # Post-process somatic VCF, filter and 
+        # normalize each somatic callers VCF,
         # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
             join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
             caller=provided(somatic_callers, call_somatic),
             name=provided(tumors, call_somatic),
+        ),
+        # Post-process somatic VCF, splits sites
+        # found in the tumor and normal sample,
+        # only runs if provided --call-somatic 
+        # @imported from rules/somatic.smk
+        expand( 
+            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.tumor.vcf.gz"),
+            caller=provided(somatic_callers, call_somatic),
+            name=provided(tumors, call_somatic),
+        ),
+        expand( 
+            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.normal.vcf.gz"),
+            caller=provided(somatic_callers, call_somatic),
+            name=provided(tumorWnormal, call_somatic),
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
