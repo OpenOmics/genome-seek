@@ -293,6 +293,11 @@
     "somalier": {
         "time": "12:00:00"
     },
+    "somatic_selectvar": {
+        "threads": "6",
+        "mem": "32G",
+        "time": "6:00:00"
+    },
     "strelka": {
         "threads": "16",
         "mem": "64G",

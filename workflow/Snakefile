@@ -56,6 +56,14 @@ run_oc  = str_bool(                      # Run OpenCRAVAT rules,
     config['options']['open_cravat']     # default: False
 )
 
+# List of somatic callers
+# TODO: add as cli option,
+# make sure at least one
+# caller is added and add
+# conditional running of 
+# each supported caller
+somatic_callers = ["octopus", "mutect2", "muse", "strelka"]
+
 # Read in resource information,
 # containing information about 
 # threads, mem, walltimes, etc.
@@ -343,6 +351,14 @@ rule all:
         # @imported from rules/somatic.smk
         expand( 
             join(workpath, "strelka", "somatic", "{name}.strelka.vcf"),
+            name=provided(tumors, call_somatic),
+        ),
+        # Filter and normalize somatic caller VCFs
+        # only runs if provided --call-somatic 
+        # @imported from rules/somatic.smk
+        expand( 
+            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
+            caller=provided(somatic_callers, call_somatic),
             name=provided(tumors, call_somatic),
         ),
         # MultiQC, QC report and sample statistics
