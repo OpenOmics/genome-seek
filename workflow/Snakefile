@@ -362,7 +362,8 @@ rule all:
             name=provided(tumors, call_somatic),
         ),
         # Post-process somatic VCF, splits sites
-        # found in the tumor and normal sample,
+        # found in the tumor and normal sample, 
+        # and to merge callsets across callers,
         # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
@@ -374,6 +375,10 @@ rule all:
             join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.normal.vcf.gz"),
             caller=provided(somatic_callers, call_somatic),
             name=provided(tumorWnormal, call_somatic),
+        ),
+        expand( 
+            join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz"),
+            name=provided(tumors, call_somatic),
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
