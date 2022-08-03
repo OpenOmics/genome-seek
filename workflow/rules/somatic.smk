@@ -767,6 +767,7 @@ rule somatic_merge_tumor:
     output:
         lsl    = join(workpath, "merged", "somatic", "{name}.intersect.lsl"),
         merged = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz"),
+        tbi = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz.tbi"),
     params:
         rname  = 'tumormerge',
         memory = allocated("mem", "somatic_merge_tumor", cluster).rstrip('G'),
@@ -800,4 +801,9 @@ rule somatic_merge_tumor:
         -Oz \\
         -o {output.merged} \\
         -l {output.lsl}
+    # Create an VCF index for merge
+    bcftools index \\
+        -f \\
+        --tbi \\
+        {output.merged}
     """
