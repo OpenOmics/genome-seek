@@ -4,6 +4,7 @@
         "deepvariant": "/data/OpenOmics/SIFs/deepvariant_1.3.0-gpu.sif",
         "glnexus": "/data/OpenOmics/SIFs/glnexus_v1.4.1.sif",
         "open_cravat": "/data/OpenOmics/SIFs/ncbr_opencravat_latest.sif",
-        "octopus": "/data/OpenOmics/SIFs/ncbr_octopus_v0.1.0.sif"
+        "octopus": "/data/OpenOmics/SIFs/ncbr_octopus_v0.1.0.sif",
+        "vcf2maf": "/data/OpenOmics/SIFs/ncbr_vcf2maf_v0.1.0.sif"
     }
 }
