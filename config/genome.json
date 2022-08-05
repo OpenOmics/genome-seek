@@ -91,6 +91,9 @@
 			"NCBI_BUILD": "GRCh38",
 			"SPECIES": "homo_sapiens"
 		},
-        "1000GSNP": "/data/OpenOmics/references/genome-seek/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
+        "1000GSNP": "/data/OpenOmics/references/genome-seek/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz",
+        "VEP_BUILD": "GRCh38",
+        "VEP_DATA": "/data/OpenOmics/references/genome-seek/VEP/106/cache",
+        "VEP_SPECIES": "homo_sapiens"
     }
 }

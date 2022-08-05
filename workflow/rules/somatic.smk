@@ -806,3 +806,54 @@ rule somatic_merge_tumor:
         --tbi \\
         {output.merged}
     """
+
+
+rule somatic_merge_maf:
+    """Data-processing step to convert the merged somatic calls from 
+    each caller into a MAF file. This step takes filtered, norm, tumor 
+    callset from all callers and annotates the variants with VEP/106
+    and converts the resulting VCF file into MAF file format. vcf2maf 
+    requires the input vcf file is NOT compressed.
+    @Input:
+        Somatic variants found in the tumor sample (scatter-per-sample)
+    @Output:
+        Annotated, merged MAF file contaning somatic callsets
+    """
+    input:
+        vcf = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz"),
+    output:
+        vcf = temp(join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.temp.vcf")),
+        vep = temp(join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.temp.vep.vcf")),
+        maf = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.maf"),
+    params:
+        rname  = 'somaticmaf',
+        tumor  = '{name}',
+        memory = allocated("mem", "somatic_merge_maf", cluster).rstrip('G'),
+        vep_data    = config['references']['VEP_DATA'],
+        vep_build   = config['references']['VEP_BUILD'],
+        vep_species = config['references']['VEP_SPECIES'],
+        genome      = config['references']['GENOME'],
+        # Building optional argument for paired normal
+        normal_option = lambda w: "--normal-id {0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+    threads: 
+        int(allocated("threads", "somatic_merge_maf", cluster))
+    container: 
+        config['images']['vcf2maf']
+    shell: """
+    # vcf2maf needs an uncompressed VCF file
+    zcat {input.vcf} \\
+    > {output.vcf}
+    # Run VEP/106 and convert into MAF file
+    vcf2maf.pl \\
+        --input-vcf {output.vcf} \\
+        --output-maf {output.maf} \\
+        --vep-path ${{VEP_HOME}} \\
+        --vep-data {params.vep_data} \\
+        --ref-fasta {params.genome} \\
+        --vep-forks {threads} \\
+        --tumor-id {params.tumor} {params.normal_option} \\
+        --ncbi-build {params.build} \\
+        --species {params.species}
+    """

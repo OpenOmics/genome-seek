@@ -308,9 +308,14 @@
         "mem": "16G",
         "time": "4:00:00"
     },
-    "somatic_merge_tumor":{
+    "somatic_merge_tumor": {
         "threads": "2",
         "mem": "16G",
+        "time": "4:00:00"
+    },
+    "somatic_merge_maf": {
+        "threads": "6",
+        "mem": "18G",
         "time": "4:00:00"
     },
     "strelka": {
