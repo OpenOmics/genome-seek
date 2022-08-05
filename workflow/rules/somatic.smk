@@ -854,6 +854,6 @@ rule somatic_merge_maf:
         --ref-fasta {params.genome} \\
         --vep-forks {threads} \\
         --tumor-id {params.tumor} {params.normal_option} \\
-        --ncbi-build {params.build} \\
-        --species {params.species}
+        --ncbi-build {params.vep_build} \\
+        --species {params.vep_species}
     """
