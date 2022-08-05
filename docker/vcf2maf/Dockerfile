@@ -10,11 +10,11 @@ FROM ensemblorg/ensembl-vep:release_106.0
 LABEL maintainer=kuhnsa@nih.gov
 
 # Overview of Dependencies
-# https://github.com/mskcc/vcf2maf/tree/v1.6.17
+# https://github.com/mskcc/vcf2maf/tree/v1.6.21
 
 # Define release with --build-arg VERSION=$RELEASE_VERSION
-# where the default = 1.6.17
-ARG VERSION=1.6.17
+# where the default = 1.6.21
+ARG VERSION=1.6.21
 
 # Create Container filesystem specific 
 # working directory and opt directories
@@ -42,12 +42,17 @@ RUN apt-get update \
         locales \
         libncurses5-dev \
         libncursesw5-dev \
+        libpng-dev \
         libssl-dev \
         libcurl4-gnutls-dev \
+        libmysqlcppconn-dev \
         liblzma-dev \
         libbz2-dev \
+        openssl \
         python3 \
         python3-pip \
+        rsync \
+        uuid-dev \
         wget \
         zlib1g-dev \
     && apt-get clean && apt-get purge \
@@ -80,19 +85,30 @@ RUN wget --no-check-certificate https://github.com/samtools/bcftools/releases/do
         && make \
         && cd /opt2
 
-# Install vcf2maf/v1.6.17
+# Install UCSC/377
+# vcf2maf needs UCSC liftOver
+RUN wget --no-check-certificate http://hgdownload.cse.ucsc.edu/admin/exe/userApps.archive/userApps.v377.src.tgz \
+        && tar -xvzf userApps.v377.src.tgz \
+        && rm userApps.v377.src.tgz \
+        && cd userApps \
+        && make \
+        && find /opt2/userApps/bin/ -type f -not -iname 'lift*' -delete \
+        && rm -rf /opt2/userApps/kent/src/ \
+        && cd /opt2
+
+# Install vcf2maf/v1.6.21
 RUN wget --no-check-certificate https://github.com/mskcc/vcf2maf/archive/refs/tags/v${VERSION}.tar.gz \
         && tar -xvf v${VERSION}.tar.gz \
         && rm v${VERSION}.tar.gz \
         && chmod a+rx /opt2/vcf2maf-${VERSION}/*.pl
 
-# Add Dockerfile and argparse.bash script
+# Add build Dockerfile to /opt2
 # and export environment variables
 # and ensure proper permissions
 ADD Dockerfile /opt2/Dockerfile
 RUN chmod -R a+rX /opt2 \
     && ln -sf /usr/bin/python3 /usr/bin/python
-ENV PATH="$PATH:/opt2/bcftools-1.10:/opt2/samtools-1.10:/opt2/htslib-1.10:/opt2:/opt2/vcf2maf-1.6.17"
+ENV PATH="$PATH:/opt2/bcftools-1.10:/opt2/samtools-1.10:/opt2/htslib-1.10:/opt2/userApps/bin:/opt2:/opt2/vcf2maf-${VERSION}"
 ENV VEP_HOME="/opt/vep/src/ensembl-vep"
 
 # Reset working directory
