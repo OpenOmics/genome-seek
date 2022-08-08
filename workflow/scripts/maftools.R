@@ -37,11 +37,11 @@ write.table(
 )
 
 # Create plots
-pdf('tcga_comparison.pdf')
+pdf('cohort_tcga_comparison.pdf')
 tcgaCompare(maf = mymaf, cohortName = "project_variants")
 dev.off()
 
-pdf('genes_by_VAF.pdf')
+pdf('cohort_genes_by_VAF.pdf')
 plotVaf(mymaf, showN = TRUE, top = 20)
 dev.off()
 

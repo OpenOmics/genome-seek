@@ -16,6 +16,7 @@
         "muse": "muse/2.0",
         "open_cravat": "opencravat/2.2.5",
         "bwa_mem2": "bwa-mem2/2.2.1",
+        "rlang": "R/4.2.0",
         "samblaster": "samblaster/0.1.25",
         "strelka": "strelka/2.9.10",
         "python2": "python/2.7",

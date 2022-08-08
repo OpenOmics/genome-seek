@@ -885,3 +885,38 @@ rule somatic_cohort_maf:
     head -2 {input.mafs[0]} > {output.maf}
     awk 'FNR>2 {{print}}' {input.mafs} >> {output.maf}
     """
+
+
+rule somatic_cohort_maftools:
+    """Data-processing step to run maftools on merged cohort-level 
+    MAF file, produces summarized plots like an oncoplot. 
+    @Input:
+        Cohort-level somatic MAF file (indirect-gather-due-to-aggregation) 
+    @Output:
+        TCGA comparsion plot
+        Top 20 genes by Vaf plot
+        MAF Summary plot
+        Oncoplot
+    """
+    input: 
+        maf  = join(workpath, "merged", "somatic", "cohort_somatic_variants.maf"),
+    output:
+        tcga  = join(workpath, "merged", "somatic", "cohort_tcga_comparison.pdf"),
+        gvaf  = join(workpath, "merged", "somatic", "cohort_genes_by_VAF.pdf"),
+        summary  = join(workpath, "merged", "somatic", "cohort_maf_summary.pdf"),
+        oncoplot = join(workpath, "merged", "somatic", "cohort_oncoplot.pdf"),
+    params:
+        rname = 'maftools',
+        wdir  = join(workpath, "merged", "somatic"),
+        memory = allocated("mem", "somatic_cohort_maftools", cluster).rstrip('G'),
+    threads: 
+        int(allocated("threads", "somatic_cohort_maftools", cluster)),
+    envmodules:
+        config['tools']['rlang']
+    shell: """
+    Rscript maftools.R \\
+        {params.wdir} \\
+        {input.maf} \\
+        {output.summary} \\
+        {output.oncoplot}
+    """
