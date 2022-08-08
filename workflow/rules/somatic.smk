@@ -909,12 +909,13 @@ rule somatic_cohort_maftools:
         rname = 'maftools',
         wdir  = join(workpath, "merged", "somatic"),
         memory = allocated("mem", "somatic_cohort_maftools", cluster).rstrip('G'),
+        script = join("workflow", "scripts", "maftools.R"),
     threads: 
         int(allocated("threads", "somatic_cohort_maftools", cluster)),
     envmodules:
         config['tools']['rlang']
     shell: """
-    Rscript maftools.R \\
+    Rscript {params.script} \\
         {params.wdir} \\
         {input.maf} \\
         {output.summary} \\
