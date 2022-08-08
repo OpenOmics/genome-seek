@@ -37,21 +37,74 @@ write.table(
 )
 
 # Create plots
-pdf('cohort_tcga_comparison.pdf')
-tcgaCompare(maf = mymaf, cohortName = "project_variants")
-dev.off()
-
-pdf('cohort_genes_by_VAF.pdf')
-plotVaf(mymaf, showN = TRUE, top = 20)
-dev.off()
-
-pdf(FILE2)
-plotmafSummary(mymaf)
-dev.off()
-
-pdf(FILE3)
-oncoplot(
-    mymaf, writeMatrix = TRUE, showTumorSampleBarcodes = TRUE,
-    genesToIgnore = flags, removeNonMutated = FALSE
+print('Creating TCGA comparison plot...')
+tryCatch(
+    {   # Try to create plot
+        pdf('cohort_tcga_comparison.pdf')
+        tcgaCompare(maf = mymaf, cohortName = "project_variants")
+    }, error = function(e) {
+        # Catch error, usually due to low mutational burden
+        print("Error: Failed to create TCGA comparison plot!")
+        print(e)
+        plot.new()
+        text(.5, .5, "Error: Failed to create TCGA comparison plot!")
+    }, finally = {
+        dev.off()
+    }
 )
-dev.off()
+
+print('Creating genes by Vaf plot...')
+tryCatch(
+    {   # Try to create plot
+        pdf('cohort_genes_by_VAF.pdf')
+        plotVaf(mymaf, showN = TRUE, top = 20)
+    }, error = function(e) {
+        # Catch error, usually due to low mutational burden
+        print("Error: Failed to create Vaf plot!")
+        print(e)
+        plot.new()
+        text(.5, .5, "Error: Failed to create Vaf plot!")
+    }, finally = {
+        # Close Plotting device
+        dev.off()
+    }
+)
+
+
+print('Creating MAF summary plot...')
+tryCatch(
+    {   # Try to create plot
+        pdf(FILE2)
+        plotmafSummary(mymaf)
+    }, error = function(e) {
+        # Catch error, usually due to low mutational burden
+        print("Error: Failed to create MAF summary plot!")
+        print(e)
+        plot.new()
+        text(.5, .5, "Error: Failed to create MAF summary plot!")
+    }, finally = {
+        # Close Plotting device
+        dev.off()
+    }
+)
+
+
+print('Creating Oncoplot...')
+tryCatch(
+    {   # Try to create plot
+        pdf(FILE3)
+        oncoplot(
+            mymaf, writeMatrix = TRUE, showTumorSampleBarcodes = TRUE,
+            genesToIgnore = flags, removeNonMutated = FALSE
+        )
+    }, error = function(e) {
+        # Catch error, usually due to low mutational burden
+        print("Error: Failed to create Oncoplot!")
+        print(e)
+        plot.new()
+        text(.5, .5, "Error: Failed to create Oncoplot!")
+    }, finally = {
+        # Close Plotting device
+        dev.off()
+    }
+)
