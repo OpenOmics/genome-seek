@@ -832,6 +832,7 @@ rule somatic_merge_maf:
         vep_data    = config['references']['VEP_DATA'],
         vep_build   = config['references']['VEP_BUILD'],
         vep_species = config['references']['VEP_SPECIES'],
+        ref_version = config['references']['VEP_REF_VERSION'],
         genome      = config['references']['GENOME'],
         # Building optional argument for paired normal
         normal_option = lambda w: "--normal-id {0}".format(
@@ -845,12 +846,13 @@ rule somatic_merge_maf:
     # vcf2maf needs an uncompressed VCF file
     zcat {input.vcf} \\
     > {output.vcf}
-    # Run VEP/106 and convert into MAF file
+    # Run VEP and convert VCF into MAF file
     vcf2maf.pl \\
         --input-vcf {output.vcf} \\
         --output-maf {output.maf} \\
         --vep-path ${{VEP_HOME}} \\
         --vep-data {params.vep_data} \\
+        --cache-version {params.ref_version} \\
         --ref-fasta {params.genome} \\
         --vep-forks {threads} \\
         --tumor-id {params.tumor} {params.normal_option} \\
