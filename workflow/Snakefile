@@ -380,12 +380,19 @@ rule all:
             join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz"),
             name=provided(tumors, call_somatic),
         ),
-        # vcf2maf, create MAF from merged VCF
+        # vcf2maf, create per-sample MAF file,
         # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
             join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.maf"),
             name=provided(tumors, call_somatic),
+        ),
+        # vcf2maf, create cohort-level MAF file,
+        # only runs if provided --call-somatic 
+        # @imported from rules/somatic.smk    
+        provided(
+            [join(workpath, "merged", "somatic", "cohort_somatic_variants.maf")], 
+            call_somatic
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 

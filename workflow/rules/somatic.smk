@@ -808,7 +808,7 @@ rule somatic_merge_tumor:
     """
 
 
-rule somatic_merge_maf:
+rule somatic_sample_maf:
     """Data-processing step to convert the merged somatic calls from 
     each caller into a MAF file. This step takes filtered, norm, tumor 
     callset from all callers and annotates the variants with VEP/106
@@ -826,9 +826,9 @@ rule somatic_merge_maf:
         vep = temp(join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.temp.vep.vcf")),
         maf = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.maf"),
     params:
-        rname  = 'somaticmaf',
+        rname  = 'samplemaf',
         tumor  = '{name}',
-        memory = allocated("mem", "somatic_merge_maf", cluster).rstrip('G'),
+        memory = allocated("mem", "somatic_sample_maf", cluster).rstrip('G'),
         vep_data    = config['references']['VEP_DATA'],
         vep_build   = config['references']['VEP_BUILD'],
         vep_species = config['references']['VEP_SPECIES'],
@@ -839,7 +839,7 @@ rule somatic_merge_maf:
             tumor2normal[w.name]
         ) if tumor2normal[w.name] else "",
     threads: 
-        int(allocated("threads", "somatic_merge_maf", cluster))
+        int(allocated("threads", "somatic_sample_maf", cluster))
     container: 
         config['images']['vcf2maf']
     shell: """
@@ -858,4 +858,30 @@ rule somatic_merge_maf:
         --tumor-id {params.tumor} {params.normal_option} \\
         --ncbi-build {params.vep_build} \\
         --species {params.vep_species}
+    """
+
+
+rule somatic_cohort_maf:
+    """Data-processing step to merge the per-sample MAF files into a 
+    single MAF file for all samples, a cohort MAF file. 
+    @Input:
+        Somatic tumor MAF files (gather-per-sample)
+    @Output:
+        Merged somatic tumor MAF, cohort-level, with all call sets
+    """
+    input: 
+        mafs = expand(join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.maf"), name=tumors),
+    output: 
+        maf  = join(workpath, "merged", "somatic", "cohort_somatic_variants.maf"),
+    params:
+        rname = 'cohortmaf',
+        memory = allocated("mem", "somatic_cohort_maf", cluster).rstrip('G'),
+    threads: 
+        int(allocated("threads", "somatic_cohort_maf", cluster))
+    container:
+        config['images']['vcf2maf']
+    shell: """
+    echo "Combining MAFs..."
+    head -2 {input.mafs[0]} > {output.maf}
+    awk 'FNR>2 {{print}}' {input.mafs} >> {output.maf}
     """

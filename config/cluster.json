@@ -313,10 +313,15 @@
         "mem": "16G",
         "time": "4:00:00"
     },
-    "somatic_merge_maf": {
+    "somatic_sample_maf": {
         "threads": "6",
         "mem": "18G",
         "time": "4:00:00"
+    },
+    "somatic_cohort_maf": {
+        "threads": "2",
+        "mem": "8G",
+        "time": "2:00:00"
     },
     "strelka": {
         "threads": "16",
