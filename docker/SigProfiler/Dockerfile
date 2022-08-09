@@ -64,6 +64,14 @@ RUN pip3 install --upgrade pip \
             SigProfilerSimulator \
             SigProfilerPlotting
 
+# Install GRCh38 reference files,
+# In future more refs maybe addded.
+RUN wget http://ngs.sanger.ac.uk/scratch/project/mutographs/SigProf/GRCh38.tar.gz \
+    && echo 'from SigProfilerMatrixGenerator import install as genInstall' > /opt2/install.py \
+    && echo 'genInstall.install("GRCh38", offline_files_path="/opt2/")' >> /opt2/install.py \
+    && python3 /opt2/install.py \
+    && rm -f /opt2/GRCh38.tar.gz
+
 # Add Dockerfile and export env variables
 WORKDIR /data2
 ADD Dockerfile /opt2/Dockerfile
