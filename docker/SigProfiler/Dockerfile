@@ -72,6 +72,15 @@ RUN wget http://ngs.sanger.ac.uk/scratch/project/mutographs/SigProf/GRCh38.tar.g
     && python3 /opt2/install.py \
     && rm -f /opt2/GRCh38.tar.gz
 
+# Install PDF unite to manipulate 
+# and merge PDF files 
+RUN apt-get update \
+    && apt-get -y upgrade \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        poppler-utils \
+    && apt-get clean && apt-get purge \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 # Add Dockerfile and export env variables
 WORKDIR /data2
 ADD Dockerfile /opt2/Dockerfile
