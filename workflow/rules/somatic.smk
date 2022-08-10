@@ -921,3 +921,85 @@ rule somatic_cohort_maftools:
         {output.summary} \\
         {output.oncoplot}
     """
+
+
+rule somatic_sample_sigprofiler:
+    """Data-processing step to run sigprofiler on each sample's MAF file, 
+    produces summarized sample protrait plot. SigProfiler is scattered per
+    sample to avoid issues where a failure with one specific sample in a
+    multi-sample MAF file prevents the final plot from being generated.
+    @IMPORTANT NOTICE
+        At the current moment, the docker image for this tool only contains 
+    the reference files for GRCh38/hg38. The SigProfilerMatrixGenerator step 
+    of SigProfiler requires reference files; however, the tool installs these
+    reference filed in the python package site installation location. This is 
+    not ideal for several reasons. I have reached out to the author of the tool 
+    about decoupling the reference file installation from the python-site 
+    installation location. This would allow also to include the reference 
+    files in the resource bundle, AND it would avoid the problem of rebuilding 
+    the docker image to support new reference genomes, AND issue related to the 
+    docker image's size. Here is a link to the Github issue reference above:
+    https://github.com/AlexandrovLab/SigProfilerMatrixGenerator/issues/101
+    For more information about SigProfiler, please visit Github: 
+    https://github.com/AlexandrovLab/SigProfilerPlotting
+    @Input:
+        Single sample somatic MAF file (scatter-per-sample) 
+    @Output:
+        SigProfiler Sample Portrait Plot (pdf)
+    """
+    input: 
+        maf = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.maf"),
+    output:
+        pdf = join(workpath, "sigprofiler", "sample_portrait_{name}.pdf"),
+    params:
+        rname = 'samplesigpro',
+        sample = '{name}',
+        wdir   = join(workpath, "sigprofiler", "{name}"),
+        odir   = join(workpath, "sigprofiler"),
+        memory = allocated("mem", "somatic_sample_sigprofiler", cluster).rstrip('G'),
+        script = join("workflow", "scripts", "sigprofiler.py"),
+        genome = config['references']['SIGPROFILER_GENOME']
+    threads: 
+        int(allocated("threads", "somatic_sample_sigprofiler", cluster)),
+    container:
+        config['images']['sigprofiler']
+    shell: """
+    # SigProfiler input directory must
+    # only contain input MAF 
+    ln -sf {input.maf} {params.wdir}
+    python3 {params.script} \\
+        -i {params.wdir}/ \\
+        -o {params.odir}/ \\
+        -p {params.sample} \\
+        -r {params.genome}
+    """
+
+
+rule somatic_cohort_sigprofiler:
+    """Data-processing step to merge each samples SigProfiler Portrait
+    plots into one PDF file. SigProfiler is scattered per sample to avoid 
+    issues where a failure with one specific sample in a multi-sample MAF 
+    file prevents the final plot from being generated. This way of running
+    the tool is more fault-tolerant. For more information about SigProfiler, 
+    please visit their repo: https://github.com/AlexandrovLab/SigProfilerPlotting
+    @Input:
+        SigProfiler Sample Portrait Plots (gather-per-sample) 
+    @Output:
+        Merged SigProfiler Portrait Plot
+    """
+    input: 
+        pdfs = expand(join(workpath, "sigprofiler", "sample_portrait_{name}.pdf"), name=tumors),
+    output:
+        pdf = join(workpath, "sigprofiler", "merged_sigprofiler.pdf"),
+    params:
+        rname = 'mergesigpro',
+        memory = allocated("mem", "somatic_cohort_sigprofiler", cluster).rstrip('G'),
+    threads: 
+        int(allocated("threads", "somatic_cohort_sigprofiler", cluster)),
+    container:
+        config['images']['sigprofiler']
+    shell: """
+    # Merge SigProfiler PDFs
+    pdfunite {input.pdfs} \\
+        {output.pdf}
+    """

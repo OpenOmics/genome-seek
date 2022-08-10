@@ -82,6 +82,7 @@
         "OCTOPUS_ERROR_MODEL": "PCR-FREE.NOVASEQ",
         "PEDDY_FILTER": "chr22",
         "PON": "/data/OpenOmics/references/genome-seek/PON/hg38.noCOSMIC_ClinVar.pon.vcf.gz",
+        "SIGPROFILER_GENOME": "GRCh38",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/data/OpenOmics/references/genome-seek/snpEff/4.3t/snpEff.config",
         "SNPEFF_BUNDLE": "/data/OpenOmics/references/genome-seek/snpEff/4.3t/",

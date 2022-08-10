@@ -328,6 +328,16 @@
         "mem": "8G",
         "time": "4:00:00"
     },
+    "somatic_sample_sigprofiler": {
+        "threads": "2",
+        "mem": "8G",
+        "time": "2:00:00"
+    },
+    "somatic_cohort_sigprofiler": {
+        "threads": "2",
+        "mem": "8G",
+        "time": "2:00:00"
+    },
     "strelka": {
         "threads": "16",
         "mem": "64G",
