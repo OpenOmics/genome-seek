@@ -965,7 +965,8 @@ rule somatic_sample_sigprofiler:
         config['images']['sigprofiler']
     shell: """
     # SigProfiler input directory must
-    # only contain input MAF 
+    # only contain input MAF
+    mkdir -p "{params.wdir}"
     ln -sf {input.maf} {params.wdir}
     python3 {params.script} \\
         -i {params.wdir}/ \\
