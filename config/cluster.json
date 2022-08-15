@@ -246,7 +246,7 @@
     "octopus_germline": {
         "threads": "24",
         "mem": "48G",
-        "time": "18:00:00"
+        "time": "24:00:00"
     },
     "octopus_somatic": {
         "threads": "24",
