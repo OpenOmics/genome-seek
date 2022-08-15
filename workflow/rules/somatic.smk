@@ -649,6 +649,12 @@ rule somatic_selectvar:
         --discordance {params.pon} \\
         --exclude-filtered \\
         --output {output.filt}
+    # Fix format number metadata, gatk 
+    # SelectVariants converts Number
+    # metadata incorrectly when it
+    # it is set to Number=.
+    sed -i 's/Number=R/Number=./g' \\
+        {output.filt}
     """
 
 
