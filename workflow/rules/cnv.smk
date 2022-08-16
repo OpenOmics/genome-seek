@@ -1,7 +1,21 @@
 # Functions and rules for calling Copy Number Variation
 from scripts.common import abstract_location, allocated
 
+# Helper functions for tumor, normal pairs 
+def get_normal_recal_bam(wildcards):
+    """
+    Returns a tumor samples paired normal
+    See config['pairs'] for tumor, normal pairs.
+    """
+    normal = tumor2normal[wildcards.name]
+    if normal:
+        # Runs in a tumor, normal mode
+        return join(workpath, "BAM", "{0}.recal.bam".format(normal))
+    else:
+        # Runs in tumor-only mode
+        return []
 
+# Germline Copy Number Variation
 rule peddy:
     """
     Peddy compares familial-relationships and sexes as reported in 
@@ -156,4 +170,54 @@ rule canvas:
         echo "WARNING: AnnotSV silently failed..." 1>&2
         touch {output.annotated}
     fi
+    """
+
+
+# Somatic Copy Number Variation
+rule hmftools_amber:
+    """Data-processing step to generate a tumor BAF file that is required
+    for Purple's copy number fitting. HMF Tools is a suite of tools the
+    Hartwig Medical Foundation developed to analyze genomic data. Amber 
+    and cobalt must be run prior to running purple. For more information 
+    about hmftools visit: https://github.com/hartwigmedical/hmftools
+    @Input:
+       Realigned, recalibrated BAM file (scatter-per-tumor-sample)
+    @Output:
+        BAF file for purple's copy number fit
+    """
+    input:
+        tumor  = join(workpath, "BAM", "{name}.recal.bam"),
+        normal = get_normal_recal_bam,
+    output:
+        snp = join(workpath, "hmftools", "amber", "{name}.amber.snp.vcf.gz"),
+        con = join(workpath, "hmftools", "amber", "{name}.amber.contamination.vcf.gz"),
+        baf = join(workpath, "hmftools", "amber", "{name}.amber.baf.tsv"),
+    params:
+        rname     = 'hmfamber',
+        tumor     = '{name}',
+        outdir    = join(workpath, "hmftools", "amber"),
+        amber_jar = config['references']['HMFTOOLS_AMBER_JAR'],
+        loci_ref  = config['references']['HMFTOOLS_AMBER_LOCI'],
+        memory    = allocated("mem", "hmftools_amber", cluster).lower().rstrip('g'),
+        # Building optional argument for paired normal
+        normal_name = lambda w: "-reference {0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+        normal_bam = lambda w: "-reference_bam {0}.recal.bam".format(
+            join(workpath, "BAM", tumor2normal[w.name])
+        ) if tumor2normal[w.name] else "",
+        # Building optional flag for tumor-only
+        tumor_flag = lambda w: "" if tumor2normal[w.name] else "-tumor_only",
+    threads: 
+        int(allocated("threads", "hmftools_amber", cluster)),
+    envmodules:
+        config['tools']['rlang'],
+    shell: """
+    java -Xmx{params.memory}g -cp {params.amber_jar} \\
+        com.hartwig.hmftools.amber.AmberApplication \\
+            -tumor {params.tumor} {params.normal_name} \\
+            -tumor_bam {input.tumor}  {params.normal_bam}\\
+            -output_dir {params.outdir} \\ 
+            -threads {threads} {params.tumor_flag} \\
+            -loci {params.loci_ref}
     """

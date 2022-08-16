@@ -412,6 +412,15 @@ rule all:
             [join(workpath, "sigprofiler", "merged_sigprofiler.pdf")], 
             call_somatic
         ),
+        # HMF Tools Purple, estimates CNV, purity and ploidy
+        # only runs if provided --call-somatic AND --call-cnv,
+        # purple will optionally use SVs from MANTA if --call-sv
+        # is also provided at runtime.
+        # @imported from rules/cnv.smk
+        expand( 
+            join(workpath, "hmftools", "amber", "{name}.amber.baf.tsv"),
+            name=provided(provided(tumors, call_somatic), call_cnv),
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
