@@ -188,6 +188,21 @@
         "time": "14:00:00",
         "mem": "96G"
     },
+    "hmftools_amber": {
+        "mem": "96G",
+        "time" : "48:00:00",
+        "threads": "24"
+    },
+    "hmftools_cobalt": {
+        "mem": "96G",
+        "time" : "48:00:00",
+        "threads": "24"
+    },
+    "hmftools_purple": {
+        "mem": "64G",
+        "time" : "48:00:00",
+        "threads": "8"
+    },
     "inbreeding": {
         "threads": "8",
         "partition": "norm"
