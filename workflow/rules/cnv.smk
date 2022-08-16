@@ -216,8 +216,8 @@ rule hmftools_amber:
     java -Xmx{params.memory}g -cp {params.amber_jar} \\
         com.hartwig.hmftools.amber.AmberApplication \\
             -tumor {params.tumor} {params.normal_name} \\
-            -tumor_bam {input.tumor}  {params.normal_bam}\\
-            -output_dir {params.outdir} \\ 
+            -tumor_bam {input.tumor}  {params.normal_bam} \\
+            -output_dir {params.outdir} \\
             -threads {threads} {params.tumor_flag} \\
             -loci {params.loci_ref}
     """
