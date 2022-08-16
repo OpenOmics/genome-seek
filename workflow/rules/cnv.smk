@@ -189,13 +189,12 @@ rule hmftools_amber:
         tumor  = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
-        snp = join(workpath, "hmftools", "amber", "{name}.amber.snp.vcf.gz"),
-        con = join(workpath, "hmftools", "amber", "{name}.amber.contamination.vcf.gz"),
-        baf = join(workpath, "hmftools", "amber", "{name}.amber.baf.tsv"),
+        con = join(workpath, "hmftools", "amber", "{name}", "{name}.amber.contamination.vcf.gz"),
+        baf = join(workpath, "hmftools", "amber", "{name}", "{name}.amber.baf.tsv"),
     params:
         rname     = 'hmfamber',
         tumor     = '{name}',
-        outdir    = join(workpath, "hmftools", "amber"),
+        outdir    = join(workpath, "hmftools", "amber", "{name}"),
         amber_jar = config['references']['HMFTOOLS_AMBER_JAR'],
         loci_ref  = config['references']['HMFTOOLS_AMBER_LOCI'],
         memory    = allocated("mem", "hmftools_amber", cluster).lower().rstrip('g'),

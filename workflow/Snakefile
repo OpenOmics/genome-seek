@@ -418,7 +418,7 @@ rule all:
         # is also provided at runtime.
         # @imported from rules/cnv.smk
         expand( 
-            join(workpath, "hmftools", "amber", "{name}.amber.baf.tsv"),
+            join(workpath, "hmftools", "amber", "{name}", "{name}.amber.baf.tsv"),
             name=provided(provided(tumors, call_somatic), call_cnv),
         ),
         # MultiQC, QC report and sample statistics
