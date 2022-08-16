@@ -220,3 +220,53 @@ rule hmftools_amber:
             -threads {threads} {params.tumor_flag} \\
             -loci {params.loci_ref}
     """
+
+
+
+rule hmftools_cobalt:
+    """Data-processing step to determines the read depth ratios for
+    Purple's copy number fitting. HMF Tools is a suite of tools the
+    Hartwig Medical Foundation developed to analyze genomic data. Amber 
+    and cobalt must be run prior to running purple. For more information 
+    about hmftools visit: https://github.com/hartwigmedical/hmftools
+    @Input:
+       Realigned, recalibrated BAM file (scatter-per-tumor-sample)
+    @Output:
+        BAF file for purple's copy number fit
+    """
+    input:
+        tumor  = join(workpath, "BAM", "{name}.recal.bam"),
+        normal = get_normal_recal_bam,
+    output:
+        raio = join(workpath, "hmftools", "cobalt", "{name}", "{name}.cobalt.ratio.tsv"),
+    params:
+        rname     = 'hmfcobalt',
+        tumor     = '{name}',
+        outdir    = join(workpath, "hmftools", "cobalt", "{name}"),
+        cobalt_jar = config['references']['HMFTOOLS_COBALT_JAR'],
+        gc_profile = config['references']['HMFTOOLS_GC_PROFILE'],
+        memory    = allocated("mem", "hmftools_cobalt", cluster).lower().rstrip('g'),
+        # Building optional argument for paired normal
+        normal_name = lambda w: "-reference {0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+        normal_bam = lambda w: "-reference_bam {0}.recal.bam".format(
+            join(workpath, "BAM", tumor2normal[w.name])
+        ) if tumor2normal[w.name] else "",
+        # Building optional flag for tumor-only
+        tumor_flag = lambda w: "" if tumor2normal[w.name] else "-tumor_only_diploid_bed {} -tumor_only".format(
+            config['references']['HMFTOOLS_DIPLOID'],
+        ),
+    threads: 
+        int(allocated("threads", "hmftools_cobalt", cluster)),
+    envmodules:
+        config['tools']['rlang'],
+    shell: """
+    java -Xmx{params.memory}g -cp {params.cobalt_jar} \\
+        com.hartwig.hmftools.cobalt.CountBamLinesApplication \\
+            -tumor {params.tumor} {params.normal_name} \\
+            -tumor_bam {input.tumor}  {params.normal_bam} \\
+            -output_dir {params.outdir} \\
+            -threads {threads} {params.tumor_flag} \\
+            -gc_profile {params.gc_profile}
+    """
