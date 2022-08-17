@@ -274,8 +274,7 @@ rule hmftools_cobalt:
     threads: 
         int(allocated("threads", "hmftools_cobalt", cluster)),
     envmodules:
-        config['tools']['rlang'],
-        config['tools']['circos']
+        config['tools']['rlang']
     shell: """
     java -Xmx{params.memory}g -cp {params.cobalt_jar} \\
         com.hartwig.hmftools.cobalt.CountBamLinesApplication \\
@@ -336,6 +335,7 @@ rule hmftools_purple:
         int(allocated("threads", "hmftools_purple", cluster)),
     envmodules:
         config['tools']['rlang'],
+        config['tools']['circos']
     shell: """
     # Set output directories
     # for Amber and Cobalt

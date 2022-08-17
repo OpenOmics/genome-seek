@@ -63,6 +63,10 @@ run_oc  = str_bool(                      # Run OpenCRAVAT rules,
 # conditional running of 
 # each supported caller
 somatic_callers = ["octopus", "mutect2", "muse", "strelka"]
+# Mutect2 and MuSE reliably 
+# work with Purple CNV Caller
+purple_callers  = ["mutect2"]
+purple_callers  = list(set(purple_callers) & set(somatic_callers))
 
 # Read in resource information,
 # containing information about 
@@ -428,7 +432,7 @@ rule all:
         expand( 
             join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.purple.cnv.somatic.tsv"),
             name=provided(provided(tumors, call_somatic), call_cnv),
-            caller=provided(somatic_callers, call_somatic),
+            caller=provided(purple_callers, call_somatic),
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
