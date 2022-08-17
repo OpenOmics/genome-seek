@@ -6,6 +6,7 @@
         "bowtie": "bowtie/2-2.4.5",
         "bcftools": "bcftools/1.13",
         "canvas": "Canvas/1.40",
+        "circos": "circos/0.69-9",
         "deepvariant": "deepvariant/1.4.0",
         "perl": "perl/5.24.3",
         "peddy": "peddy/0.3.1",

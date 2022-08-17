@@ -275,6 +275,7 @@ rule hmftools_cobalt:
         int(allocated("threads", "hmftools_cobalt", cluster)),
     envmodules:
         config['tools']['rlang'],
+        config['tools']['circos']
     shell: """
     java -Xmx{params.memory}g -cp {params.cobalt_jar} \\
         com.hartwig.hmftools.cobalt.CountBamLinesApplication \\
