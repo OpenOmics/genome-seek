@@ -15,6 +15,20 @@ def get_normal_recal_bam(wildcards):
         # Runs in tumor-only mode
         return []
 
+def get_manta_calls(wildcards):
+    """
+    Returns a path to manta's SV calls if
+    the --call-sv option was provided at 
+    runtime.
+    """
+    tumor = wildcards.name
+    if call_sv:
+        # Runs in a tumor, normal mode
+        return join(workpath, "MANTA", "somatic", tumor, "results", "variants", "somaticSV.vcf.gz"),
+    else:
+        # Runs in tumor-only mode
+        return []
+
 # Germline Copy Number Variation
 rule peddy:
     """
@@ -181,7 +195,7 @@ rule hmftools_amber:
     and cobalt must be run prior to running purple. For more information 
     about hmftools visit: https://github.com/hartwigmedical/hmftools
     @Input:
-       Realigned, recalibrated BAM file (scatter-per-tumor-sample)
+        Realigned, recalibrated BAM file (scatter-per-tumor-sample)
     @Output:
         BAF file for purple's copy number fit
     """
@@ -230,15 +244,15 @@ rule hmftools_cobalt:
     and cobalt must be run prior to running purple. For more information 
     about hmftools visit: https://github.com/hartwigmedical/hmftools
     @Input:
-       Realigned, recalibrated BAM file (scatter-per-tumor-sample)
+        Realigned, recalibrated BAM file (scatter-per-tumor-sample)
     @Output:
-        BAF file for purple's copy number fit
+        Read depth ratios for Purple's copy number fit
     """
     input:
         tumor  = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
-        raio = join(workpath, "hmftools", "cobalt", "{name}", "{name}.cobalt.ratio.tsv"),
+        ratio = join(workpath, "hmftools", "cobalt", "{name}", "{name}.cobalt.ratio.tsv"),
     params:
         rname     = 'hmfcobalt',
         tumor     = '{name}',
@@ -269,4 +283,82 @@ rule hmftools_cobalt:
             -output_dir {params.outdir} \\
             -threads {threads} {params.tumor_flag} \\
             -gc_profile {params.gc_profile}
+    """
+
+
+rule hmftools_purple:
+    """Data-processing step to estimates copy number, purity and ploidy, 
+    and identify cancer driver events. HMF Tools is a suite of tools the
+    Hartwig Medical Foundation developed to analyze genomic data. Amber 
+    and cobalt must be run prior to running purple. Purple can also take 
+    a somatic variants vcf file a additional input (passing Mutect2) and 
+    a high confidence SV vcf (passing Manta). For more information about
+    hmftools, please visit: https://github.com/hartwigmedical/hmftools
+    @Input:
+        Amber's BAF file
+        Cobalt's read depth ratios and counts
+    @Output:
+        Estimates copy number, purity and ploidy, and driver events
+    """
+    input:
+        amber  = join(workpath, "hmftools", "amber", "{name}", "{name}.amber.baf.tsv"),
+        cobalt = join(workpath, "hmftools", "cobalt", "{name}", "{name}.cobalt.ratio.tsv"),
+        vcf    = join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
+        sv     = get_manta_calls,
+    output:
+        purity = join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.purple.purity.tsv"),
+        cnv    = join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.purple.cnv.somatic.tsv"),
+        driver = join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.driver.catalog.somatic.tsv"),
+    params:
+        rname      = 'hmfpurple',
+        tumor      = '{name}',
+        outdir     = join(workpath, "hmftools", "purple", "{name}", "{caller}"),
+        genome     = config['references']['GENOME'],
+        ref_ver    = config['references']['HMFTOOLS_REF_VERSION'],
+        purple_jar = config['references']['HMFTOOLS_PURPLE_JAR'],
+        gc_profile = config['references']['HMFTOOLS_GC_PROFILE'],
+        panel      = config['references']['HMFTOOLS_DRIVER_PANEL'],
+        somatic_hotspot  = config['references']['HMFTOOLS_SOMATIC_HOTSPOT'],
+        germline_hotspot = config['references']['HMFTOOLS_GERMLINE_HOTSPOT'],
+        memory     = allocated("mem", "hmftools_purple", cluster).lower().rstrip('g'),
+        # Building optional argument for paired normal
+        normal_name = lambda w: "-reference {0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+        # Building optional flag for tumor-only
+        tumor_flag = lambda w: "" if tumor2normal[w.name] else "-tumor_only",
+        # Building optional flag for SV calls
+        sv_option = lambda w: "-structural_vcf {0}".format(
+            join(workpath, "MANTA", "somatic", w.name, "results", "variants", "somaticSV.vcf.gz"),
+        ) if call_sv else "",
+    threads: 
+        int(allocated("threads", "hmftools_purple", cluster)),
+    envmodules:
+        config['tools']['rlang'],
+    shell: """
+    # Set output directories
+    # for Amber and Cobalt
+    amber_outdir="$(dirname "{input.amber}")"
+    cobalt_outdir="$(dirname "{input.cobalt}")"
+    echo "Amber output directory: $amber_outdir"
+    echo "Cobalt output directory: $cobalt_outdir"
+
+    # Run Purple to find CNVs,
+    # purity and ploidy, and 
+    # cancer driver events
+    java -Xmx{params.memory}g -jar {params.purple_jar} \\
+        -tumor {params.tumor} {params.normal_name} \\
+        -output_dir {params.outdir} \\
+        -amber "$amber_outdir" \\
+        -cobalt "$cobalt_outdir" \\
+        -circos circos \\
+        -gc_profile {params.gc_profile} \\
+        -ref_genome {params.genome} \\
+        -ref_genome_version {params.ref_ver} \\
+        -run_drivers \\
+        -driver_gene_panel {params.panel} \\
+        -somatic_hotspots {params.somatic_hotspot} \\
+        -germline_hotspots {params.germline_hotspot} \\
+        -threads {threads} {params.tumor_flag} \\
+        -somatic_vcf {input.vcf} {params.sv_option}
     """
