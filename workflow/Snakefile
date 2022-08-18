@@ -238,27 +238,27 @@ rule all:
         # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         expand( 
-            join(workpath, "OpenCRAVAT", "VCFs", "{chunk}.germline.vcf.gz"),
+            join(workpath, "OpenCRAVAT", "germline", "VCFs", "{chunk}.germline.vcf.gz"),
             chunk=provided(chunks, run_oc)
         ),
         # OpenCRAVAT, annotation, rank and score variants,
         # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         expand( 
-            join(workpath, "OpenCRAVAT", "cravat_{chunk}.sqlite"),
+            join(workpath, "OpenCRAVAT", "germline", "cravat_{chunk}.sqlite"),
             chunk=provided(chunks, run_oc)
         ),
         # Filter OpenCRAVAT, filters SQL-lite file,
         # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         expand( 
-            join(workpath, "OpenCRAVAT", "filter", "cravat_{chunk}.fixed.sqlite"),
+            join(workpath, "OpenCRAVAT", "germline", "filter", "cravat_{chunk}.fixed.sqlite"),
             chunk=provided(chunks, run_oc)
         ),
         # Merge OpenCRAVAT, merges fitlered SQL-lite files,
         # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
-        provided([join(workpath, "OpenCRAVAT", "cravat.merged.sqlite")], run_oc),
+        provided([join(workpath, "OpenCRAVAT", "germline", "cravat.merged.sqlite")], run_oc),
         # GATK3 Indel Realignment
         # @imported from rules/gatk_recal.smk
         expand( 

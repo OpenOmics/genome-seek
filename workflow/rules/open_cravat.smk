@@ -1,7 +1,7 @@
 # Functions and rules for running OpenCRAVAT
 from scripts.common import abstract_location, allocated
 
-
+# Germline OpenCravat Rules 
 rule chrom_selectvariants:
     """
     Makes per-chromosome jointly called VCFs from GLnexus output. Please note 
@@ -18,7 +18,7 @@ rule chrom_selectvariants:
     input: 
         vcf = join(workpath, "deepvariant", "VCFs", "joint.glnexus.vcf.gz"),
     output: 
-        vcf = join(workpath, "OpenCRAVAT", "VCFs", "{chunk}.germline.vcf.gz"),
+        vcf = join(workpath, "OpenCRAVAT", "germline", "VCFs", "{chunk}.germline.vcf.gz"),
     params: 
         rname  = "chrselect",
         genome = config['references']['GENOME'], 
@@ -53,13 +53,13 @@ rule open_cravat:
         Chromosome chunked SQLite OpenCravat results
     """
     input: 
-        vcf = join(workpath, "OpenCRAVAT", "VCFs", "{chunk}.germline.vcf.gz"),
+        vcf = join(workpath, "OpenCRAVAT", "germline", "VCFs", "{chunk}.germline.vcf.gz"),
     output: 
-        db = join(workpath, "OpenCRAVAT", "cravat_{chunk}.sqlite"),
+        db = join(workpath, "OpenCRAVAT", "germline", "cravat_{chunk}.sqlite"),
     params: 
-        rname  = "cravat",
+        rname  = "ocrungermline",
         prefix = "cravat_{chunk}",
-        outdir = join(workpath, "OpenCRAVAT"),
+        outdir = join(workpath, "OpenCRAVAT", "germline"),
         annot  = ' '.join(config['options']['oc_annotators']),
         genome = config['references']['OC_LIFTOVER'],
         module = config['references']['OC_MODULES'],
@@ -131,19 +131,19 @@ rule cravat_filter:
         Filtered, fixed chromosome chunked SQLite OpenCravat results
     """
     input: 
-        db = join(workpath, "OpenCRAVAT", "cravat_{chunk}.sqlite"),
+        db = join(workpath, "OpenCRAVAT", "germline", "cravat_{chunk}.sqlite"),
     output:
-        filter_1 = join(workpath, "OpenCRAVAT", "filter", "cravat_{chunk}.f1.sqlite"),
-        filter_2 = join(workpath, "OpenCRAVAT", "filter", "cravat_{chunk}.f2.sqlite"),
-        fixed = join(workpath, "OpenCRAVAT", "filter", "cravat_{chunk}.fixed.sqlite"),
+        filter_1 = join(workpath, "OpenCRAVAT", "germline", "filter", "cravat_{chunk}.f1.sqlite"),
+        filter_2 = join(workpath, "OpenCRAVAT", "germline", "filter", "cravat_{chunk}.f2.sqlite"),
+        fixed    = join(workpath, "OpenCRAVAT", "germline", "filter", "cravat_{chunk}.fixed.sqlite"),
     params: 
-        rname  = "ocfilter",
+        rname  = "ocfiltergermline",
         chrom  = "{chunk}",
         annot  = config['options']['oc_annotators'],
-        scripts  = join(workpath, "OpenCRAVAT", "scripts"),
-        filter_1 = join(workpath, "OpenCRAVAT", "scripts", "filter_1_{chunk}.py"),
-        filter_2 = join(workpath, "OpenCRAVAT", "scripts", "filter_2_{chunk}.py"),
-        fixed = join(workpath, "OpenCRAVAT", "scripts", "fix_column_{chunk}.py"),
+        scripts  = join(workpath, "OpenCRAVAT", "germline", "scripts"),
+        filter_1 = join(workpath, "OpenCRAVAT", "germline", "scripts", "filter_1_{chunk}.py"),
+        filter_2 = join(workpath, "OpenCRAVAT", "germline", "scripts", "filter_2_{chunk}.py"),
+        fixed    = join(workpath, "OpenCRAVAT", "germline", "scripts", "fix_column_{chunk}.py"),
         # Default pop_maf: 0.05 
         maf_thres = config['options']['cravat_filters']['primary']['pop_maf'],
         so = config['options']['cravat_filters']['primary']['so'],
@@ -341,11 +341,11 @@ rule merge_sqlite:
         Merged and filtered SQLite OpenCravat results
     """
     input: 
-        dbs = expand(join(workpath, "OpenCRAVAT", "filter", "cravat_{chunk}.fixed.sqlite"), chunk=chunks),
+        dbs = expand(join(workpath, "OpenCRAVAT", "germline", "filter", "cravat_{chunk}.fixed.sqlite"), chunk=chunks),
     output: 
-        merged = join(workpath, "OpenCRAVAT", "cravat.merged.sqlite"),
+        merged = join(workpath, "OpenCRAVAT", "germline", "cravat.merged.sqlite"),
     params: 
-        rname  = "ocmerge",
+        rname  = "ocmergegermline",
     message: "Running OpenCRAVAT mergesqlite on '{input.dbs}' input files"
     threads: int(allocated("threads", "merge_sqlite", cluster))
     # envmodules: config['tools']['open_cravat']
@@ -355,3 +355,6 @@ rule merge_sqlite:
         -o {output.merged} \\
         {input.dbs} 
     """
+
+
+# Somatic OpenCravat Rules 
