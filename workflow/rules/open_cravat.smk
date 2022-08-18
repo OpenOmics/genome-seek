@@ -24,7 +24,6 @@ rule chrom_selectvariants:
         genome = config['references']['GENOME'], 
         chrom  = "{chunk}", 
         memory = allocated("mem", "chrom_selectvariants", cluster).rstrip('G')
-    message: "Running Chromosome SelectVariants on '{input.vcf}' input file"
     threads: int(allocated("threads", "chrom_selectvariants", cluster))
     envmodules: 
         config['tools']['gatk4'], config['tools']['bcftools']
@@ -63,8 +62,7 @@ rule opencravat_germline:
         annot  = ' '.join(config['options']['oc_annotators']),
         genome = config['references']['OC_LIFTOVER'],
         module = config['references']['OC_MODULES'],
-    message: "Running OpenCRAVAT run on '{input.vcf}' input file"
-    threads: int(allocated("threads", "open_cravat", cluster))
+    threads: int(allocated("threads", "opencravat_germline", cluster))
     # envmodules: config['tools']['open_cravat']
     container: config['images']['open_cravat']
     shell: """
@@ -149,7 +147,7 @@ rule opencravat_germline_filter:
         so = config['options']['cravat_filters']['primary']['so'],
         secondary = config['options']['cravat_filters']['secondary'],
     message: "Running OpenCRAVAT filters on '{input.db}' input file"
-    threads: int(allocated("threads", "open_cravat", cluster))
+    threads: int(allocated("threads", "opencravat_germline_filter", cluster))
     envmodules: 
         # Requires sqlite3, added in python/3.5
         config['tools']['python3']
@@ -346,7 +344,6 @@ rule opencravat_germline_merge:
         merged = join(workpath, "OpenCRAVAT", "germline", "cravat.merged.sqlite"),
     params: 
         rname  = "ocmergegermline",
-    message: "Running OpenCRAVAT mergesqlite on '{input.dbs}' input files"
     threads: int(allocated("threads", "merge_sqlite", cluster))
     # envmodules: config['tools']['open_cravat']
     container: config['images']['open_cravat']
@@ -358,3 +355,45 @@ rule opencravat_germline_merge:
 
 
 # Somatic OpenCravat Rules
+rule opencravat_somatic:
+    """
+    Performs genomic variant interpretation including variant impact, annotation,
+    and scoring using OpenCRAVAT. Creates a SQLite database that can be used 
+    with OpenCRAVAT's user interface. Here is more information about OpenCRAVAT: 
+    https://open-cravat.readthedocs.io/en/latest/
+    @Input:
+        Per sample caller merged somatic VCF file (scatter)
+    @Output:
+        Per sample caller merged somatic SQLite OpenCravat results
+    """
+    input: 
+        vcfs = expand(join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz"), name=tumors),
+    output: 
+        db = join(workpath, "OpenCRAVAT", "somatic", "cravat_somatic.sqlite"),
+    params: 
+        rname  = "ocrunsomatic",
+        prefix = "cravat_somatic",
+        outdir = join(workpath, "OpenCRAVAT", "somatic"),
+        annot  = ' '.join(config['options']['oc_annotators']),
+        genome = config['references']['OC_LIFTOVER'],
+        module = config['references']['OC_MODULES'],
+    threads: int(allocated("threads", "opencravat_somatic", cluster))
+    # envmodules: config['tools']['open_cravat']
+    container: config['images']['open_cravat']
+    shell: """
+    # Environment variable for modules dir
+    export OC_MODULES="{params.module}"
+ 
+    oc run \\
+        -t vcf \\
+        -x \\
+        --newlog \\
+        --cleanrun \\
+        --system-option "modules_dir={params.module}" \\
+        -a {params.annot} \\
+        -n {params.prefix} \\
+        -l {params.genome} \\
+        -d {params.outdir} \\
+        --mp {threads} \\
+        {input.vcfs}
+    """

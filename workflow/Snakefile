@@ -241,21 +241,21 @@ rule all:
             join(workpath, "OpenCRAVAT", "germline", "VCFs", "{chunk}.germline.vcf.gz"),
             chunk=provided(chunks, run_oc)
         ),
-        # OpenCRAVAT, annotation, rank and score variants,
+        # OpenCRAVAT, germline annotation, rank and score variants,
         # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         expand( 
             join(workpath, "OpenCRAVAT", "germline", "cravat_{chunk}.sqlite"),
             chunk=provided(chunks, run_oc)
         ),
-        # Filter OpenCRAVAT, filters SQL-lite file,
+        # Filter OpenCRAVAT, filters germline SQL-lite file,
         # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         expand( 
             join(workpath, "OpenCRAVAT", "germline", "filter", "cravat_{chunk}.fixed.sqlite"),
             chunk=provided(chunks, run_oc)
         ),
-        # Merge OpenCRAVAT, merges fitlered SQL-lite files,
+        # Merge OpenCRAVAT, merges fitlered germline SQL-lite files,
         # only runs if provided --open-cravat
         # @imported from rules/open_cravat.smk
         provided([join(workpath, "OpenCRAVAT", "germline", "cravat.merged.sqlite")], run_oc),
@@ -433,6 +433,16 @@ rule all:
             join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.purple.cnv.somatic.tsv"),
             name=provided(provided(tumors, call_somatic), call_cnv),
             caller=provided(purple_callers, call_somatic),
+        ),
+        # OpenCRAVAT, somatic annotation, rank and score variants,
+        # only runs if provided --open-cravat AND --call-somatic
+        # @imported from rules/open_cravat.smk
+        provided(
+            provided(
+                [join(workpath, "OpenCRAVAT", "somatic", "cravat_somatic.sqlite")], 
+                run_oc
+            ),
+            call_somatic
         ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
