@@ -221,7 +221,7 @@
         "mem": "96G",
         "time": "1-00:00:00"
     },
-    "merge_sqlite": {
+    "opencravat_germline_merge": {
         "threads": "4",
         "mem": "120G",
         "time": "2-00:00:00"
@@ -253,7 +253,7 @@
         "mem": "96G",
         "gres": "lscratch:256"
     },
-    "open_cravat": {
+    "opencravat_germline": {
         "threads": "20",
         "mem": "48G",
         "time": "12:00:00"
