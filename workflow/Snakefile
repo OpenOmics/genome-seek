@@ -444,6 +444,13 @@ rule all:
             ),
             call_somatic
         ),
+        provided(
+            provided(
+                [join(workpath, "OpenCRAVAT", "somatic", "cravat.merged.sqlite")], 
+                run_oc
+            ),
+            call_somatic
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
