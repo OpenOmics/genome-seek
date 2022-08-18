@@ -83,6 +83,7 @@ rule octopus_somatic:
         -I {input.normal} {input.tumor} {params.normal_option} \\
         -o {output.vcf} \\
         --somatic-forest-model {params.model} \\
+        --annotations AC AD AF DP \\
         -T {params.chunk}
     """
 
@@ -153,7 +154,7 @@ rule octopus_germline:
         # Regions to evaluate: chr1 to chrM
         chroms = "{0}".format(" ".join(config['references']['CHR_CHUNKS']))
     threads: 
-        int(allocated("threads", "octopus_normal", cluster))
+        int(allocated("threads", "octopus_germline", cluster))
     container: 
         config['images']['octopus']
     shell: """
@@ -164,7 +165,7 @@ rule octopus_germline:
         -I {input.normal} \\
         -o {output.vcf} \\
         --forest-model {params.model} \\
-        --annotations AC AD AF \\
+        --annotations AC AD AF DP \\
         -T {params.chroms}
     """
 
