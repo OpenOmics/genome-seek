@@ -259,12 +259,12 @@
         "time": "12:00:00"
     },
     "octopus_germline": {
-        "threads": "24",
+        "threads": "28",
         "mem": "48G",
         "time": "24:00:00"
     },
     "octopus_somatic": {
-        "threads": "24",
+        "threads": "28",
         "mem": "48G",
         "time": "1-18:00:00"
     },
