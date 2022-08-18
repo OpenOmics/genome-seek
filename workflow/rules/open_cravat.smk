@@ -144,7 +144,8 @@ rule cravat_filter:
         filter_1 = join(workpath, "OpenCRAVAT", "scripts", "filter_1_{chunk}.py"),
         filter_2 = join(workpath, "OpenCRAVAT", "scripts", "filter_2_{chunk}.py"),
         fixed = join(workpath, "OpenCRAVAT", "scripts", "fix_column_{chunk}.py"),
-        maf_thres = config['options']['cravat_filters']['primary']['maf'],
+        # Default pop_maf: 0.05 
+        maf_thres = config['options']['cravat_filters']['primary']['pop_maf'],
         so = config['options']['cravat_filters']['primary']['so'],
         secondary = config['options']['cravat_filters']['secondary'],
     message: "Running OpenCRAVAT filters on '{input.db}' input file"

@@ -2,7 +2,7 @@
     "options": {
         "cravat_filters": {
             "primary": {
-                "maf": "0.001",
+                "pop_maf": "0.05",
                 "so" : "EXL,FSI,FSD,MIS,SPL,MLO,STG,STL,TAB,IND,INI"
             },
             "secondary": {
