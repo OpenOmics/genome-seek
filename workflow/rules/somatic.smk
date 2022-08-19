@@ -83,7 +83,7 @@ rule octopus_somatic:
         -I {input.normal} {input.tumor} {params.normal_option} \\
         -o {output.vcf} \\
         --somatic-forest-model {params.model} \\
-        --annotations AC AD AF DP \\
+        --annotations AC AD DP \\
         -T {params.chunk}
     """
 
