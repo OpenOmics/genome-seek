@@ -64,7 +64,7 @@ rule octopus_somatic:
         tmpdir  = join("octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
         tmppath = join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
         s_model = config['references']['OCTOPUS_SOMATIC_FOREST_MODEL'],
-        g_model = model = config['references']['OCTOPUS_GERMLINE_FOREST_MODEL'],
+        g_model = config['references']['OCTOPUS_GERMLINE_FOREST_MODEL'],
         error   = config['references']['OCTOPUS_ERROR_MODEL'],
         # Building optional argument for paired normal 
         normal_option = lambda w: "--normal-sample {0}".format(
