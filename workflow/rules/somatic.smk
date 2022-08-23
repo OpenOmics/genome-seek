@@ -56,15 +56,16 @@ rule octopus_somatic:
     output:
         vcf = join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}.vcf.gz"),
     params: 
-        genome = config['references']['GENOME'],
-        rname  = "octosomatic",
-        chunk = "{region}",
-        tumor = "{name}",
-        wd = workpath,
-        tmpdir = join("octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
+        genome  = config['references']['GENOME'],
+        rname   = "octosomatic",
+        chunk   = "{region}",
+        tumor   = "{name}",
+        wd      = workpath,
+        tmpdir  = join("octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
         tmppath = join(workpath, "octopus", "somatic", "chunks", "{region}", "{name}_tmp"),
-        model = config['references']['OCTOPUS_SOMATIC_FOREST_MODEL'],
-        error = config['references']['OCTOPUS_ERROR_MODEL'],
+        s_model = config['references']['OCTOPUS_SOMATIC_FOREST_MODEL'],
+        g_model = model = config['references']['OCTOPUS_GERMLINE_FOREST_MODEL'],
+        error   = config['references']['OCTOPUS_ERROR_MODEL'],
         # Building optional argument for paired normal 
         normal_option = lambda w: "--normal-sample {0}".format(
             tumor2normal[w.name]
@@ -82,7 +83,8 @@ rule octopus_somatic:
         -R {params.genome} \\
         -I {input.normal} {input.tumor} {params.normal_option} \\
         -o {output.vcf} \\
-        --somatic-forest-model {params.model} \\
+        --forest-model {params.g_model} \\
+        --somatic-forest-model {params.s_model} \\
         --annotations AC AD DP \\
         -T {params.chunk}
     """
@@ -101,6 +103,7 @@ rule octopus_merge:
         vcfs = expand(join(workpath, "octopus", "somatic", "chunks", "{region}", "{{name}}.vcf.gz"), region=regions),
     output:
         lsl  = join(workpath, "octopus", "somatic", "{name}.list"),
+        raw  = join(workpath, "octopus", "somatic", "{name}.octopus.raw.vcf"),
         vcf  = join(workpath, "octopus", "somatic", "{name}.octopus.vcf"),
     params: 
         genome = config['references']['GENOME'],
@@ -115,19 +118,30 @@ rule octopus_merge:
     # Create list of chunks to merge
     find {params.octopath} -iname '{params.tumor}.vcf.gz' \\
         > {output.lsl}
-    # Merge octopus chunk calls 
+    # Merge octopus chunk calls,
+    # contains both germline and
+    # somatic variants
     bcftools concat \\
         --threads {threads} \\
         -d exact \\
         -a \\
         -f {output.lsl} \\
-        -o {output.vcf} \\
+        -o {output.raw} \\
         -O v
+    # Filter Octopus callset for 
+    # variants with SOMATIC tag
+    grep -E "#|CHROM|SOMATIC" {output.raw} \\
+        > {output.vcf}
     """
 
 
 rule octopus_germline:
     """
+    @NOTE: This rule is no longer being run in the pipeline. It has been removed in 
+    favor of calling germline variants with DeepVariant, see "germline.smk", AND calling 
+    germline variants while calling somatic variants by providing the --forest-model 
+    option at runtime. 
+
     Data-processing step to call germline variants in normals. Many somatic downstream 
     tools take germline calls as part of their input. This rule should only be run with 
     normal samples in tumor, normal pairs. This is why it is included in the somatic.smk
@@ -794,7 +808,7 @@ rule somatic_merge_tumor:
     # variants in at least two callers
     bcftools isec \\
         -Oz \\
-        -n=2 \\
+        -n+2 \\
         -c none \\
         -p {params.isec_dir} \\
         {input.tumors} 
