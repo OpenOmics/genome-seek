@@ -208,11 +208,16 @@ def git_commit_hash(repo_path):
     @return githash <str>:
         Latest git commit hash
     """
-    githash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd = repo_path).strip().decode('utf-8')
-    # Typecast to fix python3 TypeError (Object of type bytes is not JSON serializable)
-    # subprocess.check_output() returns a byte string
-    githash = str(githash)
-
+    try:
+        githash = subprocess.check_output(['git', 'rev-parse', 'HEAD'], stderr=subprocess.STDOUT, cwd = repo_path).strip().decode('utf-8')
+        # Typecast to fix python3 TypeError (Object of type bytes is not JSON serializable)
+        # subprocess.check_output() returns a byte string
+        githash = str(githash)
+    except Exception as e:
+        # Github releases are missing the .git directory,
+        # meaning you cannot get a commit hash, set the 
+        # commit hash to indicate its from a GH release
+        githash = 'github_release'
     return githash
 
 
