@@ -669,7 +669,16 @@ def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None,
     # Add any default PATHs to bind to 
     # the container's filesystem, like 
     # tmp directories, /lscratch
-    bindpaths = "{},{}".format(outdir, os.path.dirname(tmp_dir.rstrip('/')))
+    addpaths = []
+    temp = os.path.dirname(tmp_dir.rstrip('/'))
+    if temp == os.sep:
+        temp = tmp_dir.rstrip('/')
+    if outdir not in additional_bind_paths:
+        addpaths.append(outdir)
+    if temp not in additional_bind_paths:
+        addpaths.append(temp)
+    bindpaths = ','.join(addpaths)
+
     # Set ENV variable 'SINGULARITY_CACHEDIR' 
     # to output directory
     my_env = {}; my_env.update(os.environ)
@@ -682,13 +691,15 @@ def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None,
         cache = alt_cache
 
     if additional_bind_paths:
-        # Add Bind PATHs for rawdata directories
-        bindpaths = "{},{}".format(additional_bind_paths,bindpaths)
+        # Add Bind PATHs for output and temp directories
+        if bindpaths:
+            bindpaths = ",{}".format(bindpaths)
+        bindpaths = "{}{}".format(additional_bind_paths,bindpaths)
 
     if not exists(os.path.join(outdir, 'logfiles')):
         # Create directory for logfiles
         os.makedirs(os.path.join(outdir, 'logfiles'))
-    
+
     # Create .singularity directory for 
     # installations of snakemake without
     # setuid which creates a sandbox in
