@@ -18,7 +18,7 @@ The **`./genome-seek`** pipeline is composed several inter-related sub commands 
 
  * [<code>genome-seek <b>run</b></code>](https://openomics.github.io/genome-seek/usage/run/): Run the genome-seek pipeline with your input files.
  * [<code>genome-seek <b>unlock</b></code>](https://openomics.github.io/genome-seek/usage/unlock/): Unlocks a previous runs output directory.
- * [<code>genome-seek <b>cache</b></code>](https://openomics.github.io/genome-seek/usage/cache/): Cache remote resources locally, coming soon!
+ * [<code>genome-seek <b>cache</b></code>](https://openomics.github.io/genome-seek/usage/cache/): Cache software containers locally.
 
 **genome-seek** is a comprehensive clinical WGS pipeline that is focused on speed. Each tool in the pipeline was benchmarked and selected due to its low run times without sacrificing accuracy or precision. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest-level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
 
