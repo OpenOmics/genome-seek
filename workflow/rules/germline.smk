@@ -96,7 +96,7 @@ rule glnexus:
 
     glnexus_cli \\
         --dir ${{tmp_dne}} \\
-        --config DeepVariant \\
+        --config DeepVariant_unfiltered \\
         --list {output.gvcfs} \\
         --threads {threads} \\
         --mem-gbytes {params.memory} \\
