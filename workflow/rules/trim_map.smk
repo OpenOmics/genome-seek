@@ -53,7 +53,7 @@ rule bwa_mem2:
         r1=join(workpath,"fastqs","{name}.R1.trimmed.fastq.gz"),
         r2=join(workpath,"fastqs","{name}.R2.trimmed.fastq.gz"),
     output: 
-        bam = temp(join(workpath, "BAM", "{name}.sorted.bam")),
+        bam = join(workpath, "BAM", "{name}.sorted.bam"),
         bai = join(workpath, "BAM", "{name}.sorted.bam.bai")
     params:
         rname = "bwamem2",
