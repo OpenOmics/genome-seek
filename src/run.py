@@ -673,9 +673,9 @@ def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None,
     temp = os.path.dirname(tmp_dir.rstrip('/'))
     if temp == os.sep:
         temp = tmp_dir.rstrip('/')
-    if outdir not in additional_bind_paths:
+    if outdir not in additional_bind_paths.split(','):
         addpaths.append(outdir)
-    if temp not in additional_bind_paths:
+    if temp not in additional_bind_paths.split(','):
         addpaths.append(temp)
     bindpaths = ','.join(addpaths)
 
