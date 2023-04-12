@@ -14,7 +14,7 @@ extra_css:
   - css/extra.css
 
 # Copyright
-copyright: Copyright &copy; 2022 OpenOmics
+copyright: Copyright &copy; 2023 OpenOmics
 
 # Configuration
 theme:
@@ -52,7 +52,7 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/OpenOmics
     - icon: fontawesome/brands/docker
-      link: https://hub.docker.com/orgs/nciccbr/repositories
+      link: https://hub.docker.com/u/skchronicles
   version:
     provider: mike
 
@@ -88,7 +88,8 @@ markdown_extensions:
   - pymdownx.snippets:
       check_paths: true
   - pymdownx.superfences
-  - pymdownx.tabbed
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.tasklist:
       custom_checkbox: true
   - pymdownx.tilde
