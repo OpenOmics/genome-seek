@@ -99,6 +99,7 @@ nav:
   - Commands: 
     - genome-seek run: usage/run.md
     - genome-seek unlock: usage/unlock.md
+    - genome-seek cache: usage/install.md
     - genome-seek cache: usage/cache.md
   - FAQ:
     - General Questions: faq/questions.md
