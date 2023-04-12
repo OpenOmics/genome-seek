@@ -28,9 +28,35 @@ Welcome to genome-seek's documentation! This guide is the main source of documen
 
 The **`./genome-seek`** pipeline is composed several inter-related sub commands to setup and run the pipeline across different systems. Each of the available sub commands perform different functions: 
 
- * [<code>genome-seek <b>run</b></code>](usage/run.md): Run the genome-seek pipeline with your input files.
- * [<code>genome-seek <b>unlock</b></code>](usage/unlock.md): Unlocks a previous runs output directory.
- * [<code>genome-seek <b>cache</b></code>](usage/cache.md): Cache software containers locally.
+<section align="center" markdown="1" style="display: flex; flex-wrap: row wrap; justify-content: space-around;">
+
+!!! inline custom-grid-button ""
+
+    [<code style="font-size: 1em;">genome-seek <b>run</b></code>](usage/run.md)   
+    Run the genome-seek pipeline with your input files.
+
+!!! inline custom-grid-button ""
+
+    [<code style="font-size: 1em;">genome-seek <b>unlock</b></code>](usage/unlock.md)  
+    Unlocks a previous runs output directory.
+
+</section>
+
+<section align="center" markdown="1" style="display: flex; flex-wrap: row wrap; justify-content: space-around;">
+
+
+!!! inline custom-grid-button ""
+
+    [<code style="font-size: 1em;">genome-seek <b>install</b></code>](usage/install.md)  
+    Download remote reference files locally.
+
+
+!!! inline custom-grid-button ""
+
+    [<code style="font-size: 1em;">genome-seek <b>cache</b></code>](usage/cache.md)  
+    Cache remote software containers locally.  
+
+</section>
 
 **genome-seek** is a comprehensive clinical WGS pipeline that is focused on speed. Each tool in the pipeline was benchmarked and selected due to its low run times without sacrificing accuracy or precision. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest-level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
 
