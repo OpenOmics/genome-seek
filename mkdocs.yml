@@ -27,12 +27,12 @@ theme:
     # Palette toggle for light mode 
     - scheme: default
       toggle:
-        icon: material/toggle-switch-off-outline
+        icon: material/lightbulb-on
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
       toggle:
-        icon: material/toggle-switch
+        icon: material/weather-night
         name: Switch to light mode
   logo: assets/icons/doc-book.svg
   favicon: assets/favicon/favicon.ico
@@ -58,6 +58,7 @@ extra:
 
 # Extensions
 markdown_extensions:
+  - markdown.extensions.md_in_html
   - markdown.extensions.admonition
   - markdown.extensions.attr_list
   - markdown.extensions.def_list
