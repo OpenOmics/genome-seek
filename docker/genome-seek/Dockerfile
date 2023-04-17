@@ -106,10 +106,10 @@ RUN apt-get update -qq \
     && apt-get clean && apt-get purge \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 # Install CRAN packages
-RUN Rscript -e 'install.packages(c("data.table", "dplyr", "optparse", "remotes", "devtools"), repos="http://cran.r-project.org")'
-RUN Rscript -e 'install.packages(c("R.utils", "tidyverse", "ggpubr", "ggsignif", "rstatix")), repos="http://cran.r-project.org")'
+RUN Rscript -e 'install.packages(c("data.table", "dplyr", "optparse", "remotes", "devtools", "plotly"), Ncpus = 4, repos="http://cran.r-project.org")'
+RUN Rscript -e 'install.packages(c("R.utils", "tidyverse", "ggpubr", "ggsignif", "rstatix"), Ncpus = 4, repos="http://cran.r-project.org")'
 # Install Bioconductor packages 
-RUN Rscript -e 'install.packages("BiocManager"); BiocManager::install(c("limma", "edgeR", "rtracklayer", "maftools"))'
+RUN Rscript -e 'install.packages("BiocManager"); BiocManager::install(c("limma", "edgeR", "rtracklayer", "maftools"), Ncpus = 4)'
 
 # TODO: apt-get common bioinformatics tools
 # ...
