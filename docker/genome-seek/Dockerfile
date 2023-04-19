@@ -1,4 +1,3 @@
-
 # Base image for genome-seek,
 # uses Ubuntu Jammy (LTS)
 FROM ubuntu:22.04
@@ -112,6 +111,7 @@ RUN pip3 install --upgrade pip \
 	  && pip3 install argparse \
 	  && pip3 install numpy \
       && pip3 install pysam \
+      && pip3 install pandas \
 	  && pip3 install scipy
 
 # Perl fix issue
