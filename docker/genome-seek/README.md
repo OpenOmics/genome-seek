@@ -1,5 +1,9 @@
 ## Steps for Building Docker Images
 
+This is the official base image for the genome-seek pipeline. Subsequent images for specific rules (which can be found in each child directory) are built from this parent 
+image. The parent image contains tools that are common across multiple rules-- i.e. GATK3, GATK4, samtools, picard, vcftools, bcftools, R/4.X, python3, java 8, etc. The child 
+images for specific set of rules extend the base image to bundle extra tools/resources. 
+
 Directly below are instructions for building an image using the provided Dockerfile:
 
 ```bash
