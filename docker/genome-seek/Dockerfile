@@ -117,7 +117,7 @@ RUN pip3 install --upgrade pip \
 # Perl fix issue
 RUN cpanm FindBin Term::ReadLine
 
-# Install R (4.2.2) and R packages.
+# Install R (4.2.3) and R packages.
 # For more information, check out: 
 # https://cran.r-project.org/bin/linux/ubuntu/
 RUN apt-get update -qq \
@@ -210,7 +210,8 @@ RUN mkdir -p /opt2/bcftools/1.17/ \
     && rm /opt2/bcftools/1.17/bcftools-1.17.tar.bz2 \
     && cd /opt2/bcftools/1.17/bcftools-1.17/ \
     && ./configure \
-    && make 
+    && make \
+    && make install
 WORKDIR /opt2
 
 # Install vcftools/0.1.16,
