@@ -1,0 +1,227 @@
+#!/usr/bin/env python2.7
+"""
+This GATK wrapper script invokes GATK tools with a more
+friendly interface.
+
+For documentation on each of the tools and their arguments
+see https://www.broadinstitute.org/gatk/guide/tooldocs/
+"""
+
+import argparse
+import os
+import errno
+import sys
+import subprocess
+import re
+import tempfile
+
+tool_list = [
+    "VariantAnnotator",
+    "AnalyzeCovariates",
+    "BaseRecalibrator",
+    "AssignSomaticStatus",
+    "AnnotatePopulationAFWalker",
+    "ContEst",
+    "CallableLoci",
+    "CompareCallableLoci",
+    "DepthOfCoverage",
+    "GCContentByInterval",
+    "DiagnoseTargets",
+    "ErrorRatePerCycle",
+    "FindCoveredIntervals",
+    "ReadGroupProperties",
+    "ReadLengthDistribution",
+    "DiffObjects",
+    "GATKPaperGenotyper",
+    "FastaAlternateReferenceMaker",
+    "FastaReferenceMaker",
+    "FastaStats",
+    "VariantFiltration",
+    "UnifiedGenotyper",
+    "HaplotypeCaller",
+    "HaplotypeResolver",
+    "IndelRealigner",
+    "LeftAlignIndels",
+    "RealignerTargetCreator",
+    "MuTect2",
+    "QualifyMissingIntervals",
+    "PhaseByTransmission",
+    "ReadBackedPhasing",
+    "CheckPileup",
+    "CountBases",
+    "CountIntervals",
+    "CountLoci",
+    "CountMales",
+    "CountReadEvents",
+    "CountReads",
+    "CountRODs",
+    "CountRODsByRef",
+    "CountTerminusEvent",
+    "ErrorThrowing",
+    "FlagStat",
+    "Pileup",
+    "PrintRODs",
+    "QCRef",
+    "ReadClippingStats",
+    "ClipReads",
+    "PrintReads",
+    "SplitSamFile",
+    "ASEReadCounter",
+    "SplitNCigarReads",
+    "SimulateReadsForVariants",
+    "ValidationSiteSelector",
+    "VariantEval",
+    "ApplyRecalibration",
+    "VariantRecalibrator",
+    "CalculateGenotypePosteriors",
+    "CombineGVCFs",
+    "CombineVariants",
+    "GenotypeConcordance",
+    "GenotypeGVCFs",
+    "LeftAlignAndTrimVariants",
+    "RandomlySplitVariants",
+    "RegenotypeVariants",
+    "SelectHeaders",
+    "SelectVariants",
+    "ValidateVariants",
+    "VariantsToAllelicPrimitives",
+    "VariantsToBinaryPed",
+    "VariantsToTable",
+    "VariantsToVCF",
+    ]
+
+def tool_help(jar):
+    """get list of tools and short descriptions directly from GATK"""
+    sp = subprocess.Popen(["java", "-jar", jar, "--help"],
+            stdout=subprocess.PIPE)
+    gatk_help_output = sp.communicate()[0]
+    if sp.returncode != 0:
+        print "Could not locate GATK jar"
+        sys.exit(1)
+    toollist_start = gatk_help_output.find("annotator")
+    print("Available tools")
+    print(80*"-")
+    print(gatk_help_output[toollist_start:])
+
+def cleanup(tmpdir):
+    retcode = subprocess.call(["/bin/rm", "-rf", tmpdir])
+    if retcode != 0:
+        print >>sys.stderr, "ERROR: could not remove temp dir %s" % tmpdir
+
+################################################################################
+#                            command line interface                            #
+################################################################################
+
+cmdline = argparse.ArgumentParser(description = __doc__,
+    usage="GATK [options] [-m MEM] tool [gatk_tool_args]")
+cmdline.add_argument("-m", "--mem", default="2g",
+    help="""maximal heap memory allowed for the Java process.
+    *Format*: <number>[kmg]. *Examples*: 1024k, 1000m, 2g,  32g. Passed to
+    Java with -Xmx. (default: 2g)""")
+cmdline.add_argument("-p", "--pgct", default=-1, type=int,
+        help="""maximal number of parallel GC threads allowed for Java VM.
+        (default: JVM default for allocated CPUS).""",
+        metavar="N")
+cmdline.add_argument("--g1gc", default=False, action = "store_true",
+        help="""Use the G1 garbage collector (for large heaps)""")
+cmdline.add_argument("-n", "--dry-run", default=False,
+        action="store_true", 
+        help="show command that would have been executed and set up temp dir")
+# the nargs trick swollows any commands to GATK that may conflict with wrapper
+# arguments
+cmdline.add_argument("tool", nargs = argparse.REMAINDER,
+    help="""GATK tool. Use 'LIST' or 'list' to get the current list of available
+    tools""")
+args = cmdline.parse_args()
+if len(args.tool) == 0:
+    cmdline.print_help()
+    sys.exit(1)
+
+################################################################################
+#                              set up parameters                               #
+################################################################################
+if "GATK_JAR" in os.environ:
+    jar = os.environ["GATK_JAR"]
+elif "GATKJAR" in os.environ:
+    jar = os.environ["GATKJAR"]
+else:
+    print >>sys.stderr, "missing environment variable 'GATK_JAR'"
+    sys.exit(1)
+
+tool = args.tool[0]
+tool_args = args.tool[1:]
+if tool.lower() == "list":
+    tool_help(jar)
+    sys.exit()
+elif tool not in tool_list:
+    print >> sys.stderr, "Unknown tool: %s" % tool
+    sys.exit(1)
+
+if not re.match("[0-9]+[kKmMgG]$", args.mem):
+    print >>sys.stderr, "argument to --mem is formatted incorrectly"
+    sys.exit(1)
+
+# figure out how many parallel GC threads should be allowed
+# number given on command line takes precedence
+ncpus = 4
+if "SLURM_JOBID" in os.environ:
+    if "SLURM_CPUS_PER_TASK" in os.environ:
+        ncpus = int(os.environ["SLURM_CPUS_PER_TASK"])
+    elif "SLURM_JOB_CPUS_PER_NODE" in os.environ:
+        ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
+
+n_gc_threads = args.pgct
+if n_gc_threads == -1:
+    if ncpus <= 8:
+        n_gc_threads = ncpus
+    else:
+        n_gc_threads = 8 + int((5.0 / 8.0) * (ncpus - 8))
+
+################################################################################
+#                           where to put temp files                            #
+################################################################################
+scratch_path = "."
+has_lscratch = False
+if "SLURM_JOBID" in os.environ:
+    # running on a node
+    has_lscratch = os.path.isdir(os.path.join("/lscratch", os.environ["SLURM_JOBID"]))
+    if has_lscratch:
+        tmpdir = os.path.join("/lscratch", os.environ["SLURM_JOBID"])
+    else:
+        tmpdir = tempfile.mkdtemp(dir=scratch_path)
+else:
+    tmpdir = tempfile.mkdtemp(dir=scratch_path)
+
+print >>sys.stderr, "directory for temp files: %s" % tmpdir
+
+################################################################################
+#                              command to execute                              #
+################################################################################
+# first argument is passed as argv[0] to the executable
+java_opts = ["-Djava.io.tmpdir=%s" % tmpdir,
+             "-Xmx%s" % args.mem,
+             "-XX:ParallelGCThreads=%i" % n_gc_threads]
+
+if args.g1gc:
+    java_opts.extend(["-XX:+UseG1GC", 
+                      "-XX:ConcGCThreads=%i" % (n_gc_threads // 4, )])
+
+# for 3.8: use the JDK flators - intel flators cause segfaults for larger memory
+cmd_args = ["java"] + java_opts + ["-jar", jar, "-T", tool] \
+        + tool_args + ["--use_jdk_inflater", "--use_jdk_deflater"]
+print >>sys.stderr, "Executing '", " ".join(cmd_args), "'"
+if args.dry_run:
+    cleanup(tmpdir)
+    sys.exit(0)
+else:
+    try:
+        retcode = subprocess.call(cmd_args)
+        print >>sys.stderr, "GATK finished (exit code %i)" % retcode
+        if not has_lscratch:
+            cleanup(tmpdir)
+        sys.exit(retcode)
+    except OSError as e:
+        print >>sys.stderr, "Execution failed:", e
+        if not has_lscratch:
+            cleanup(tmpdir)
+        sys.exit(1)
