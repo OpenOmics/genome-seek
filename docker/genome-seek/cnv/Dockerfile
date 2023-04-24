@@ -19,12 +19,12 @@ LABEL maintainer="Skyler Kuhn <kuhnsa@nih.gov>" \
 # image; however hmftools requires
 # java 11+.
 # @INSTALLS:
-#  • java 11+   ✓ (hmftool jars included in resource bundle)
-#  • peddy      ✓
-#  • dotnet     ✓ (ASP.NET Core 2.1 Runtime)
-#  • canvas     ✓ (requires dotnet)
-#  • annotsv    ✓
-#  • tcl/tcllib ✓
+#  • java 11+       ✓ (hmftool jars included in resource bundle)
+#  • peddy          ✓
+#  • dotnet         ✓ (ASP.NET Core 2.1 Runtime)
+#  • canvas         ✓ (requires dotnet)
+#  • annotsv/3.3.5  ✓ (annotations included in resource bundle)
+#  • tcl/tcllib     ✓
 WORKDIR /opt2
 # Install Java 11+ for hmftools,
 # installing dotnet runtime dependencies
@@ -38,6 +38,7 @@ RUN apt-get update \
         libunwind8 \
         tcl \
         tcllib \
+        tcsh \
     && apt-get clean && apt-get purge \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -79,16 +80,37 @@ RUN mkdir -p /opt2/peddy/0.4.8 \
     && pip install -r requirements.txt \
     && pip install --editable .
 
-# Install AnnotSV/2.2, for more info see:
+# Install AnnotSV/3.3.5, for more info see:
 # https://lbgi.fr/AnnotSV/downloads
 # https://github.com/lgmgeo/AnnotSV
-# https://lbgi.fr/AnnotSV/Documentation/README.AnnotSV_2.2.pdf
+# https://lbgi.fr/AnnotSV/Documentation/README.AnnotSV_3.3.pdf
 # @Required libraries:
 #  • TCL/Tk                    ✓ Already installed, see above
 #  • tcllib (tar/csv packages) ✓ Already installed, see above
 #  • bedtools (>=2.25)         ✓ Already in base image
-#  • Annotations (human)       - Needs to be downloaded
-
+#  • vcftools (>=1.9)          ✓ Already in base image
+#  • java (>=8)                ✓ Already in base image
+#  • python (>=3.88)           ✓ Already in base image
+#    • python-pandas           ✓ Already in base image
+#    • python-pyfaidx          - Needs to be installed
+#    • python-natsort          - Needs to be installed
+#  • Annotations (human)       + Included in resource bundle
+# AnnotSV has large resource bundles, the human annotation
+# is about 6.6 GB when it is extracted. This is too large 
+# to include in the docker image. As so, AnnotSV will be 
+# installed in the docker image AND the annotation files 
+# will be included in the resource bundle of the pipeline, 
+# please see this issue on Github for more information:
+# https://github.com/lgmgeo/AnnotSV/issues/177 
+RUN mkdir -p /opt2/annotsv/3.3.5/ \
+    && pip install natsort pyfaidx \
+    && wget https://github.com/lgmgeo/AnnotSV/archive/refs/tags/v3.3.5.tar.gz -P /opt2/annotsv/3.3.5/ \
+    && tar -vxzf /opt2/annotsv/3.3.5/v3.3.5.tar.gz -C /opt2/annotsv/3.3.5/ \
+    && rm /opt2/annotsv/3.3.5/v3.3.5.tar.gz \
+    && cd /opt2/annotsv/3.3.5/AnnotSV-3.3.5 \
+    && make install
+ENV ANNOTSV=/opt2/annotsv/3.3.5/AnnotSV-3.3.5 \
+    PATH="${PATH}:/opt2/annotsv/3.3.5/AnnotSV-3.3.5/bin"
 
 
 ################ POST #################
