@@ -9,7 +9,7 @@ LABEL maintainer="Skyler Kuhn <kuhnsa@nih.gov>" \
     about.summary="An awesome Clinical Whole Genome Sequencing Pipeline" \
     about.home="https://github.com/OpenOmics/genome-seek" \
     about.documentation="https://openomics.github.io/genome-seek/" \
-    about.tags="Variant-calling quality-control"
+    about.tags="Copy number variation calling"
 
 # Base image already contains:
 # bcftools, vcftools, circos, gawk, 
