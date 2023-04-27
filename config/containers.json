@@ -1,11 +1,18 @@
 {
     "images": {
-        "base": "/data/OpenOmics/SIFs/ccbr_wes_base_v0.1.0.sif",
-        "deepvariant": "/data/OpenOmics/SIFs/deepvariant_1.3.0-gpu.sif",
-        "glnexus": "/data/OpenOmics/SIFs/glnexus_v1.4.1.sif",
-        "open_cravat": "/data/OpenOmics/SIFs/ncbr_opencravat_latest.sif",
-        "octopus": "/data/OpenOmics/SIFs/ncbr_octopus_v0.1.0.sif",
-        "sigprofiler": "/data/OpenOmics/SIFs/ncbr_sigprofiler_v0.1.0.sif",
-        "vcf2maf": "/data/OpenOmics/SIFs/ncbr_vcf2maf_v0.1.0.sif"
+        "genome-seek":          "docker://skchronicles/genome-seek:v0.1.0",
+        "genome-seek_trim_map": "docker://skchronicles/genome-seek_trim_map:v0.1.0",
+        "genome-seek_somatic":  "docker://skchronicles/genome-seek_somatic:v0.1.0",
+        "genome-seek_qc":       "docker://skchronicles/genome-seek_qc:v0.1.0",
+        "genome-seek_sv":       "docker://skchronicles/genome-seek_sv:v0.1.0",
+        "genome-seek_cnv":      "docker://skchronicles/genome-seek_cnv:v0.1.0",
+        "genome-seek_hla":      "docker://skchronicles/genome-seek_hla:v0.1.0",
+        "base":                 "docker://skchronicles/ccbr_wes_base:v0.1.0",
+        "deepvariant":          "docker://google/deepvariant:1.3.0-gpu",
+        "glnexus":              "ghcr.io://dnanexus-rnd/glnexus:v1.4.1",
+        "open_cravat":          "docker://skchronicles/ncbr_opencravat:v0.1.0",
+        "octopus":              "docker://skchronicles/ncbr_octopus:v0.1.0",
+        "sigprofiler":          "docker://skchronicles/ncbr_sigprofiler:v0.1.0",
+        "vcf2maf":              "docker://skchronicles/ncbr_vcf2maf:v0.1.0"
     }
 }
