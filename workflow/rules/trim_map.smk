@@ -24,6 +24,7 @@ rule fastp:
     params:
         rname='trim',
     threads: int(allocated("threads", "fastp", cluster))
+    container: config['images']['genome-seek_trim_map']
     envmodules: config['tools']['fastp']
     shell: """
     fastp -w {threads} \\
@@ -63,6 +64,7 @@ rule bwa_mem2:
         sort_threads = int(int(allocated("threads", "bwa_mem2", cluster)) / 2)
     threads: 
         int(allocated("threads", "bwa_mem2", cluster))
+    container: config['images']['genome-seek_trim_map']
     envmodules: 
         config['tools']['samtools'],
         config['tools']['bwa_mem2'],

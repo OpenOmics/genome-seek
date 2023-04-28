@@ -72,8 +72,7 @@ rule octopus_somatic:
         ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "octopus_somatic", cluster))
-    container: 
-        config['images']['octopus']
+    container: config['images']['octopus']
     shell: """
     mkdir -p '{params.tmppath}'
     octopus --threads {threads} \\
@@ -112,8 +111,8 @@ rule octopus_merge:
         octopath = join(workpath, "octopus", "somatic", "chunks")
     threads: 
         int(allocated("threads", "octopus_merge", cluster))
-    envmodules:
-        config['tools']['bcftools']
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['bcftools']
     shell: """
     # Create list of chunks to merge
     find {params.octopath} -iname '{params.tumor}.vcf.gz' \\
@@ -169,8 +168,7 @@ rule octopus_germline:
         chroms = "{0}".format(" ".join(config['references']['CHR_CHUNKS']))
     threads: 
         int(allocated("threads", "octopus_germline", cluster))
-    container: 
-        config['images']['octopus']
+    container: config['images']['octopus']
     shell: """
     octopus --threads {threads} \\
         --working-directory {params.wd} \\
@@ -219,8 +217,8 @@ rule gatk_scatter_mutect2:
         ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "gatk_scatter_mutect2", cluster))
-    envmodules:
-        config['tools']['gatk4']
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
     shell: """
     gatk Mutect2 \\
         -R {params.genome} \\
@@ -249,6 +247,7 @@ rule gatk_gather_mutect2:
     output:
         vcf = temp(join(workpath, "mutect2", "somatic", "{name}.mutect2.tmp.vcf")),
     params:
+        tmpdir = tmpdir,
         rname  = 'merge_mutect2',
         genome = config['references']['GENOME'],
         memory = allocated("mem", "gatk_gather_mutect2", cluster).lower().rstrip('g'),
@@ -258,11 +257,20 @@ rule gatk_gather_mutect2:
             expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.vcf"), chrom=chunks),
         ),
     threads: 
-        int(allocated("threads", "gatk_gather_mutect2", cluster))
-    envmodules:
-        config['tools']['gatk3']
+        max(int(allocated("threads", "gatk_gather_mutect2", cluster))-1, 1)
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk3']
     shell: """
-    GATK -m {params.memory}G CombineVariants \\
+    # Setups temporary directory for
+    # intermediate files with built-in 
+    # mechanism for deletion on exit
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+    tmp=$(mktemp -d -p "{params.tmpdir}")
+    trap 'rm -rf "${{tmp}}"' EXIT
+
+    java -Xmx{params.memory}g -Djava.io.tmpdir=${{tmp}} \
+        -XX:ParallelGCThreads={threads} -jar $GATK_JAR -T CombineVariants \\
+        --use_jdk_inflater --use_jdk_deflater \\
         -R {params.genome} \\
         --filteredrecordsmergetype KEEP_UNCONDITIONAL \\
         --assumeIdenticalSamples \\
@@ -310,8 +318,8 @@ rule gatk_learnReadOrientationModel:
         ),
     threads: 
         int(allocated("threads", "gatk_learnReadOrientationModel", cluster))
-    envmodules:
-        config['tools']['gatk4']
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
     shell: """
     # Gather Mutect2 stats
     gatk MergeMutectStats \\
@@ -349,8 +357,8 @@ rule gatk_tumorPileup:
         memory = allocated("mem", "gatk_tumorPileup", cluster).lower().rstrip('g'),
     threads: 
         int(allocated("threads", "gatk_tumorPileup", cluster))
-    envmodules:
-        config['tools']['gatk4']
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
     shell: """
     gatk --java-options '-Xmx{params.memory}g' GetPileupSummaries \\
         -I {input.tumor} \\
@@ -385,8 +393,8 @@ rule gatk_normalPileup:
         memory = allocated("mem", "gatk_tumorPileup", cluster).lower().rstrip('g'),
     threads: 
         int(allocated("threads", "gatk_normalPileup", cluster))
-    envmodules:
-        config['tools']['gatk4']
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
     shell: """
     gatk --java-options '-Xmx{params.memory}g' GetPileupSummaries \\
         -I {input.normal} \\
@@ -421,8 +429,8 @@ rule gatk_contamination:
         ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "gatk_contamination", cluster))
-    envmodules:
-        config['tools']['gatk4']
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
     shell: """
     gatk CalculateContamination \\
         -I {input.tumor} {params.normal_option} \\
@@ -454,6 +462,7 @@ rule gatk_filter_mutect2:
         genome = config['references']['GENOME'],
     threads: 
         int(allocated("threads", "gatk_filter_mutect2", cluster))
+    container: config['images']['genome-seek']
     envmodules:
         config['tools']['gatk4'],
         config['tools']['vcftools'],
@@ -506,6 +515,7 @@ rule muse:
         ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "muse", cluster))
+    container: config['images']['genome-seek_somatic']
     envmodules:
         config['tools']['muse'],
         config['tools']['bcftools']
@@ -555,6 +565,7 @@ rule strelka:
         header = temp(join(workpath, "strelka", "{name}", "{name}.samples")),
         final  = join(workpath, "strelka", "somatic", "{name}.strelka.vcf"),
     params:
+        tmpdir = tmpdir,
         tumor  = '{name}',
         rname  = 'strelka',
         outdir = join(workpath, "strelka", "{name}"),
@@ -573,38 +584,52 @@ rule strelka:
             tumor2normal[w.name]
         ) if tumor2normal[w.name] else "",
     threads: 
-        int(allocated("threads", "strelka", cluster))
+        max(int(allocated("threads", "strelka", cluster))-1, 1)
+    container: config['images']['genome-seek_somatic']
     envmodules:
         config['tools']['strelka'],
         config['tools']['gatk3'],
         config['tools']['bcftools']
     shell: """
+    # Setups temporary directory for
+    # intermediate files with built-in 
+    # mechanism for deletion on exit
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+    tmp=$(mktemp -d -p "{params.tmpdir}")
+    trap 'rm -rf "${{tmp}}"' EXIT
+
     # Delete previous attempts output
     # directory to ensure hard restart
     if [ -d "{params.outdir}" ]; then
         rm -rf "{params.outdir}"
     fi
+
     # Configure Strelka somatic workflow
     configureStrelkaSomaticWorkflow.py \\
         --referenceFasta {params.genome} \\
         --tumorBam {input.tumor} {params.normal_option} \\
         --runDir {params.outdir} \\
         --callRegions {params.regions}
+    
     # Call somatic variants with Strelka
     echo "Starting Strelka workflow..."
     {params.workflow} \\
         -m local \\
         -j {threads} \\
         -g {params.memory} 
+    
     # Combine and filter results
     echo "Running CombineVariants..."
-    GATK -m {params.memory}G CombineVariants \\
+    java -Xmx{params.memory}g -Djava.io.tmpdir=${{tmp}} \
+        -XX:ParallelGCThreads={threads} -jar $GATK_JAR -T CombineVariants \\
+        --use_jdk_inflater --use_jdk_deflater \\
         -R {params.genome} \\
         --variant {output.snps} \\
         --variant {output.indels} \\
         --assumeIdenticalSamples \\
         --filteredrecordsmergetype KEEP_UNCONDITIONAL \\
         -o {output.vcf}
+    
     # Renaming TUMOR/NORMAL in 
     # VCF with real sample names
     echo -e "TUMOR\\t{params.tumor}{params.normal_header}" \\
@@ -639,6 +664,7 @@ rule somatic_selectvar:
         memory = allocated("mem", "somatic_selectvar", cluster).rstrip('G'),
     threads: 
         int(allocated("threads", "somatic_selectvar", cluster))
+    container: config['images']['genome-seek_somatic']
     envmodules:
         config['tools']['gatk4'],
         config['tools']['bcftools'],
@@ -697,8 +723,8 @@ rule somatic_split_tumor:
         memory = allocated("mem", "somatic_split_tumor", cluster).rstrip('G'),
     threads: 
         int(allocated("threads", "somatic_split_tumor", cluster))
-    envmodules:
-        config['tools']['bcftools'],
+    container: config['images']['genome-seek_somatic']
+    envmodules: config['tools']['bcftools']
     shell: """
     # Filter call set to tumor sites
     bcftools view \\
@@ -747,8 +773,8 @@ rule somatic_split_normal:
         memory = allocated("mem", "somatic_split_normal", cluster).rstrip('G'),
     threads: 
         int(allocated("threads", "somatic_split_normal", cluster))
-    envmodules:
-        config['tools']['bcftools'],
+    container: config['images']['genome-seek_somatic']
+    envmodules: config['tools']['bcftools']
     shell: """
     # Filter call set to normal sites
     bcftools view \\
@@ -796,8 +822,8 @@ rule somatic_merge_tumor:
         isec_dir = join(workpath, "merged", "somatic", "intersect"),
     threads: 
         int(allocated("threads", "somatic_merge_tumor", cluster))
-    envmodules:
-        config['tools']['bcftools'],
+    container: config['images']['genome-seek_somatic']
+    envmodules: config['tools']['bcftools']
     shell: """
     # Delete previous attempts output
     # directory to ensure hard restart
@@ -863,8 +889,7 @@ rule somatic_sample_maf:
         ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "somatic_sample_maf", cluster))
-    container: 
-        config['images']['vcf2maf']
+    container: config['images']['vcf2maf']
     shell: """
     # vcf2maf needs an uncompressed VCF file
     zcat {input.vcf} \\
@@ -901,8 +926,7 @@ rule somatic_cohort_maf:
         memory = allocated("mem", "somatic_cohort_maf", cluster).rstrip('G'),
     threads: 
         int(allocated("threads", "somatic_cohort_maf", cluster))
-    container:
-        config['images']['vcf2maf']
+    container: config['images']['vcf2maf']
     shell: """
     echo "Combining MAFs..."
     head -2 {input.mafs[0]} > {output.maf}
@@ -935,8 +959,8 @@ rule somatic_cohort_maftools:
         script = join("workflow", "scripts", "maftools.R"),
     threads: 
         int(allocated("threads", "somatic_cohort_maftools", cluster)),
-    envmodules:
-        config['tools']['rlang']
+    container: config['images']['genome-seek_somatic']
+    envmodules: config['tools']['rlang']
     shell: """
     Rscript {params.script} \\
         {params.wdir} \\
@@ -984,8 +1008,7 @@ rule somatic_sample_sigprofiler:
         genome = config['references']['SIGPROFILER_GENOME']
     threads: 
         int(allocated("threads", "somatic_sample_sigprofiler", cluster)),
-    container:
-        config['images']['sigprofiler']
+    container: config['images']['sigprofiler']
     shell: """
     # SigProfiler input directory must
     # only contain input MAF
@@ -1020,8 +1043,7 @@ rule somatic_cohort_sigprofiler:
         memory = allocated("mem", "somatic_cohort_sigprofiler", cluster).rstrip('G'),
     threads: 
         int(allocated("threads", "somatic_cohort_sigprofiler", cluster)),
-    container:
-        config['images']['sigprofiler']
+    container: config['images']['sigprofiler']
     shell: """
     # Merge SigProfiler PDFs
     pdfunite {input.pdfs} \\

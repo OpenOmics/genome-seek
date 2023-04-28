@@ -50,6 +50,7 @@ rule manta_germline:
         genome   = config['references']['GENOME'],
         memory   = allocated("mem", "manta_germline", cluster).rstrip('G'),
     threads: int(allocated("threads", "manta_germline", cluster))
+    container: config['images']['genome-seek_sv']
     envmodules: config['tools']['manta']
     shell: """
     # Delete previous attempts output
@@ -102,6 +103,7 @@ rule manta_somatic:
             join(workpath, "BAM", tumor2normal[w.name])
         ) if tumor2normal[w.name] else "",
     threads: int(allocated("threads", "manta_somatic", cluster))
+    container: config['images']['genome-seek_sv']
     envmodules: config['tools']['manta']
     shell: """
     # Delete previous attempts output

@@ -25,10 +25,12 @@ rule gatk_realign:
         rname  = "realign"
     threads: 
         int(allocated("threads", "gatk_realign", cluster))
-    envmodules: 
-        config['tools']['gatk3'],
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk3']
     shell: """
     java -Xmx{params.memory}g -jar ${{GATK_JAR}} -T RealignerTargetCreator \\
+        --use_jdk_inflater \\
+        --use_jdk_deflater \\
         -I {input.bam} \\
         -R {params.genome} \\
         -o {output.intervals} \\
@@ -68,8 +70,8 @@ rule gatk_scatter_recal:
         intervals = lambda w: joint_option('-L', config['references']['NRECALS'][w.recal]),
         memory = allocated("mem", "gatk_scatter_recal", cluster).lower().rstrip('g'),
         rname = 'scatter_recal'
-    envmodules:
-        config['tools']['gatk4'],
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
     threads: int(allocated("threads", "gatk_scatter_recal", cluster))
     shell: """
     gatk --java-options '-Xmx{params.memory}g' BaseRecalibrator \\
@@ -103,8 +105,8 @@ rule gatk_gather_recal:
         bams   = join(workpath, "BAM"),
         memory = allocated("mem", "gatk_gather_recal", cluster).lower().rstrip('g'),
         rname  = 'gather_recal'
-    envmodules:
-        config['tools']['gatk4'],
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
     threads: int(allocated("threads", "gatk_gather_recal", cluster))
     shell: """
     # Create GatherBQSR list
@@ -139,6 +141,7 @@ rule gatk_apply_recal:
         genome = config['references']['GENOME'],     
         memory = allocated("mem", "gatk_apply_recal", cluster).lower().rstrip('g'),
         rname  = 'apply_recal'
+    container: config['images']['genome-seek']
     envmodules:
         config['tools']['gatk4'],
         config['tools']['samtools'],

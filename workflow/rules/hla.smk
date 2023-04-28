@@ -25,6 +25,7 @@ rule hla:
         graph  = config['references']['HLA_LA_GRAPH'],
     message: "Running HLA*LA on '{input.bam}' input file"
     threads: int(allocated("threads", "hla", cluster))
+    container: config['images']['genome-seek_hla']
     envmodules: config['tools']['hla_la']
     shell: """
     HLA-LA.pl \\

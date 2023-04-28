@@ -27,8 +27,8 @@ rule deepvariant:
         tmpdir = tmpdir,
     message: "Running DeepVariant on '{input.bam}' input file"
     threads: int(allocated("threads", "deepvariant", cluster))
+    container: config['images']['deepvariant']
     envmodules: config['tools']['deepvariant']
-    # container: config['images']['deepvariant']
     shell: """
     # Setups temporary directory for
     # intermediate files with built-in 
@@ -147,6 +147,7 @@ rule gatk_selectvariants:
         memory = allocated("mem", "gatk_selectvariants", cluster).rstrip('G')
     message: "Running GATK4 SelectVariants on '{input.vcf}' input file"
     threads: int(allocated("threads", "gatk_selectvariants", cluster))
+    container: config['images']['genome-seek']
     envmodules: config['tools']['gatk4']
     shell: """
     gatk --java-options '-Xmx{params.memory}g -XX:ParallelGCThreads={threads}' SelectVariants \\

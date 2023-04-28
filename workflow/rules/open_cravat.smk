@@ -25,8 +25,10 @@ rule chrom_selectvariants:
         chrom  = "{chunk}", 
         memory = allocated("mem", "chrom_selectvariants", cluster).rstrip('G')
     threads: int(allocated("threads", "chrom_selectvariants", cluster))
+    container: config['images']['genome-seek']
     envmodules: 
-        config['tools']['gatk4'], config['tools']['bcftools']
+        config['tools']['gatk4'], 
+        config['tools']['bcftools'],
     shell: """
     gatk --java-options '-Xmx{params.memory}g -XX:ParallelGCThreads={threads}' SelectVariants \\
         -R {params.genome} \\
@@ -63,8 +65,8 @@ rule opencravat_germline:
         genome = config['references']['OC_LIFTOVER'],
         module = config['references']['OC_MODULES'],
     threads: int(allocated("threads", "opencravat_germline", cluster))
-    # envmodules: config['tools']['open_cravat']
     container: config['images']['open_cravat']
+    envmodules: config['tools']['open_cravat']
     shell: """
     # Environment variable for modules dir
     export OC_MODULES="{params.module}"
@@ -148,6 +150,7 @@ rule opencravat_germline_filter:
         secondary = config['options']['cravat_filters']['secondary'],
     message: "Running OpenCRAVAT filters on '{input.db}' input file"
     threads: int(allocated("threads", "opencravat_germline_filter", cluster))
+    container: config['images']['genome-seek']
     envmodules: 
         # Requires sqlite3, added in python/3.5
         config['tools']['python3']
@@ -345,8 +348,8 @@ rule opencravat_germline_merge:
     params: 
         rname  = "ocmergegermline",
     threads: int(allocated("threads", "merge_sqlite", cluster))
-    # envmodules: config['tools']['open_cravat']
     container: config['images']['open_cravat']
+    envmodules: config['tools']['open_cravat']
     shell: """
     oc util mergesqlite \\
         -o {output.merged} \\
@@ -378,8 +381,8 @@ rule opencravat_somatic:
         genome = config['references']['OC_LIFTOVER'],
         module = config['references']['OC_MODULES'],
     threads: int(allocated("threads", "opencravat_somatic", cluster))
-    # envmodules: config['tools']['open_cravat']
     container: config['images']['open_cravat']
+    envmodules: config['tools']['open_cravat']
     shell: """
     # Environment variable for modules dir
     export OC_MODULES="{params.module}"
@@ -461,6 +464,7 @@ rule opencravat_somatic_filter:
         secondary = config['options']['cravat_filters']['secondary'],
     message: "Running OpenCRAVAT filters on '{input.db}' input file"
     threads: int(allocated("threads", "opencravat_somatic_filter", cluster))
+    container: config['images']['genome-seek']
     envmodules: 
         # Requires sqlite3, added in python/3.5
         config['tools']['python3']

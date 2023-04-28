@@ -57,9 +57,10 @@ rule peddy:
         intermediate = join(workpath, "deepvariant", "VCFs", "intermediate")
     message: "Running peddy on '{input.vcf}' input file"
     threads: int(allocated("threads", "peddy", cluster))
+    container: config['images']['genome-seek_cnv']
     envmodules: 
         config['tools']['vcftools'],
-        config['tools']['peddy']
+        config['tools']['peddy'],
     shell: """
     vcftools \\
         --gzvcf {input.vcf} \\
@@ -117,6 +118,7 @@ rule canvas:
         annotsv_annot = config['references']['ANNOTSV_ANNOTATIONS'],
     message: "Running canvas on '{input.vcf}' input file"
     threads: int(allocated("threads", "canvas", cluster))
+    container: config['images']['genome-seek_cnv']
     envmodules: 
         config['tools']['canvas'],
         config['tools']['bcftools'],
@@ -225,8 +227,8 @@ rule hmftools_amber:
         tumor_flag = lambda w: "" if tumor2normal[w.name] else "-tumor_only",
     threads: 
         int(allocated("threads", "hmftools_amber", cluster)),
-    envmodules:
-        config['tools']['rlang'],
+    container: config['images']['genome-seek_cnv']
+    envmodules: config['tools']['rlang']
     shell: """
     java -Xmx{params.memory}g -cp {params.amber_jar} \\
         com.hartwig.hmftools.amber.AmberApplication \\
@@ -275,8 +277,8 @@ rule hmftools_cobalt:
         ),
     threads: 
         int(allocated("threads", "hmftools_cobalt", cluster)),
-    envmodules:
-        config['tools']['rlang']
+    container: config['images']['genome-seek_cnv']
+    envmodules: config['tools']['rlang']
     shell: """
     java -Xmx{params.memory}g -cp {params.cobalt_jar} \\
         com.hartwig.hmftools.cobalt.CountBamLinesApplication \\
@@ -335,9 +337,10 @@ rule hmftools_purple:
         ) if call_sv else "",
     threads: 
         int(allocated("threads", "hmftools_purple", cluster)),
+    container: config['images']['genome-seek_cnv']
     envmodules:
         config['tools']['rlang'],
-        config['tools']['circos']
+        config['tools']['circos'],
     shell: """
     # Set output directories
     # for Amber and Cobalt

@@ -31,6 +31,7 @@ rule fc_lane:
         rname = 'fclane',
         get_flowcell_lanes = join("workflow", "scripts", "flowcell_lane.py"),
     threads: int(allocated("threads", "fc_lane", cluster))
+    container: config['images']['genome-seek_qc']
     envmodules: config['tools']['python2']
     shell: """
     python {params.get_flowcell_lanes} \\
@@ -60,6 +61,7 @@ rule fastqc_raw:
         rname  = 'rawfqc',
         outdir = join(workpath,"rawQC"),
     threads: int(allocated("threads", "fastqc_raw", cluster))
+    container: config['images']['genome-seek_qc']
     envmodules: config['tools']['fastqc']
     shell: """
     fastqc \\
@@ -95,9 +97,10 @@ rule fastq_screen:
         # Exposed Parameters: modify resources/fastq_screen.conf to change 
         # default locations to bowtie2 indices
         fastq_screen_config = config['references']['FASTQ_SCREEN_CONFIG'],
+    container: config['images']['genome-seek_qc']
     envmodules: 
         config['tools']['fastq_screen'],
-        config['tools']['bowtie']
+        config['tools']['bowtie'],
     threads: int(allocated("threads", "fastq_screen", cluster))
     shell: """
     fastq_screen --conf {params.fastq_screen_config} \\
@@ -132,6 +135,7 @@ rule fastqc_bam:
         adapters = config['references']['FASTQC_ADAPTERS']
     message: "Running FastQC with {threads} threads on '{input.bam}' input file"
     threads: int(allocated("threads", "fastqc_bam", cluster))
+    container: config['images']['genome-seek_qc']
     envmodules: config['tools']['fastqc']
     shell: """
     fastqc -t {threads} \\
@@ -163,6 +167,7 @@ rule qualimap:
         rname  = "qualibam"
     message: "Running QualiMap BAM QC with {threads} threads on '{input.bam}' input file"
     threads: int(allocated("threads", "qualimap", cluster))
+    container: config['images']['genome-seek_qc']
     envmodules: config['tools']['qualimap']
     shell: """
     unset DISPLAY
@@ -197,6 +202,7 @@ rule samtools_flagstats:
         rname = "flagstat"
     message: "Running SAMtools flagstat on '{input.bam}' input file"
     threads: int(allocated("threads", "samtools_flagstats", cluster))
+    container: config['images']['genome-seek']
     envmodules: config['tools']['samtools']
     shell: """
     samtools flagstat --threads {threads} \\
@@ -227,6 +233,7 @@ rule bcftools_stats:
         rname = "bcfstats",
     message: "Running BCFtools stats on '{input.vcf}' input file"
     threads: int(allocated("threads", "bcftools_stats", cluster))
+    container: config['images']['genome-seek']
     envmodules: config['tools']['bcftools']
     shell: """
     bcftools stats \\
@@ -260,6 +267,7 @@ rule gatk_varianteval:
         memory   = allocated("mem", "gatk_varianteval", cluster).lower().rstrip('g')
     message: "Running GATK4 VariantEval on '{input.vcf}' input file"
     threads: int(allocated("threads", "gatk_varianteval", cluster))
+    container: config['images']['genome-seek']
     envmodules: config['tools']['gatk4']
     shell: """
     gatk --java-options '-Xmx{params.memory}g -XX:ParallelGCThreads={threads}' VariantEval \\
@@ -294,6 +302,7 @@ rule snpeff:
         bundle = config['references']['SNPEFF_BUNDLE'],
         memory = allocated("mem", "snpeff", cluster).lower().rstrip('g')
     threads: int(allocated("threads", "snpeff", cluster))
+    container: config['images']['genome-seek_qc']
     envmodules: config['tools']['snpeff']
     shell: """
     java -Xmx{params.memory}g -jar ${{SNPEFF_JAR}} \\
@@ -326,6 +335,7 @@ rule vcftools:
         rname  = "vcftools",
     message: "Running VCFtools on '{input.vcf}' input file"
     threads: int(allocated("threads", "vcftools", cluster))
+    container: config['images']['genome-seek']
     envmodules: config['tools']['vcftools']
     shell: """
     vcftools \\
@@ -357,6 +367,7 @@ rule collectvariantcallmetrics:
         memory = allocated("mem", "collectvariantcallmetrics", cluster).lower().rstrip('g')
     message: "Running Picard CollectVariantCallingMetrics on '{input.vcf}' input file"
     threads: int(allocated("threads", "collectvariantcallmetrics", cluster))
+    container: config['images']['genome-seek']
     envmodules: config['tools']['picard']
     shell: """
     java -Xmx{params.memory}g -jar ${{PICARDJARPATH}}/picard.jar \\
@@ -395,7 +406,7 @@ rule somalier:
         sites  = config['references']['SOMALIER']['SITES_VCF'],
         ancestry_db = config['references']['SOMALIER']['ANCESTRY_DB'],
     threads: int(allocated("threads", "somalier", cluster))
-    container: config['images']['base']
+    container: config['images']['genome-seek_qc']
     shell: """ 
     echo "Extracting sites to estimate ancestry."
     somalier extract \\
@@ -484,6 +495,7 @@ rule multiqc:
         rname  = "multiqc",
         workdir = workpath,
     threads: int(allocated("threads", "multiqc", cluster))
+    container: config['images']['genome-seek_qc']
     envmodules: config['tools']['multiqc']
     shell: """
     multiqc --ignore '*/.singularity/*' \\
