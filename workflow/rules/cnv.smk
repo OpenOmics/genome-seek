@@ -114,6 +114,7 @@ rule canvas:
         canvas_genome = config['references']['CANVAS_GENOME'],
         canvas_balleles = config['references']['CANVAS_BALLELES'],
         annotsv_build = config['references']['ANNOTSV_BUILD'],
+        annotsv_annot = config['references']['ANNOTSV_ANNOTATIONS'],
     message: "Running canvas on '{input.vcf}' input file"
     threads: int(allocated("threads", "canvas", cluster))
     envmodules: 
@@ -168,6 +169,7 @@ rule canvas:
 
     # Rank and annotate CNVs
     AnnotSV \\
+        -annotationsDir  {params.annotsv_annot} \\
         -genomeBuild {params.annotsv_build} \\
         -outputDir {params.outdir} \\
         -outputFile {output.annotated} \\

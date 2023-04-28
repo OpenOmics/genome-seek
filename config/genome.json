@@ -1,6 +1,7 @@
 {
     "references": {
         "ANNOTSV_BUILD": "GRCh38",
+        "ANNOTSV_ANNOTATIONS": "/data/OpenOmics/references/genome-seek/AnnotSV/3.3.5",
         "CANVAS_GENOME": "/data/OpenOmics/references/genome-seek/CANVAS/WholeGenomeFasta",
         "CANVAS_KMER": "/data/OpenOmics/references/genome-seek/CANVAS/kmer.fa",
         "CANVAS_FILTER": "/data/OpenOmics/references/genome-seek/CANVAS/filter13.bed",
@@ -56,6 +57,7 @@
         "GENOME": "/data/OpenOmics/references/genome-seek/Homo_sapiens_assembly38.fasta",
         "GNOMAD": "/data/OpenOmics/references/genome-seek/GNOMAD/somatic-hg38-af-only-gnomad.hg38.vcf.gz",
         "GISTIC_REFGENE": "/data/OpenOmics/references/genome-seek/gistic/hg38.UCSC.add_miR.160920.refgene.mat",
+        "HLA_LA_GRAPH": "/data/OpenOmics/references/genome-seek/HLA-LA/graphs/PRG_MHC_GRCh38_withIMGT",
         "HMFTOOLS_REF_VERSION": "38",
         "HMFTOOLS_AMBER_JAR": "/data/OpenOmics/references/genome-seek/hmftools/amber-3.5.jar",
         "HMFTOOLS_COBALT_JAR": "/data/OpenOmics/references/genome-seek/hmftools/cobalt-1.11.jar",

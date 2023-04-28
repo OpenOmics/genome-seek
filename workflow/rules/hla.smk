@@ -22,13 +22,14 @@ rule hla:
     params: 
         rname = "hlala",
         outdir = join(workpath, "HLA", "{name}"),
+        graph  = config['references']['HLA_LA_GRAPH'],
     message: "Running HLA*LA on '{input.bam}' input file"
     threads: int(allocated("threads", "hla", cluster))
     envmodules: config['tools']['hla_la']
     shell: """
     HLA-LA.pl \\
         --BAM {input.bam} \\
-        --graph PRG_MHC_GRCh38_withIMGT \\
+        --graph {params.graph} \\
         --sampleID sample \\
         --maxThreads {threads} \\
         --workingDir {params.outdir}
