@@ -44,12 +44,22 @@ RUN apt-get update \
 
 # Installing dotnet for Canvas, for more info see:
 # https://github.com/Illumina/canvas/issues/99
+# This version of dotnet requires libssl/1.1
 RUN mkdir -p /opt2/dotnet/2.1.30/ \
     && wget https://download.visualstudio.microsoft.com/download/pr/d6040f80-8343-4771-9c02-dbc9a35ac88a/68e74e6e46cf36fa1a50f68af6831d6d/aspnetcore-runtime-2.1.30-linux-x64.tar.gz -P /opt2/dotnet/2.1.30/ \
     && tar -vxzf /opt2/dotnet/2.1.30/aspnetcore-runtime-2.1.30-linux-x64.tar.gz -C /opt2/dotnet/2.1.30/ \
-    && rm /opt2/dotnet/2.1.30/aspnetcore-runtime-2.1.30-linux-x64.tar.gz 
+    && rm /opt2/dotnet/2.1.30/aspnetcore-runtime-2.1.30-linux-x64.tar.gz \
+    && wget https://www.openssl.org/source/openssl-1.1.1c.tar.gz -P /opt2/dotnet/lib \
+    && tar -xzvf /opt2/dotnet/lib/openssl-1.1.1c.tar.gz -C /opt2/dotnet/lib \
+    && rm /opt2/dotnet/lib/openssl-1.1.1c.tar.gz \ 
+    && cd /opt2/dotnet/lib/openssl-1.1.1c/ \
+    && ./config \
+            --prefix=/opt2/dotnet/lib/openssl \
+            --openssldir=/opt2/dotnet/lib/openssl \
+    && make \
+    && make install
 ENV PATH="${PATH}:/opt2/dotnet/2.1.30"
-
+ENV LD_LIBRARY_PATH="/opt2/dotnet/lib/openssl"
 
 ############## INSTALL #############
 # Install Canvas/1.40.0.1613+master, for more info see:
