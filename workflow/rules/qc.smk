@@ -34,7 +34,7 @@ rule fc_lane:
     container: config['images']['genome-seek_qc']
     envmodules: config['tools']['python2']
     shell: """
-    python {params.get_flowcell_lanes} \\
+    python3 {params.get_flowcell_lanes} \\
         {input.r1} \\
         {wildcards.name} \\
     > {output.txt}

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 
 from __future__ import print_function, division
@@ -9,7 +9,7 @@ import sys, gzip
 # sys.argv[1] = sample_name.R1.fastq.gz
 # sys.argv[2] = sample_name (name without PATH and .R?.fastq.gz extension)
 # Example
-# $ python flowcell_lane.py input.R1.fastq.gz input > flowcell_lanes.txt
+# $ python3 flowcell_lane.py input.R1.fastq.gz input > flowcell_lanes.txt
 
 # Input 1 (Normal FastQ from Casava > 1.8)
 # @J00170:88:ANYVJBBXX:8:1101:1600:1244 1:N:0:ACTTGA
@@ -34,7 +34,7 @@ def usage(message = '', exitcode = 0):
     returns non-zero exit-code. Additional message can be displayed with
     the 'message' parameter.
     """
-    print('Usage: python {} sampleName.R1.fastq.gz  sampleName > sampleName.flowcell_lanes.txt'.format(sys.argv[0]))
+    print('Usage: python3 {} sampleName.R1.fastq.gz  sampleName > sampleName.flowcell_lanes.txt'.format(sys.argv[0]))
     if message:
         print(message)
     sys.exit(exitcode)
@@ -62,7 +62,13 @@ def get_flowcell_lane(sequence_identifer):
     IDs in its sequence indentifer.
     For more information visit: https://en.wikipedia.org/wiki/FASTQ_format
     """
-    id_list = sequence_identifer.strip().split(':')
+    try:
+        # Decode gzip byte-string object,
+        # needed for gzipped input files
+        id_list = sequence_identifer.decode('utf8').strip().split(':')
+    except AttributeError:
+        # Needed for non-gzipped inputs
+        id_list = sequence_identifer.strip().split(':')
     if len(id_list) < 7:
         # No Flowcell IDs in this format
         # Return next instrument id instead (next best thing)
