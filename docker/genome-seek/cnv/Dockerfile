@@ -59,7 +59,6 @@ RUN mkdir -p /opt2/dotnet/2.1.30/ \
     && make \
     && make install
 ENV PATH="${PATH}:/opt2/dotnet/2.1.30"
-ENV LD_LIBRARY_PATH="/opt2/dotnet/lib/openssl"
 
 ############## INSTALL #############
 # Install Canvas/1.40.0.1613+master, for more info see:
@@ -73,8 +72,10 @@ RUN mkdir -p /opt2/canvas/1.40.0.1613.master/ \
     && rmdir /opt2/canvas/1.40.0.1613.master/1.40.0.1613+master/ \
     && mkdir -p /opt2/canvas/1.40.0.1613.master/bin \
     && echo '#!/bin/bash' > /opt2/canvas/1.40.0.1613.master/Canvas.sh \
+    && echo 'export LD_LIBRARY_PATH=/opt2/dotnet/lib/openssl/lib' >> /opt2/canvas/1.40.0.1613.master/Canvas.sh \
     && echo 'dotnet /opt2/canvas/1.40.0.1613.master/Canvas-1.40.0.1613+master_x64/Canvas.dll "$@"' >> /opt2/canvas/1.40.0.1613.master/Canvas.sh \
     && chmod a+rx /opt2/canvas/1.40.0.1613.master/Canvas.sh \
+    && chmod -R a+rx /opt2/canvas/1.40.0.1613.master/Canvas-1.40.0.1613+master_x64/ \
     && ln -sf /opt2/canvas/1.40.0.1613.master/Canvas.sh /opt2/canvas/1.40.0.1613.master/bin/Canvas.dll
 ENV PATH="${PATH}:/opt2/canvas/1.40.0.1613.master/bin"
 
