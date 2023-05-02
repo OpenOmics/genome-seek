@@ -50,7 +50,7 @@ rule hla:
     singularity exec -B {params.bind} {params.sif} \\
     HLA-LA.pl \\
         --BAM {input.bam} \\
-        --graph {params.graph} \\
+        --graph PRG_MHC_GRCh38_withIMGT \\
         --sampleID sample \\
         --maxThreads {threads} \\
         --workingDir {params.outdir}
