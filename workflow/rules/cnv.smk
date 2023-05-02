@@ -176,8 +176,8 @@ rule canvas:
         -outputDir {params.outdir} \\
         -outputFile {output.annotated} \\
         -SVinputFile {output.filtered} \\
-        -vcfFiles {input.joint} \\
-        -vcfSamples {params.sample}
+        -snvIndelFiles {input.joint} \\
+        -snvIndelSamples {params.sample}
     
     # Check if AnnotSV silently failed
     if [ ! -f "{output.annotated}" ]; then
