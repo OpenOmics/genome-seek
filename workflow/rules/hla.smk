@@ -33,7 +33,7 @@ rule hla:
         graph  = config['references']['HLA_LA_GRAPH'],
         sif    = config['images']['genome-seek_hla'],
         bind   = "{0},{1}:{2}".format(
-            ','.join(config['bindpaths']),
+            ','.join(sorted(config['bindpaths'])),
             config['references']['HLA_LA_GRAPH'],
             '/opt2/hla-la/1.0.3/HLA-LA/graphs/PRG_MHC_GRCh38_withIMGT'
         ),
