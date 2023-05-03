@@ -62,7 +62,8 @@ run_oc  = str_bool(                      # Run OpenCRAVAT rules,
 # caller is added and add
 # conditional running of 
 # each supported caller
-somatic_callers = ["octopus", "mutect2", "muse", "strelka"]
+somatic_callers = ["octopus", "mutect2"]
+tn_somatic_callers = ["muse", "strelka"]
 # Mutect2 and MuSE reliably 
 # work with Purple CNV Caller
 purple_callers  = ["mutect2"]
@@ -339,18 +340,20 @@ rule all:
             name=provided(tumors, call_somatic),
         ),
         # MuSE, call somatic variants,
-        # only runs if provided --call-somatic 
+        # only runs if provided --call-somatic,
+        # only runs with tumor-normal pairs, 
         # @imported from rules/somatic.smk
         expand( 
             join(workpath, "muse", "somatic", "{name}.muse.vcf"),
-            name=provided(tumors, call_somatic),
+            name=provided(tumorWnormal, call_somatic),
         ),
         # Strelka, call somatic variants,
-        # only runs if provided --call-somatic 
+        # only runs if provided --call-somatic,
+        # only runs with tumor-normal pairs,
         # @imported from rules/somatic.smk
         expand( 
             join(workpath, "strelka", "somatic", "{name}.strelka.vcf"),
-            name=provided(tumors, call_somatic),
+            name=provided(tumorWnormal, call_somatic),
         ),
         # Post-process somatic VCF, filter and 
         # normalize each somatic callers VCF,
@@ -360,6 +363,13 @@ rule all:
             join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
             caller=provided(somatic_callers, call_somatic),
             name=provided(tumors, call_somatic),
+        ),
+        # Conditionally add tumor-normal callers,
+        # MuSE and Strelka
+        expand( 
+            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
+            caller=provided(tn_somatic_callers, call_somatic),
+            name=provided(tumorWnormal, call_somatic),
         ),
         # Post-process somatic VCF, splits sites
         # found in the tumor and normal sample, 
@@ -371,9 +381,23 @@ rule all:
             caller=provided(somatic_callers, call_somatic),
             name=provided(tumors, call_somatic),
         ),
+        # Conditionally add tumor-normal callers,
+        # MuSE and Strelka
+        expand( 
+            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.tumor.vcf.gz"),
+            caller=provided(tn_somatic_callers, call_somatic),
+            name=provided(tumorWnormal, call_somatic),
+        ),
         expand( 
             join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.normal.vcf.gz"),
             caller=provided(somatic_callers, call_somatic),
+            name=provided(tumorWnormal, call_somatic),
+        ),
+        # Conditionally add tumor-normal callers,
+        # MuSE and Strelka
+        expand( 
+            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.normal.vcf.gz"),
+            caller=provided(tn_somatic_callers, call_somatic),
             name=provided(tumorWnormal, call_somatic),
         ),
         expand( 

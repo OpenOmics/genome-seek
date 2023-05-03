@@ -35,6 +35,30 @@ def get_normal_pileup_table(wildcards):
         # Runs in tumor-only mode
         return []
 
+def get_somatic_merge_tumor(wildcards):
+    """Returns somatic variants found in the tumor sample 
+    for all somatic callers. For tumor-normal samples, extra
+    somatic callers (i.e. MuSE and Strelka) are run. Tumor-only 
+    samples will only have callsets from Mutect2 and octopus.
+    See config['pairs'] for tumor, normal pairs.
+    """
+    callset = somatic_callers
+    tumor = wildcards.name
+    normal = tumor2normal[tumor]
+    if normal:
+        # Callers = Octopus, Mutect2, MuSE, Strelka
+        return [
+            join(workpath, caller, "somatic", "{0}.{1}.filtered.norm.tumor.vcf.gz".format(tumor, caller)) \
+            for caller in somatic_callers + tn_somatic_callers
+        ]
+    else:
+        # Callers = Octopus, Mutect2
+        return [
+         join(workpath, caller, "somatic", "{0}.{1}.filtered.norm.tumor.vcf.gz".format(tumor, caller)) \
+         for caller in somatic_callers
+        ]
+
+
 # Data processing rules for calling somatic variants
 rule octopus_somatic:
     """
@@ -811,7 +835,7 @@ rule somatic_merge_tumor:
         Variants found in at least 2 callers
     """
     input:
-        tumors = expand(join(workpath, "{caller}", "somatic", "{{name}}.{caller}.filtered.norm.tumor.vcf.gz"), caller=somatic_callers),
+        tumors = get_somatic_merge_tumor,
     output:
         lsl    = join(workpath, "merged", "somatic", "{name}.intersect.lsl"),
         merged = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz"),
