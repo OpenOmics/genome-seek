@@ -554,6 +554,7 @@ rule muse:
     # Calculate cutoffs from a 
     # sample specific error model
     MuSE sump \\
+        -n {threads} \\
         -G \\
         -I {output.txt} \\
         -O {output.vcf} \\
