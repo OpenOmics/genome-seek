@@ -25,6 +25,7 @@ LABEL maintainer="Skyler Kuhn <kuhnsa@nih.gov>" \
 #  • canvas         ✓ (requires dotnet)
 #  • annotsv/3.3.5  ✓ (annotations included in resource bundle)
 #  • tcl/tcllib     ✓
+#  • circos/0.69-8  ✓ (apt-get install has issues w/ config files)
 WORKDIR /opt2
 # Install Java 11+ for hmftools,
 # installing dotnet runtime dependencies
@@ -123,6 +124,22 @@ RUN mkdir -p /opt2/annotsv/3.3.5/ \
 ENV ANNOTSV=/opt2/annotsv/3.3.5/AnnotSV-3.3.5 \
     PATH="${PATH}:/opt2/annotsv/3.3.5/AnnotSV-3.3.5/bin"
 
+# Install circos/0.69-8, for more info see:
+# http://circos.ca/software/installation/
+# The pt-get version of circos cannot find
+# its global config files properly.  
+# The installation scatters config files 
+# across the filesystem in locations that 
+# circos cannot properly find. This is a 
+# patching of agt-get install with a manual
+# install of the tool and deleting old exe 
+# in /usr/bin.
+RUN mkdir -p /opt2/circos/0.69-8/ \
+    && wget http://circos.ca/distribution/circos-0.69-8.tgz -P /opt2/circos/0.69-8/ \
+    && tar -vxzf /opt2/circos/0.69-8/circos-0.69-8.tgz -C /opt2/circos/0.69-8/ \
+    && rm /opt2/circos/0.69-8/circos-0.69-8.tgz \
+    && rm /usr/bin/circos
+ENV PATH="${PATH}:/opt2/circos/0.69-8/circos-0.69-8/bin"
 
 ################ POST #################
 # Add Dockerfile and export env variables
