@@ -188,7 +188,7 @@ function submit(){
           # snakemake -pr --latency-wait 120 -d {outdir} --configfile=config.json 
           # --cluster-config os.path.join({outdir}, 'config', 'cluster.json') 
           # --cluster {CLUSTER_OPTS} --stats os.path.join({outdir}, 'logfiles', 'runtime_statistics.json') 
-          # --printshellcmds --keep-going --rerun-incomplete 
+          # --printshellcmds --keep-going --rerun-incomplete --rerun-triggers mtime
           # --keep-remote --restart-times 3 -j 500 --use-singularity 
           # --singularity-args -B {}.format({bindpaths}) --local-cores 24
           SLURM_DIR="$3/logfiles/slurmfiles"
@@ -227,7 +227,8 @@ snakemake --latency-wait 120 -s "$3/workflow/Snakefile" -d "$3" \\
   --configfile="$3/config.json" \\
   --printshellcmds --cluster-config "$3/config/cluster.json" \\
   --cluster "${CLUSTER_OPTS}" --keep-going --restart-times 3 -j 500 \\
-  --rerun-incomplete --stats "$3/logfiles/runtime_statistics.json" \\
+  --rerun-incomplete --rerun-triggers mtime \\
+  --stats "$3/logfiles/runtime_statistics.json" \\
   --keep-remote --local-cores 14 2>&1
 # Create summary report
 snakemake -d "$3" --report "Snakemake_Report.html"

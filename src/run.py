@@ -617,6 +617,7 @@ def dryrun(outdir, config='config.json', snakefile=os.path.join('workflow', 'Sna
             '-s', str(snakefile),
             '--use-singularity',
             '--rerun-incomplete',
+            '--rerun-triggers', 'mtime',
             '--cores', str(256),
             '--configfile={}'.format(config)
         ], cwd = outdir,
@@ -719,7 +720,9 @@ def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None,
         # replacing Popen subprocess with a direct
         # snakemake API call: https://snakemake.readthedocs.io/en/stable/api_reference/snakemake.html
         masterjob = subprocess.Popen([
-                'snakemake', '-pr', '--rerun-incomplete',
+                'snakemake', '-pr',
+                '--rerun-incomplete',
+                '--rerun-triggers', 'mtime',
                 '--use-singularity',
                 '--singularity-args', "'-B {}'".format(bindpaths),
                 '--cores', str(threads),
