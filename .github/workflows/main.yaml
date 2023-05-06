@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - uses: docker://snakemake/snakemake:v5.24.2
+    - uses: docker://snakemake/snakemake:v7.25.3
     - name: Dry Run with test data, all options
       run: |
-        docker run -v $PWD:/opt2 snakemake/snakemake:v5.24.2 \
+        docker run -v $PWD:/opt2 snakemake/snakemake:v7.25.3 \
         /opt2/genome-seek run --input \
         /opt2/.tests/WT_S1.R1.fastq.gz /opt2/.tests/WT_S1.R2.fastq.gz \
         /opt2/.tests/WT_S2_R1.fastq.gz /opt2/.tests/WT_S2_R2.fastq.gz \
@@ -29,7 +29,7 @@ jobs:
         --pon /opt2/.tests/1000g_pon.hg38.vcf.gz --dry-run
     - name: Dry Run with test data, skip QC
       run: |
-        docker run -v $PWD:/opt2 snakemake/snakemake:v5.24.2 \
+        docker run -v $PWD:/opt2 snakemake/snakemake:v7.25.3 \
         /opt2/genome-seek run --input \
         /opt2/.tests/WT_S1.R1.fastq.gz /opt2/.tests/WT_S1.R2.fastq.gz \
         /opt2/.tests/WT_S2_R1.fastq.gz /opt2/.tests/WT_S2_R2.fastq.gz \
@@ -42,5 +42,5 @@ jobs:
     - name: Lint Workflow
       continue-on-error: true
       run: |
-        docker run -v $PWD:/opt2 snakemake/snakemake:v5.24.2 snakemake --lint -s /opt2/output/workflow/Snakefile -d /opt2/output || \
+        docker run -v $PWD:/opt2 snakemake/snakemake:v7.25.3 snakemake --lint -s /opt2/output/workflow/Snakefile -d /opt2/output || \
         echo 'There may have been a few warnings or errors. Please read through the log to determine if its harmless.'
