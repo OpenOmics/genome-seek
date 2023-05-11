@@ -538,7 +538,10 @@ rule muse:
             tumor2normal[w.name]
         ) if tumor2normal[w.name] else "",
     threads: 
-        int(allocated("threads", "muse", cluster))
+        # MuSE over-alllocates threads,
+        # see this issue for more info:
+        # https://github.com/wwylab/MuSE/issues/8
+        max(int(allocated("threads", "muse", cluster)) - 9, 4),
     container: config['images']['genome-seek_somatic']
     envmodules:
         config['tools']['muse'],
