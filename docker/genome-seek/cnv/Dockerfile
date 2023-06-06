@@ -141,6 +141,10 @@ RUN mkdir -p /opt2/circos/0.69-8/ \
     && rm /usr/bin/circos
 ENV PATH="${PATH}:/opt2/circos/0.69-8/circos-0.69-8/bin"
 
+# Re-install R package "ragg" due to
+# Graphics API version mismatch issue
+RUN Rscript -e 'install.packages("ragg")'
+
 ################ POST #################
 # Add Dockerfile and export env variables
 ADD Dockerfile /opt2/genome-seek_cnv.dockerfile
