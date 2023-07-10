@@ -371,44 +371,19 @@ rule all:
             caller=provided(tn_somatic_callers, call_somatic),
             name=provided(tumorWnormal, call_somatic),
         ),
-        # Post-process somatic VCF, splits sites
-        # found in the tumor and normal sample, 
-        # and to merge callsets across callers,
+        # Post-process somatic VCF, 
+        # and merge callsets across callers,
         # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
-            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.tumor.vcf.gz"),
-            caller=provided(somatic_callers, call_somatic),
-            name=provided(tumors, call_somatic),
-        ),
-        # Conditionally add tumor-normal callers,
-        # MuSE and Strelka
-        expand( 
-            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.tumor.vcf.gz"),
-            caller=provided(tn_somatic_callers, call_somatic),
-            name=provided(tumorWnormal, call_somatic),
-        ),
-        expand( 
-            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.normal.vcf.gz"),
-            caller=provided(somatic_callers, call_somatic),
-            name=provided(tumorWnormal, call_somatic),
-        ),
-        # Conditionally add tumor-normal callers,
-        # MuSE and Strelka
-        expand( 
-            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.normal.vcf.gz"),
-            caller=provided(tn_somatic_callers, call_somatic),
-            name=provided(tumorWnormal, call_somatic),
-        ),
-        expand( 
-            join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz"),
+            join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.vcf.gz"),
             name=provided(tumors, call_somatic),
         ),
         # vcf2maf, create per-sample MAF file,
         # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
-            join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.maf"),
+            join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.maf"),
             name=provided(tumors, call_somatic),
         ),
         # vcf2maf, create cohort-level MAF file,
