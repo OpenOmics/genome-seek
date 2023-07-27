@@ -15,8 +15,9 @@ LABEL maintainer=kuhnsa@nih.gov
 #    • Python Package: distro
 
 # Define release with --build-arg VERSION=$RELEASE_VERSION
-# where the default = v0.7.4
-ARG VERSION=v0.7.4
+# where the default = develop and haswell
+ARG VERSION=develop
+ARG ARCHITECTURE=haswell
 
 # Create Container filesystem specific 
 # working directory and opt directories
@@ -60,27 +61,34 @@ RUN localedef -i en_US -f UTF-8 en_US.UTF-8
 RUN pip3 install --upgrade pip \
 	  && pip3 install distro
 
-# Install Octopus from tagged version
+# Installs the latest version Octopus
+# as of the date of building the image:
+# 17a597d192bcd5192689bf38c5836a98b824867a
+# Checking to see if this version of the 
+# tool resolve intermediant issues related
+# to the following issue:
+# https://github.com/luntergroup/octopus/issues/178
 RUN git clone --branch ${VERSION} --single-branch https://github.com/luntergroup/octopus.git \
     && cd octopus \
-    # Patch to avoid compiling 
-    # with AVX2 instruction set
-    # when building the image
-    # on a modern machine, this
-    # instruction set will fail 
-    # on nodes that have older 
-    # generation CPUs, ivybridge
-    # or sandybridge, here is a 
-    # list of CPUs that support 
-    # this instuction set:
+    && git checkout 17a597d192bcd5192689bf38c5836a98b824867a \
+    # Set -march option to avoid 
+    # compiling and building a 
+    # docker image with an illegal 
+    # instruction set that is not
+    # compatible with the arch on 
+    # the host machine. To avoid
+    # any problems, we are setting
+    # the -march to architecture 
+    # of the oldest node type. On
+    # Biowulf this is haswell.
+    # Here is a list of CPUs that
+    # support this instuction set:
     # https://en.wikipedia.org/wiki/Advanced_Vector_Extensions#Advanced_Vector_Extensions_2 
-    && sed -i 's/^elseif (AVX2_FOUND)/#elseif (AVX2_FOUND)/g' src/CMakeLists.txt \
-    && sed -i 's/add_compile_options(-mavx2)/#add_compile_options(-mavx2)/g' src/CMakeLists.txt \
     && mkdir -pv build_dir \
     && cd build_dir \
     && cmake \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCOMPILER_ARCHITECTURE=sandybridge \
+        -DCOMPILER_ARCHITECTURE=${ARCHITECTURE} \
         -DHTSLIB_ROOT=/usr/lib/x86_64-linux-gnu \
         .. \
     && make install -j 1
