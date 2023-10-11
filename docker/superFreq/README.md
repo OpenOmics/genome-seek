@@ -7,20 +7,20 @@ Directly below are instructions for building an image using the provided Dockerf
 docker image ls
 
 # Build from Dockerfile
-docker build --no-cache -f Dockerfile --tag=superfreq:v0.1.0 .
+docker build --no-cache -f Dockerfile --tag=superfreq:v0.1.1 .
 
 # Testing, take a peek inside
-docker run -ti superfreq:v0.1.0 /bin/bash
+docker run -ti superfreq:v0.1.1 /bin/bash
 
 # Updating Tag  before pushing to DockerHub
-docker tag superfreq:v0.1.0 skchronicles/superfreq:v0.1.0
-docker tag superfreq:v0.1.0 skchronicles/superfreq         # latest
+docker tag superfreq:v0.1.1 skchronicles/superfreq:v0.1.1
+docker tag superfreq:v0.1.1 skchronicles/superfreq         # latest
 
 # Check out new tag(s)
 docker image ls
 
 # Push new tagged image to DockerHub
-docker push skchronicles/superfreq:v0.1.0
+docker push skchronicles/superfreq:v0.1.1
 docker push skchronicles/superfreq:latest
 ```
 
@@ -29,7 +29,7 @@ docker push skchronicles/superfreq:latest
 Scan your image for known vulnerabilities:
 
 ```bash
-docker scan superfreq:v0.1.0
+docker scan superfreq:v0.1.1
 ```
 
 ### Gotchas
@@ -38,10 +38,20 @@ docker scan superfreq:v0.1.0
 
 To avoid this problem, please export the following environment variables prior to running superFreq:
 ```bash
+# Important/required VEP enviroment variables
 export VEP_DIR_CACHE=/path/to/VEP/110/cache/
 export VEP_OFFLINE=1
 export VEP_FORCE_OVERWRITE=1
 export VEP_CACHE=1
+
+# Setting up tmpdir for Rscripts,
+# tempdir() function in R will use
+# these variables to resolve the 
+# location writing temp files
+mkdir -p /path/to/superFreq/outdir
+export TMPDIR=/path/to/superFreq/outdir
+export TMP=/path/to/superFreq/outdir
+export TEMP=/path/to/superFreq/outdir
 ```
 
 This will ensure [superFreq](https://github.com/ChristofferFlensburg/superFreq) runs `VEP/110` in an offline mode using your local cache. 

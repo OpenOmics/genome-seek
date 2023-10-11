@@ -1,5 +1,7 @@
-# Base image for superFreq/v1.4.5,
-# uses Ubuntu Jammy (LTS)
+# Base image for superFreq/v1.4.6,
+# uses Ubuntu Jammy (LTS), and uses
+# a patched version of superFreq: 
+# https://github.com/skchronicles/superFreq
 FROM ubuntu:22.04
 
 # Depedencies of superFreq:
@@ -21,8 +23,8 @@ FROM ubuntu:22.04
 #                BSgenome.Hsapiens.UCSC.hg38 (>= 1.4.1)
 LABEL maintainer="OpenOmics" \
     base_image="ubuntu:22.04" \
-    version="v0.1.0"   \
-    software="superFreq/v1.4.5" \
+    version="v0.1.1"   \
+    software="superFreq/v1.4.6" \
     about.summary="superFreq: An R package that analyses cancer exomes" \
     about.home="https://github.com/ChristofferFlensburg/superFreq" \
     about.documentation="https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1007603" \
@@ -68,6 +70,7 @@ RUN apt-get update \
         locales \
         # perl/5.34.0-3
         perl \
+        libdbd-mysql-perl \
         pkg-config \
         # python/3.10.6
         python3 \
@@ -114,13 +117,20 @@ RUN pip3 install --upgrade pip \
     && pip3 install scipy
 
 
-############ superFreq/1.4.5 ############
-# Install superFreq/1.4.5, for more info:
+############ superFreq/1.4.6 ############
+# Install superFreq/1.4.6, for more info:
 # github.com/ChristofferFlensburg/superFreq/
 # setting the timeout to 15 mins due to very
 # large size (>600MB) of BSgenome genomes.
+# Due to an issue with WriteXLS writing tmp
+# files prior to creating the excel spread-
+# sheet, superFreq was forked and patch to
+# increase its verbosity while creating those
+# files. The patched version of superFreq can 
+# be found here as a tagged version, v1.4.6: 
+# https://github.com/skchronicles/superFreq
 RUN Rscript -e \
-    'options(timeout = 900); devtools::install_github("ChristofferFlensburg/superFreq", Ncpus = 4)' \
+    'options(timeout = 900); devtools::install_github("skchronicles/superFreq", Ncpus = 4)' \
     # Check if installed properly,
     # sometimes the BSgenome package
     # downloads will time out.
@@ -150,7 +160,7 @@ RUN mkdir -p /opt2/VEP/110/ /opt2/VEP/110/Plugins \
     && cd /opt2/VEP/110/ensembl-vep-release-110.1 \
     # Install Perl dependencies:
     # http://www.ensembl.org/info/docs/tools/vep/script/vep_download.html#requirements
-    && cpanm DBI DBD::mysql Archive::Zip \
+    && cpanm DBI Archive::Zip \
     # Installs API + Faidx/htslib
     && ./INSTALL.pl --NO_UPDATE --AUTO a
 
@@ -161,7 +171,7 @@ WORKDIR /opt2
 ################ POST #################
 # Add Dockerfile and export environment 
 # variables and update permissions
-ADD Dockerfile /opt2/superfreq_1-4-5.dockerfile
+ADD Dockerfile /opt2/superfreq_1-4-6.dockerfile
 RUN chmod -R a+rX /opt2
 ENV PATH="/opt2:$PATH"
 WORKDIR /data2
