@@ -23,7 +23,7 @@ FROM ubuntu:22.04
 #                BSgenome.Hsapiens.UCSC.hg38 (>= 1.4.1)
 LABEL maintainer="OpenOmics" \
     base_image="ubuntu:22.04" \
-    version="v0.1.1"   \
+    version="v0.1.2"   \
     software="superFreq/v1.4.6" \
     about.summary="superFreq: An R package that analyses cancer exomes" \
     about.home="https://github.com/ChristofferFlensburg/superFreq" \
@@ -136,7 +136,7 @@ RUN Rscript -e \
     # downloads will time out.
     && Rscript -e 'library("superFreq")'
 
-################ VEP/110 ################
+################ VEP/106 ################
 # superFreq can also optionally run VEP
 # to annotate its results. We are making
 # use of this feature. It is important
@@ -148,23 +148,38 @@ RUN Rscript -e \
 # with environment variable. This is very
 # import because superFreq does not have 
 # a built-in method to set/specify this
-# location at run time. As so, before 
+# location at run time. With that being
+# said, we discovered an issue with the
+# 110 cache where the 'gnomAD_AF' field 
+# was renamed to 'gnomADe_AF'. We think
+# this is causing downstream filtering 
+# issue in superFreq that is resulting 
+# in NA values to appear after superFreq
+# runs VEP internally. As so, before 
 # running superFreq these paths NEED to
 # be export aprori to run time. For more
 # information please see the following: 
 # https://github.com/Ensembl/ensembl-vep/pull/1267
-RUN mkdir -p /opt2/VEP/110/ /opt2/VEP/110/Plugins \
-    && wget https://github.com/Ensembl/ensembl-vep/archive/refs/tags/release/110.1.tar.gz -O /opt2/VEP/110/110.1.tar.gz \
-    && tar -zvxf /opt2/VEP/110/110.1.tar.gz -C /opt2/VEP/110/ \
-    && rm -f /opt2/VEP/110/110.1.tar.gz \
-    && cd /opt2/VEP/110/ensembl-vep-release-110.1 \
+RUN mkdir -p /opt2/VEP/106/ /opt2/VEP/106/Plugins /opt2/VEP/106/bin\
+    && wget https://github.com/Ensembl/ensembl-vep/archive/refs/tags/release/106.1.tar.gz -O /opt2/VEP/106/106.1.tar.gz \
+    && tar -zvxf /opt2/VEP/106/106.1.tar.gz -C /opt2/VEP/106/ \
+    && rm -f /opt2/VEP/106/106.1.tar.gz \
+    && cd /opt2/VEP/106/ensembl-vep-release-106.1 \
     # Install Perl dependencies:
     # http://www.ensembl.org/info/docs/tools/vep/script/vep_download.html#requirements
     && cpanm DBI Archive::Zip \
     # Installs API + Faidx/htslib
-    && ./INSTALL.pl --NO_UPDATE --AUTO a
+    && ./INSTALL.pl --NO_UPDATE --AUTO a \
+    # Create a wrapper to VEP that uses
+    # env variables for the cache dir
+    && mv /opt2/VEP/106/ensembl-vep-release-106.1/vep /opt2/VEP/106/ensembl-vep-release-106.1/vep_106 \
+    && echo '#!/usr/bin/env bash' > /opt2/VEP/106/bin/vep \
+    && echo 'set -euo pipefail' >> /opt2/VEP/106/bin/vep \
+    && echo 'if [[ $# -eq 0 ]]; then /opt2/VEP/106/ensembl-vep-release-106.1/vep_106; exit; fi' >> /opt2/VEP/106/bin/vep \
+    && echo '/opt2/VEP/106/ensembl-vep-release-106.1/vep_106 --offline --dir_cache ${VEP_DIR_CACHE} "$@"' >> /opt2/VEP/106/bin/vep \
+    && chmod a+rx /opt2/VEP/106/bin/vep
 
-ENV PATH="${PATH}:/opt2/VEP/110/ensembl-vep-release-110.1"
+ENV PATH="${PATH}:/opt2/VEP/106/bin" VEP_DIR_CACHE='${HOME}/.vep'
 WORKDIR /opt2 
 
 

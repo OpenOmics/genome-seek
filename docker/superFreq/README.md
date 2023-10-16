@@ -7,20 +7,20 @@ Directly below are instructions for building an image using the provided Dockerf
 docker image ls
 
 # Build from Dockerfile
-docker build --no-cache -f Dockerfile --tag=superfreq:v0.1.1 .
+docker build --no-cache -f Dockerfile --tag=superfreq:v0.1.2 .
 
 # Testing, take a peek inside
-docker run -ti superfreq:v0.1.1 /bin/bash
+docker run -ti superfreq:v0.1.2 /bin/bash
 
 # Updating Tag  before pushing to DockerHub
-docker tag superfreq:v0.1.1 skchronicles/superfreq:v0.1.1
-docker tag superfreq:v0.1.1 skchronicles/superfreq         # latest
+docker tag superfreq:v0.1.2 skchronicles/superfreq:v0.1.2
+docker tag superfreq:v0.1.2 skchronicles/superfreq         # latest
 
 # Check out new tag(s)
 docker image ls
 
 # Push new tagged image to DockerHub
-docker push skchronicles/superfreq:v0.1.1
+docker push skchronicles/superfreq:v0.1.2
 docker push skchronicles/superfreq:latest
 ```
 
@@ -29,7 +29,7 @@ docker push skchronicles/superfreq:latest
 Scan your image for known vulnerabilities:
 
 ```bash
-docker scan superfreq:v0.1.1
+docker scan superfreq:v0.1.2
 ```
 
 ### Gotchas
