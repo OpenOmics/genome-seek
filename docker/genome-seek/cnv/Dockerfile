@@ -4,7 +4,7 @@
 FROM skchronicles/genome-seek:v0.1.0
 LABEL maintainer="Skyler Kuhn <kuhnsa@nih.gov>" \
     base_image="skchronicles/genome-seek:v0.1.0" \
-    version="v0.1.0"   \
+    version="v0.2.0"   \
     software="genome-seekq cnv" \
     about.summary="An awesome Clinical Whole Genome Sequencing Pipeline" \
     about.home="https://github.com/OpenOmics/genome-seek" \
@@ -26,6 +26,7 @@ LABEL maintainer="Skyler Kuhn <kuhnsa@nih.gov>" \
 #  • annotsv/3.3.5  ✓ (annotations included in resource bundle)
 #  • tcl/tcllib     ✓
 #  • circos/0.69-8  ✓ (apt-get install has issues w/ config files)
+#  • slivar/0.3.0   ✓ from https://github.com/brentp/slivar
 WORKDIR /opt2
 # Install Java 11+ for hmftools,
 # installing dotnet runtime dependencies
@@ -144,6 +145,14 @@ ENV PATH="${PATH}:/opt2/circos/0.69-8/circos-0.69-8/bin"
 # Re-install R package "ragg" due to
 # Graphics API version mismatch issue
 RUN Rscript -e 'install.packages("ragg")'
+
+# Install slivar/0.3.0, for more info see:
+# https://github.com/brentp/slivar
+RUN mkdir -p /opt2/slivar/0.3.0/bin \
+    && wget https://github.com/brentp/slivar/releases/download/v0.3.0/slivar -P /opt2/slivar/0.3.0/bin/ \
+    && chmod a+x /opt2/slivar/0.3.0/bin/slivar
+ENV PATH="${PATH}:/opt2/slivar/0.3.0/bin"
+
 
 ################ POST #################
 # Add Dockerfile and export env variables
