@@ -170,7 +170,8 @@
     "glnexus": {
         "threads": "24",
         "mem": "240G",
-        "time": "4-00:00:00"
+        "time": "4-00:00:00",
+        "gres": "lscratch:256"
     },
     "gtype_refinement": {
         "threads": "2",
@@ -189,9 +190,9 @@
         "mem": "96G"
     },
     "hmftools_amber": {
-        "mem": "96G",
+        "mem": "365G",
         "time" : "48:00:00",
-        "threads": "24"
+        "threads": "56"
     },
     "hmftools_cobalt": {
         "mem": "96G",
@@ -270,7 +271,7 @@
     },
     "octopus_somatic": {
         "threads": "28",
-        "mem": "48G",
+        "mem": "96G",
         "time": "1-18:00:00"
     },
     "octopus_merge": {
