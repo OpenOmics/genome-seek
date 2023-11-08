@@ -370,7 +370,7 @@ rule opencravat_somatic:
         Per sample caller merged somatic SQLite OpenCravat results
     """
     input: 
-        vcfs = expand(join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz"), name=tumors),
+        vcfs = expand(join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.vcf.gz"), name=tumors),
     output: 
         db = join(workpath, "OpenCRAVAT", "somatic", "cravat_somatic.sqlite"),
     params: 

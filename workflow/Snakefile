@@ -309,6 +309,10 @@ rule all:
             join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.vcf.gz"),
             name=provided(provided(tumors, call_somatic), call_sv),
         ),
+        expand( 
+            join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.filtered.vcf"),
+            name=provided(provided(tumors, call_somatic), call_sv),
+        ),
         # Mutect2, call somatic variants,
         # scattered and merged on chroms
         # to speed up overall run time,
