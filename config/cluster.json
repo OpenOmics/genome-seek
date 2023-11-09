@@ -284,6 +284,11 @@
         "mem": "48G",
         "time": "12:00:00"
     },
+    "octopus_filter": {
+        "threads": "4",
+        "mem": "48G",
+        "time": "12:00:00"
+    },
     "ped": {
         "threads": "2",
         "partition": "norm",
@@ -365,6 +370,11 @@
         "time": "2:00:00"
     },
     "strelka": {
+        "threads": "16",
+        "mem": "64G",
+        "time": "24:00:00"
+    },
+    "strelka_format": {
         "threads": "16",
         "mem": "64G",
         "time": "24:00:00"

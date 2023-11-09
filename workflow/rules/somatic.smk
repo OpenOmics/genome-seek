@@ -35,28 +35,24 @@ def get_normal_pileup_table(wildcards):
         # Runs in tumor-only mode
         return []
 
-def get_somatic_merge_tumor(wildcards):
-    """Returns somatic variants found in the tumor sample 
-    for all somatic callers. For tumor-normal samples, extra
-    somatic callers (i.e. MuSE and Strelka) are run. Tumor-only 
-    samples will only have callsets from Mutect2 and octopus.
+def get_somatic_tn_callers(wildcards):
+    """Returns somatic variants found with tumor-normal variant
+    callers. For tumor-normal samples, extra somatic callers 
+    (i.e. MuSE and Strelka) are run. Tumor-only return empty
+    list (rule already has reference in input section).
     See config['pairs'] for tumor, normal pairs.
     """
-    callset = somatic_callers
     tumor = wildcards.name
     normal = tumor2normal[tumor]
     if normal:
-        # Callers = Octopus, Mutect2, MuSE, Strelka
+        # Callers = MuSE, Strelka
         return [
-            join(workpath, caller, "somatic", "{0}.{1}.filtered.norm.tumor.vcf.gz".format(tumor, caller)) \
-            for caller in somatic_callers + tn_somatic_callers
+            join(workpath, caller, "somatic", "{0}.{1}.filtered.norm.vcf".format(tumor, caller)) \
+            for caller in tn_somatic_callers
         ]
     else:
-        # Callers = Octopus, Mutect2
-        return [
-         join(workpath, caller, "somatic", "{0}.{1}.filtered.norm.tumor.vcf.gz".format(tumor, caller)) \
-         for caller in somatic_callers
-        ]
+        # No paired normal, return nothing
+        return []
 
 
 # Data processing rules for calling somatic variants
@@ -128,6 +124,12 @@ rule octopus_merge:
         lsl  = join(workpath, "octopus", "somatic", "{name}.list"),
         raw  = join(workpath, "octopus", "somatic", "{name}.octopus.raw.vcf"),
         vcf  = join(workpath, "octopus", "somatic", "{name}.octopus.unfiltered.vcf"),
+        chroms  = temp(join(workpath, "octopus", "somatic", "{name}.chroms")),
+        starts  = temp(join(workpath, "octopus", "somatic", "{name}.starts")),
+        stops   = temp(join(workpath, "octopus", "somatic", "{name}.stops")),
+        bed     = temp(join(workpath, "octopus", "somatic", "{name}.list.bed")),
+        sortbed = temp(join(workpath, "octopus", "somatic", "{name}.sort.bed")),
+        sortlsl = join(workpath, "octopus", "somatic", "{name}.sort.list"),
     params: 
         genome = config['references']['GENOME'],
         rname  = "octomerge",
@@ -136,11 +138,32 @@ rule octopus_merge:
     threads: 
         int(allocated("threads", "octopus_merge", cluster))
     container: config['images']['genome-seek']
-    envmodules: config['tools']['bcftools']
+    envmodules: config['tools']['bcftools'],
     shell: """
     # Create list of chunks to merge
     find {params.octopath} -iname '{params.tumor}.vcf.gz' \\
         > {output.lsl}
+    
+    # Sort list of chunks to merge
+    awk -F '/' '{{print $(NF-1)}}' {output.lsl} \\
+        | awk -F ':' '{{print $(1)}}' > {output.chroms}
+    awk -F '/' '{{print $(NF-1)}}' {output.lsl} \\
+        | awk -F ':' '{{print $(2)}}' \\
+        | awk -F '-' '{{print $(NF-1)}}' > {output.starts}
+    awk -F '/' '{{print $(NF-1)}}' {output.lsl} \\
+        | awk -F ':' '{{print $(2)}}' \\
+        | awk -F '-' '{{print $(NF)}}' > {output.stops}
+    paste {output.chroms} \\
+        {output.starts} \\
+        {output.stops} \\
+        {output.lsl} \\
+        > {output.bed}
+    bedtools sort \\
+        -i {output.bed} \\
+        -faidx {params.genome}.fai \\
+        > {output.sortbed}
+    cut -f4 {output.sortbed} > {output.sortlsl}
+
     # Merge octopus chunk calls,
     # contains both germline and
     # somatic variants
@@ -148,7 +171,7 @@ rule octopus_merge:
         --threads {threads} \\
         -d exact \\
         -a \\
-        -f {output.lsl} \\
+        -f {output.sortlsl} \\
         -o {output.raw} \\
         -O v
     # Filter Octopus callset for 
@@ -177,16 +200,37 @@ rule octopus_filter:
         genome = config['references']['GENOME'],
         rname  = "octofilter",
         tumor  = "{name}",
-        octopath = join(workpath, "octopus", "somatic", "chunks")
+        octopath = join(workpath, "octopus", "somatic", "chunks"),
+        # Building optional argument for paired normal
+        bcftools_filter_i_option = lambda w: 'FMT/FT[1:0]=="PASS"' \
+            if tumor2normal[w.name] else 'FMT/FT[0:0]=="PASS"',
     threads: 
-        int(allocated("threads", "octopus_merge", cluster))
-    envmodules:
-        config['tools']['bcftools']
+        int(allocated("threads", "octopus_filter", cluster))
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['bcftools']
     shell: """
-           bcftools filter -o {output.vcfa} -O v -i 'FILTER=="PASS"' {input.vcf}
-           awk -F '\t' -v OFS='\t' '( $1 ~ /^#/ ) || ( $8 ~ /SOMATIC/ ) {{print}}' {output.vcfa} > {output.vcfb}
-           bcftools filter -i 'FMT/FT[0:0]=="PASS"' {output.vcfb} | bcftools filter -i 'FMT/FT[1:0]=="PASS"' -o {output.vcfc}
-           bcftools sort -o {output.vcfsort} -O v {output.vcfc}
+    bcftools filter \\
+        -o {output.vcfa} \\
+        -O v \\
+        -i 'FILTER=="PASS"' \\
+        {input.vcf}
+    
+    awk -F '\\t' -v OFS='\\t' \\
+        '( $1 ~ /^#/ ) || ( $8 ~ /SOMATIC/ ) {{print}}' \\
+        {output.vcfa} \\
+        > {output.vcfb}
+    
+    bcftools filter \\
+        -i 'FMT/FT[0:0]=="PASS"' \\
+        {output.vcfb} \\
+        | bcftools filter \\
+            -i '{params.bcftools_filter_i_option}' \\
+            -o {output.vcfc}
+    
+    bcftools sort \\
+        -o {output.vcfsort} \\
+        -O v \\
+        {output.vcfc}
     """
 
 rule octopus_germline:
@@ -622,11 +666,12 @@ rule strelka:
         indels = join(workpath, "strelka", "{name}", "results", "variants", "somatic.indels.vcf.gz"),
         vcf    = temp(join(workpath, "strelka", "{name}", "{name}.tmp.vcf")),
         header = temp(join(workpath, "strelka", "{name}", "{name}.samples")),
-        final  = join(workpath, "strelka", "somatic", "{name}.strelka.vcf"),
+        rehead  = temp(join(workpath, "strelka", "somatic", "{name}.rehead.vcf")),
     params:
         tmpdir = tmpdir,
         tumor  = '{name}',
         rname  = 'strelka',
+        purple_jar = config['references']['HMFTOOLS_PURPLE_JAR'],
         outdir = join(workpath, "strelka", "{name}"),
         workflow = join(workpath, "strelka", "{name}", "runWorkflow.py"),
         regions  = config['references']['MANTA_CALLREGIONS'],
@@ -694,9 +739,56 @@ rule strelka:
     echo -e "TUMOR\\t{params.tumor}{params.normal_header}" \\
     > {output.header} 
     bcftools reheader \\
-        -o {output.final} \\
+        -o {output.rehead} \\
         -s {output.header} \\
         {output.vcf}
+    """  
+    
+rule strelka_format:
+    """Data-processing step to call somatic mutations with Strelka. This tool is 
+    optimized for rapid clinical analysis of germline variation in small cohorts 
+    and somatic variation in tumor/normal sample pairs. More information about 
+    strelka can be found here: https://github.com/Illumina/strelka
+    @Input:
+        Realigned, recalibrated BAM file for a normal in a TN pair
+    @Output:
+        Per sample VCF of somatic variants
+    """
+    input: 
+        rehead  = join(workpath, "strelka", "somatic", "{name}.rehead.vcf"),
+    output:
+        final  = join(workpath, "strelka", "somatic", "{name}.strelka.vcf"),
+    params:
+        tmpdir = tmpdir,
+        tumor  = '{name}',
+        rname  = 'strelka_format',
+        purple_jar = config['references']['HMFTOOLS_PURPLE_JAR'],
+        outdir = join(workpath, "strelka", "{name}"),
+        workflow = join(workpath, "strelka", "{name}", "runWorkflow.py"),
+        regions  = config['references']['MANTA_CALLREGIONS'],
+        genome   = config['references']['GENOME'],
+        pon      = config['references']['PON'],
+        memory   = allocated("mem", "strelka_format", cluster).rstrip('G'),
+        # Building optional argument for paired normal
+        normal_option = lambda w: "--normalBam {0}.recal.bam".format(
+            join(workpath, "BAM", tumor2normal[w.name])
+        ) if tumor2normal[w.name] else "",
+        # Creating optional reheader for paired normal,
+        # resolves to "\nNORMAL\t${normalName}"
+        normal_header = lambda w: "\\nNORMAL\\t{0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+    threads: 
+        max(int(allocated("threads", "strelka_format", cluster))-1, 1)
+    container: config['images']['genome-seek_cnv']
+    envmodules:
+        config['tools']['rlang'],
+    shell: """
+    #Adding AD annotation to VCF
+    java -Xmx{params.memory}g -cp {params.purple_jar} \\
+        com.hartwig.hmftools.purple.tools.AnnotateStrelkaWithAllelicDepth \\
+        -in {input.rehead} \\
+        -out {output.final}
     """
 
 
@@ -760,18 +852,19 @@ rule somatic_selectvar:
 rule somatic_merge_tumor:
     """Data-processing step to post-process vcf file generated by all the
     somatic callers. This step takes filtered tumor sample callsets from 
-    each caller and intersects them. GATK3 CombineVariants needs at least 2 files as input.
+    each caller and intersects them so only variants found in at least 
+    2 callers are retained. bcftools isec needs at least 2 files as input.
     @Input:
         Somatic variants found in the tumor sample (gather-across-somatic-callers)
     @Output:
         Variants found in at least 2 callers
     """
     input:
-##        tumors = get_somatic_merge_tumor,
-          octopus = join(workpath, "octopus", "somatic", "{name}.octopus.filtered.norm.vcf"),
-          mutect2 = join(workpath, "mutect2", "somatic", "{name}.mutect2.filtered.norm.vcf"),
-          muse = join(workpath, "muse", "somatic", "{name}.muse.filtered.norm.vcf"),
-          strelka = join(workpath, "strelka", "somatic", "{name}.strelka.filtered.norm.vcf"),
+        tn_callers = get_somatic_tn_callers,
+        octopus = join(workpath, "octopus", "somatic", "{name}.octopus.filtered.norm.vcf"),
+        mutect2 = join(workpath, "mutect2", "somatic", "{name}.mutect2.filtered.norm.vcf"),
+        # muse = join(workpath, "muse", "somatic", "{name}.muse.filtered.norm.vcf"),
+        # strelka = join(workpath, "strelka", "somatic", "{name}.strelka.filtered.norm.vcf"),
     output:
         merged = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.vcf.gz"),
     params:
@@ -779,6 +872,17 @@ rule somatic_merge_tumor:
         genome = config['references']['GENOME'],
         memory = allocated("mem", "somatic_merge_tumor", cluster).rstrip('G'),
         tmpdir = tmpdir,
+        # Dynamically update the priority list
+        # based on wether a sample is a tumor-only
+        # or a tumor-normal
+        priority_list = lambda w: "mutect2,octopus,muse,strelka" \
+          if tumor2normal[w.name] else "mutect2,octopus",
+        strelka_option = lambda w: "--variant:strelka {0}.strelka.filtered.norm.vcf".format(
+            join(workpath, "strelka", "somatic", w.name)
+        ) if tumor2normal[w.name] else "",
+        muse_option = lambda w: "--variant:muse {0}.muse.filtered.norm.vcf".format(
+            join(workpath, "muse", "somatic", w.name)
+        ) if tumor2normal[w.name] else "",
     threads: 
         int(allocated("threads", "somatic_merge_tumor", cluster))
     container: config['images']['genome-seek_somatic']
@@ -790,8 +894,14 @@ rule somatic_merge_tumor:
     tmp=$(mktemp -d -p "{params.tmpdir}")
     trap 'rm -rf "${{tmp}}"' EXIT
 
-    java -Xmx{params.memory}g -Djava.io.tmpdir=${{tmp}} \
-        -XX:ParallelGCThreads={threads} -jar $GATK_JAR -T CombineVariants -R {params.genome} --filteredrecordsmergetype KEEP_IF_ANY_UNFILTERED --genotypemergeoption PRIORITIZE --rod_priority_list octopus,mutect2,strelka -o {output.merged} --variant:octopus {input.octopus} --variant:mutect2 {input.mutect2} --variant:strelka {input.strelka}
+    java -Xmx{params.memory}g -Djava.io.tmpdir=${{tmp}} \\
+        -XX:ParallelGCThreads={threads} -jar $GATK_JAR -T CombineVariants \\
+            -R {params.genome} \\
+            --filteredrecordsmergetype KEEP_IF_ANY_UNFILTERED \\
+            --genotypemergeoption PRIORITIZE \\
+            --rod_priority_list {params.priority_list} \\
+            -o {output.merged} \\
+            --variant:octopus {input.octopus} --variant:mutect2 {input.mutect2} {params.strelka_option} {params.muse_option} 
     """
 
 rule somatic_sample_maf:
@@ -809,7 +919,7 @@ rule somatic_sample_maf:
         vcf = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.vcf.gz"),
     output:
         vcf = temp(join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.temp.vcf")),
-        vep = temp(join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.temp.vep.vcf")),
+        vep = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.temp.vep.vcf"),
         maf = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.maf"),
     params:
         rname  = 'samplemaf',
