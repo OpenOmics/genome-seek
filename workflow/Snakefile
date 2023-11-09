@@ -422,16 +422,29 @@ rule all:
         # @imported from rules/cnv.smk
         expand( 
             join(workpath, "hmftools", "amber", "{name}", "{name}.amber.baf.tsv"),
-            name=provided(provided(tumors, call_somatic), call_cnv),
+            name=provided(provided(tumors, call_somatic), call_cnv)
         ),
         expand( 
             join(workpath, "hmftools", "cobalt", "{name}", "{name}.cobalt.ratio.tsv"),
-            name=provided(provided(tumors, call_somatic), call_cnv),
+            name=provided(provided(tumors, call_somatic), call_cnv)
         ),
         expand( 
-            join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.purple.cnv.somatic.tsv"),
-            name=provided(provided(tumors, call_somatic), call_cnv),
-            caller=provided(purple_callers, call_somatic),
+            join(workpath, "hmftools", "purple", "{name}", "{name}.purple.cnv.somatic.tsv"),
+            name=provided(provided(tumors, call_somatic), call_cnv)
+        ),
+        expand( 
+            join(workpath, "hmftools", "purple", "{name}", "{name}.purple.maf"),
+            name=provided(provided(tumors, call_somatic), call_cnv)
+        ),
+        # Maftools, create cohort-level summary plots from purple somatic VCF,
+        # only runs if provided --call-somatic AND --call-cnv
+        # @imported from rules/somatic.smk    
+        provided(
+            provided(
+                [join(workpath, "hmftools", "cohort_oncoplot.pdf")],
+                call_somatic
+            ),
+            call_cnv
         ),
         # OpenCRAVAT, somatic annotation, rank and score variants,
         # only runs if provided --open-cravat AND --call-somatic

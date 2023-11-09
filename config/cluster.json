@@ -204,6 +204,22 @@
         "time" : "48:00:00",
         "threads": "8"
     },
+    "somatic_purple_maf": {
+        "threads": "4",
+        "mem": "32G",
+        "time": "1-12:00:00",
+        "gres": "lscratch:32"
+    },
+    "purple_cohort_maf": {
+        "threads": "2",
+        "mem": "8G",
+        "time": "4:00:00"
+    },
+    "purple_cohort_maftools": {
+        "threads": "2",
+        "mem": "8G",
+        "time": "4:00:00"
+    },
     "inbreeding": {
         "threads": "8",
         "partition": "norm"
