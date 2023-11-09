@@ -151,8 +151,8 @@ rule manta_somatic_filter:
         filtermanta = join(workpath, "workflow", "scripts", "FilterManta.pl"),
         genome      = config['references']['GENOME'],
         filter_ref  = config['references']['MANTA_FILTER_CHROMOSEQ_TRANSLOCATION'],
-        memory      = allocated("mem", "manta_somatic", cluster).rstrip('G'),
-    threads: int(allocated("threads", "manta_somatic", cluster))
+        memory      = allocated("mem", "manta_somatic_filter", cluster).rstrip('G'),
+    threads: int(allocated("threads", "manta_somatic_filter", cluster))
     container: config['images']['genome-seek_sv']
     envmodules: 
         config['tools']['bcftools'],

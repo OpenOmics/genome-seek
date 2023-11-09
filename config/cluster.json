@@ -222,6 +222,11 @@
         "mem": "96G",
         "time": "1-00:00:00"
     },
+    "manta_somatic_filter": {
+        "threads": "4",
+        "mem": "72G",
+        "time": "1-00:00:00"
+    },
     "opencravat_germline_merge": {
         "threads": "4",
         "mem": "120G",
