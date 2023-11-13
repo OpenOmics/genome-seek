@@ -101,6 +101,15 @@ rule manta_somatic:
         normal_option = lambda w: "--normalBam {0}.recal.bam".format(
             join(workpath, "BAM", tumor2normal[w.name])
         ) if tumor2normal[w.name] else "",
+        # Building command to create a renamed symlink
+        # called, somaticSV.vcf.gz, when run in tumor-
+        # only mode. Ensures a consistent output file
+        # names regardless of whether a sample has a 
+        # paired normal or not.
+        symlink = lambda w: "ln -sf {0} {1}".format(
+            join(workpath, "MANTA", "somatic", w.name, "results", "variants", "tumorSV.vcf.gz"),
+            join(workpath, "MANTA", "somatic", w.name, "results", "variants", "somaticSV.vcf.gz"),
+        ) if not tumor2normal[w.name] else "",
     threads: int(allocated("threads", "manta_somatic", cluster))
     container: config['images']['genome-seek_sv']
     envmodules: config['tools']['manta']
@@ -123,7 +132,8 @@ rule manta_somatic:
     echo "Starting Manta workflow..."
     {params.workflow} \\
         -j {threads} \\
-        -g {params.memory} 
+        -g {params.memory}
+    {params.symlink}
     """
 
 # Filter Somatic SV calls

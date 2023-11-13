@@ -278,7 +278,7 @@
     "opencravat_germline": {
         "threads": "20",
         "mem": "48G",
-        "time": "12:00:00"
+        "time": "1-12:00:00"
     },
     "opencravat_somatic": {
         "threads": "32",
