@@ -186,9 +186,9 @@ rule manta_somatic_filter:
     # from chromoseq pipeline,
     # https://github.com/genome/docker-basespace_chromoseq
     # Needs paths to its depedencies:
-    bedtools_path="$(which bedtools)"
-    minimap2_path="$(which minimap2)"
-    svtools_path="$(which svtools)"
+    bedtools_path="$(type -P bedtools)"
+    minimap2_path="$(type -P minimap2)"
+    svtools_path="$(type -P svtools)"
     echo "Paths of all dependencies... ${{bedtools_path}}:${{minimap2_path}}:${{svtools_path}}"
     perl {params.filtermanta} \\
         -r {params.genome} \\
