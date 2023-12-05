@@ -73,7 +73,6 @@ rule manta_germline:
         -g {params.memory} 
     """
 
-
 # Somatic SV calling 
 rule manta_somatic:
     """
@@ -102,6 +101,15 @@ rule manta_somatic:
         normal_option = lambda w: "--normalBam {0}.recal.bam".format(
             join(workpath, "BAM", tumor2normal[w.name])
         ) if tumor2normal[w.name] else "",
+        # Building command to create a renamed symlink
+        # called, somaticSV.vcf.gz, when run in tumor-
+        # only mode. Ensures a consistent output file
+        # names regardless of whether a sample has a 
+        # paired normal or not.
+        symlink = lambda w: "ln -sf {0} {1}".format(
+            join(workpath, "MANTA", "somatic", w.name, "results", "variants", "tumorSV.vcf.gz"),
+            join(workpath, "MANTA", "somatic", w.name, "results", "variants", "somaticSV.vcf.gz"),
+        ) if not tumor2normal[w.name] else "",
     threads: int(allocated("threads", "manta_somatic", cluster))
     container: config['images']['genome-seek_sv']
     envmodules: config['tools']['manta']
@@ -124,5 +132,77 @@ rule manta_somatic:
     echo "Starting Manta workflow..."
     {params.workflow} \\
         -j {threads} \\
-        -g {params.memory} 
+        -g {params.memory}
+    {params.symlink}
+    """
+
+# Filter Somatic SV calls
+rule manta_somatic_filter:
+    """
+    Data processing step to call somatic structural variants using manta. 
+    Manta is optimized for optimized for analysis of germline variation 
+    in small sets of individuals and somatic variation in tumor/normal 
+    sample pairs. Manta's Github Repo: https://github.com/Illumina/manta
+    @Input:
+        Single-sample VCF file with called somatic structural variants (scatter)
+    @Output:
+        Filtered single-sample VCF file with called somatic structural variants
+    """
+    input: 
+        vcf  = join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.vcf.gz"),
+    output:
+        samplevcf  = join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.sample.vcf.gz"),
+        flagged    = join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.flagged.vcf.gz"),
+        filtered   = join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.filtered.vcf"),
+    params: 
+        rname       = "manta_somatic_filter",
+        sample      = "{name}",
+        outdir      = join(workpath, "MANTA", "somatic", "{name}"),
+        filtermanta = join(workpath, "workflow", "scripts", "FilterManta.pl"),
+        genome      = config['references']['GENOME'],
+        filter_ref  = config['references']['MANTA_FILTER_CHROMOSEQ_TRANSLOCATION'],
+        memory      = allocated("mem", "manta_somatic_filter", cluster).rstrip('G'),
+    threads: int(allocated("threads", "manta_somatic_filter", cluster))
+    container: config['images']['genome-seek_sv']
+    envmodules: 
+        config['tools']['bcftools'],
+        config['tools']['samtools'],
+        config['tools']['bedtools'],
+        config['tools']['svtools'],
+        config['tools']['minimap2'],
+        config['tools']['perl'],
+    shell: """
+    # Flag and filter SVs based on the
+    # following: read support, contig 
+    # re-mapping, and allele fraction. 
+    # Also removes non-PASS SVs from
+    # somatic SV callset.
+    bcftools view \\
+        -s {params.sample} \\
+        -O z \\
+        -o {output.samplevcf} \\
+        {input.vcf}
+    # Script to filter manta results 
+    # from chromoseq pipeline,
+    # https://github.com/genome/docker-basespace_chromoseq
+    # Needs paths to its depedencies:
+    bedtools_path="$(type -P bedtools)"
+    minimap2_path="$(type -P minimap2)"
+    svtools_path="$(type -P svtools)"
+    echo "Paths of all dependencies... ${{bedtools_path}}:${{minimap2_path}}:${{svtools_path}}"
+    perl {params.filtermanta} \\
+        -r {params.genome} \\
+        -k {params.filter_ref} \\
+        -b "${{bedtools_path}}" \\
+        -p "${{minimap2_path}}" \\
+        -s "${{svtools_path}}" \\
+        -t {params.outdir} \\
+        {output.samplevcf} \\
+        {output.flagged}
+    # Remove non-PASS-ing SVs
+    bcftools view \\
+        -O v \\
+        -i 'FILTER=="PASS"' \\
+        {output.flagged} \\
+    > {output.filtered}
     """

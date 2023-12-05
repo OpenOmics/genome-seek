@@ -24,10 +24,11 @@ def get_manta_calls(wildcards):
     tumor = wildcards.name
     if call_sv:
         # Runs in a tumor, normal mode
-        return join(workpath, "MANTA", "somatic", tumor, "results", "variants", "somaticSV.vcf.gz"),
+        return join(workpath, "MANTA", "somatic", tumor, "results", "variants", "somaticSV.filtered.vcf"),
     else:
         # Runs in tumor-only mode
         return []
+
 
 # Germline Copy Number Variation
 rule peddy:
@@ -207,7 +208,6 @@ rule hmftools_amber:
         tumor  = join(workpath, "BAM", "{name}.recal.bam"),
         normal = get_normal_recal_bam,
     output:
-        con = join(workpath, "hmftools", "amber", "{name}", "{name}.amber.contamination.vcf.gz"),
         baf = join(workpath, "hmftools", "amber", "{name}", "{name}.amber.baf.tsv"),
     params:
         rname     = 'hmfamber',
@@ -238,7 +238,6 @@ rule hmftools_amber:
             -threads {threads} {params.tumor_flag} \\
             -loci {params.loci_ref}
     """
-
 
 
 rule hmftools_cobalt:
@@ -307,17 +306,22 @@ rule hmftools_purple:
     input:
         amber  = join(workpath, "hmftools", "amber", "{name}", "{name}.amber.baf.tsv"),
         cobalt = join(workpath, "hmftools", "cobalt", "{name}", "{name}.cobalt.ratio.tsv"),
-        vcf    = join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
+        vcf    = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.temp.vep.vcf"),
         sv     = get_manta_calls,
     output:
-        purity = join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.purple.purity.tsv"),
-        cnv    = join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.purple.cnv.somatic.tsv"),
-        driver = join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.driver.catalog.somatic.tsv"),
+        purity = join(workpath, "hmftools", "purple", "{name}", "{name}.purple.purity.tsv"),
+        cnv    = join(workpath, "hmftools", "purple", "{name}", "{name}.purple.cnv.somatic.tsv"),
+        driver = join(workpath, "hmftools", "purple", "{name}", "{name}.driver.catalog.somatic.tsv"),
+        vcf    = join(workpath, "hmftools", "purple", "{name}", "{name}.merged.filtered.norm.biallelic.vcf"),
+        purplevcf    = join(workpath, "hmftools", "purple", "{name}", "{name}.purple.somatic.vcf.gz"),
     params:
         rname      = 'hmfpurple',
         tumor      = '{name}',
-        outdir     = join(workpath, "hmftools", "purple", "{name}", "{caller}"),
+        outdir     = join(workpath, "hmftools", "purple", "{name}"),
         genome     = config['references']['GENOME'],
+        gnomadv2   = config['references']['SLIVARGNOMAD'],
+        gnomadv3   = config['references']['SLIVARGNOMAD3'],
+        topmed     = config['references']['SLIVARTOPMED'],
         ref_ver    = config['references']['HMFTOOLS_REF_VERSION'],
         purple_jar = config['references']['HMFTOOLS_PURPLE_JAR'],
         gc_profile = config['references']['HMFTOOLS_GC_PROFILE'],
@@ -333,7 +337,7 @@ rule hmftools_purple:
         tumor_flag = lambda w: "" if tumor2normal[w.name] else "-tumor_only",
         # Building optional flag for SV calls
         sv_option = lambda w: "-structural_vcf {0}".format(
-            join(workpath, "MANTA", "somatic", w.name, "results", "variants", "somaticSV.vcf.gz"),
+            join(workpath, "MANTA", "somatic", w.name, "results", "variants", "somaticSV.filtered.vcf"),
         ) if call_sv else "",
     threads: 
         int(allocated("threads", "hmftools_purple", cluster)),
@@ -341,6 +345,7 @@ rule hmftools_purple:
     envmodules:
         config['tools']['rlang'],
         config['tools']['circos'],
+        config['tools']['bcftools'],
     shell: """
     # Set output directories
     # for Amber and Cobalt
@@ -348,7 +353,28 @@ rule hmftools_purple:
     cobalt_outdir="$(dirname "{input.cobalt}")"
     echo "Amber output directory: $amber_outdir"
     echo "Cobalt output directory: $cobalt_outdir"
-
+    
+    # Decompress and filter merged 
+    # somatic variant VCF to remove 
+    # biallelic variants and variants 
+    # with > 0.01 frequency in the 
+    # general population
+    bcftools view \\
+        -O v \\
+        --max-alleles 2 \\
+        {input.vcf} \\
+        | slivar expr \\
+            --vcf - --pass-only \\
+            -g {params.gnomadv2} \\
+            -g {params.topmed} \\
+            --info 'INFO.impactful && INFO.gnomad_popmax_af < 0.01 && INFO.topmed_af < 0.05' \\
+        | sed 's/gnomad_/gnomadV2_/g' \\
+        | slivar expr \\
+            --vcf - --pass-only \\
+            -g {params.gnomadv3} \\
+            --info 'INFO.gnomad_popmax_af < 0.01' \\
+    > {output.vcf}
+    
     # Run Purple to find CNVs,
     # purity and ploidy, and 
     # cancer driver events
@@ -366,5 +392,119 @@ rule hmftools_purple:
         -somatic_hotspots {params.somatic_hotspot} \\
         -germline_hotspots {params.germline_hotspot} \\
         -threads {threads} {params.tumor_flag} \\
-        -somatic_vcf {input.vcf} {params.sv_option}
+        -somatic_vcf {output.vcf} {params.sv_option}
+    """
+
+
+rule somatic_purple_maf:
+    """Data-processing step to convert the merged somatic calls from 
+    each caller into a MAF file. This step takes filtered, norm, tumor 
+    callset from all callers and annotates the variants with VEP/106
+    and converts the resulting VCF file into MAF file format. vcf2maf 
+    requires the input vcf file is NOT compressed.
+    @Input:
+        Somatic variants found in the tumor sample (scatter-per-sample)
+    @Output:
+        Annotated, merged MAF file contaning somatic callsets
+    """
+    input:
+        vcf    = join(workpath, "hmftools", "purple", "{name}", "{name}.purple.somatic.vcf.gz"),
+    output:
+        vcf = temp(join(workpath, "hmftools", "purple", "{name}", "{name}.purple.somatic.vcf")),
+        vep = join(workpath, "hmftools", "purple", "{name}", "{name}.purple.somatic.vep.vcf"),
+        maf = join(workpath, "hmftools", "purple", "{name}", "{name}.purple.maf"),
+    params:
+        rname  = 'purplemaf',
+        tumor  = '{name}',
+        memory = allocated("mem", "somatic_purple_maf", cluster).lower().rstrip('g'),
+        vep_data    = config['references']['VEP_DATA'],
+        vep_build   = config['references']['VEP_BUILD'],
+        vep_species = config['references']['VEP_SPECIES'],
+        ref_version = config['references']['VEP_REF_VERSION'],
+        genome      = config['references']['GENOME'],
+        # Building optional argument for paired normal
+        normal_option = lambda w: "--normal-id {0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+    threads: 
+        int(allocated("threads", "somatic_purple_maf", cluster))
+    container: config['images']['vcf2maf']
+    shell: """
+    # vcf2maf needs an uncompressed VCF file
+    zcat {input.vcf} \\
+    > {output.vcf}
+    # Run VEP and convert VCF into MAF file
+    vcf2maf.pl \\
+        --input-vcf {output.vcf} \\
+        --output-maf {output.maf} \\
+        --vep-path ${{VEP_HOME}} \\
+        --vep-data {params.vep_data} \\
+        --cache-version {params.ref_version} \\
+        --ref-fasta {params.genome} \\
+        --vep-forks {threads} \\
+        --tumor-id {params.tumor} {params.normal_option} \\
+        --ncbi-build {params.vep_build} \\
+        --species {params.vep_species} \\
+        --retain-info set,PURPLE_CN,SUBCL,HOTSPOT,IMPACT,NEAR_HOTSPOT,PNOISE,PNOISE2,PON,PURPLE_AF,PURPLE_GERMLINE,PURPLE_MACN,PURPLE_VCN,REPORTED,SOMATIC,SomaticEVS
+    """
+
+
+rule purple_cohort_maf:
+    """Data-processing step to merge the per-sample MAF files into a 
+    single MAF file for all samples, a cohort MAF file. 
+    @Input:
+        Somatic tumor MAF files (gather-per-sample)
+    @Output:
+        Merged somatic tumor MAF, cohort-level, with all call sets
+    """
+    input: 
+        mafs = expand(join(workpath, "hmftools", "purple", "{name}", "{name}.purple.maf"), name=tumors),
+    output: 
+        maf  = join(workpath, "hmftools", "cohort_somatic_variants.maf"),
+    params:
+        rname  = 'cohortmaf',
+        memory = allocated("mem", "purple_cohort_maf", cluster).lower().rstrip('g'),
+    threads: 
+        int(allocated("threads", "purple_cohort_maf", cluster))
+    container: config['images']['vcf2maf']
+    shell: """
+    echo "Combining MAFs..."
+    head -2 {input.mafs[0]} > {output.maf}
+    awk 'FNR>2 {{print}}' {input.mafs} >> {output.maf}
+    """
+
+
+rule purple_cohort_maftools:
+    """Data-processing step to run maftools on merged cohort-level 
+    MAF file, produces summarized plots like an oncoplot. 
+    @Input:
+        Cohort-level somatic MAF file (indirect-gather-due-to-aggregation) 
+    @Output:
+        TCGA comparsion plot
+        Top 20 genes by Vaf plot
+        MAF Summary plot
+        Oncoplot
+    """
+    input: 
+        maf  = join(workpath, "hmftools", "cohort_somatic_variants.maf"),
+    output:
+        tcga     = join(workpath, "hmftools", "cohort_tcga_comparison.pdf"),
+        gvaf     = join(workpath, "hmftools", "cohort_genes_by_VAF.pdf"),
+        summary  = join(workpath, "hmftools", "cohort_maf_summary.pdf"),
+        oncoplot = join(workpath, "hmftools", "cohort_oncoplot.pdf"),
+    params:
+        rname  = 'maftools',
+        wdir   = join(workpath, "hmftools"),
+        memory = allocated("mem", "purple_cohort_maftools", cluster).lower().rstrip('g'),
+        script = join("workflow", "scripts", "maftools.R"),
+    threads: 
+        int(allocated("threads", "purple_cohort_maftools", cluster)),
+    container: config['images']['genome-seek_somatic']
+    envmodules: config['tools']['rlang']
+    shell: """
+    Rscript {params.script} \\
+        {params.wdir} \\
+        {input.maf} \\
+        {output.summary} \\
+        {output.oncoplot}
     """

@@ -309,6 +309,10 @@ rule all:
             join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.vcf.gz"),
             name=provided(provided(tumors, call_somatic), call_sv),
         ),
+        expand( 
+            join(workpath, "MANTA", "somatic", "{name}", "results", "variants", "somaticSV.filtered.vcf"),
+            name=provided(provided(tumors, call_somatic), call_sv),
+        ),
         # Mutect2, call somatic variants,
         # scattered and merged on chroms
         # to speed up overall run time,
@@ -371,44 +375,19 @@ rule all:
             caller=provided(tn_somatic_callers, call_somatic),
             name=provided(tumorWnormal, call_somatic),
         ),
-        # Post-process somatic VCF, splits sites
-        # found in the tumor and normal sample, 
-        # and to merge callsets across callers,
+        # Post-process somatic VCF, 
+        # and merge callsets across callers,
         # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
-            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.tumor.vcf.gz"),
-            caller=provided(somatic_callers, call_somatic),
-            name=provided(tumors, call_somatic),
-        ),
-        # Conditionally add tumor-normal callers,
-        # MuSE and Strelka
-        expand( 
-            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.tumor.vcf.gz"),
-            caller=provided(tn_somatic_callers, call_somatic),
-            name=provided(tumorWnormal, call_somatic),
-        ),
-        expand( 
-            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.normal.vcf.gz"),
-            caller=provided(somatic_callers, call_somatic),
-            name=provided(tumorWnormal, call_somatic),
-        ),
-        # Conditionally add tumor-normal callers,
-        # MuSE and Strelka
-        expand( 
-            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.normal.vcf.gz"),
-            caller=provided(tn_somatic_callers, call_somatic),
-            name=provided(tumorWnormal, call_somatic),
-        ),
-        expand( 
-            join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.vcf.gz"),
+            join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.vcf.gz"),
             name=provided(tumors, call_somatic),
         ),
         # vcf2maf, create per-sample MAF file,
         # only runs if provided --call-somatic 
         # @imported from rules/somatic.smk
         expand( 
-            join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.tumor.maf"),
+            join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.maf"),
             name=provided(tumors, call_somatic),
         ),
         # vcf2maf, create cohort-level MAF file,
@@ -443,16 +422,29 @@ rule all:
         # @imported from rules/cnv.smk
         expand( 
             join(workpath, "hmftools", "amber", "{name}", "{name}.amber.baf.tsv"),
-            name=provided(provided(tumors, call_somatic), call_cnv),
+            name=provided(provided(tumors, call_somatic), call_cnv)
         ),
         expand( 
             join(workpath, "hmftools", "cobalt", "{name}", "{name}.cobalt.ratio.tsv"),
-            name=provided(provided(tumors, call_somatic), call_cnv),
+            name=provided(provided(tumors, call_somatic), call_cnv)
         ),
         expand( 
-            join(workpath, "hmftools", "purple", "{name}", "{caller}", "{name}.purple.cnv.somatic.tsv"),
-            name=provided(provided(tumors, call_somatic), call_cnv),
-            caller=provided(purple_callers, call_somatic),
+            join(workpath, "hmftools", "purple", "{name}", "{name}.purple.cnv.somatic.tsv"),
+            name=provided(provided(tumors, call_somatic), call_cnv)
+        ),
+        expand( 
+            join(workpath, "hmftools", "purple", "{name}", "{name}.purple.maf"),
+            name=provided(provided(tumors, call_somatic), call_cnv)
+        ),
+        # Maftools, create cohort-level summary plots from purple somatic VCF,
+        # only runs if provided --call-somatic AND --call-cnv
+        # @imported from rules/somatic.smk    
+        provided(
+            provided(
+                [join(workpath, "hmftools", "cohort_oncoplot.pdf")],
+                call_somatic
+            ),
+            call_cnv
         ),
         # OpenCRAVAT, somatic annotation, rank and score variants,
         # only runs if provided --open-cravat AND --call-somatic

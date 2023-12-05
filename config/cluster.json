@@ -170,7 +170,8 @@
     "glnexus": {
         "threads": "24",
         "mem": "240G",
-        "time": "4-00:00:00"
+        "time": "4-00:00:00",
+        "gres": "lscratch:256"
     },
     "gtype_refinement": {
         "threads": "2",
@@ -189,9 +190,9 @@
         "mem": "96G"
     },
     "hmftools_amber": {
-        "mem": "96G",
+        "mem": "365G",
         "time" : "48:00:00",
-        "threads": "24"
+        "threads": "56"
     },
     "hmftools_cobalt": {
         "mem": "96G",
@@ -202,6 +203,22 @@
         "mem": "64G",
         "time" : "48:00:00",
         "threads": "8"
+    },
+    "somatic_purple_maf": {
+        "threads": "4",
+        "mem": "32G",
+        "time": "1-12:00:00",
+        "gres": "lscratch:32"
+    },
+    "purple_cohort_maf": {
+        "threads": "2",
+        "mem": "8G",
+        "time": "4:00:00"
+    },
+    "purple_cohort_maftools": {
+        "threads": "2",
+        "mem": "8G",
+        "time": "4:00:00"
     },
     "inbreeding": {
         "threads": "8",
@@ -219,6 +236,11 @@
     "manta_somatic": {
         "threads": "32",
         "mem": "96G",
+        "time": "1-00:00:00"
+    },
+    "manta_somatic_filter": {
+        "threads": "4",
+        "mem": "72G",
         "time": "1-00:00:00"
     },
     "opencravat_germline_merge": {
@@ -256,7 +278,7 @@
     "opencravat_germline": {
         "threads": "20",
         "mem": "48G",
-        "time": "12:00:00"
+        "time": "1-12:00:00"
     },
     "opencravat_somatic": {
         "threads": "32",
@@ -270,10 +292,15 @@
     },
     "octopus_somatic": {
         "threads": "28",
-        "mem": "48G",
-        "time": "1-18:00:00"
+        "mem": "120G",
+        "time": "2-12:00:00"
     },
     "octopus_merge": {
+        "threads": "4",
+        "mem": "48G",
+        "time": "12:00:00"
+    },
+    "octopus_filter": {
         "threads": "4",
         "mem": "48G",
         "time": "12:00:00"
@@ -359,6 +386,11 @@
         "time": "2:00:00"
     },
     "strelka": {
+        "threads": "16",
+        "mem": "64G",
+        "time": "24:00:00"
+    },
+    "strelka_format": {
         "threads": "16",
         "mem": "64G",
         "time": "24:00:00"

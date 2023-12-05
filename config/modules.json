@@ -5,6 +5,7 @@
         "fastp": "fastp/0.23.1",
         "bowtie": "bowtie/2-2.4.5",
         "bcftools": "bcftools/1.13",
+        "bedtools": "bedtools/2.27.1",
         "canvas": "Canvas/1.40",
         "circos": "circos/0.69-9",
         "deepvariant": "deepvariant/1.4.0",
@@ -20,6 +21,7 @@
         "rlang": "R/4.2.0",
         "samblaster": "samblaster/0.1.25",
         "strelka": "strelka/2.9.10",
+        "svtools": "svtools/0.5.1",
         "python2": "python/2.7",
         "python3": "python/3.8",
         "fastq_screen": "fastq_screen/0.14.1",
@@ -28,6 +30,7 @@
         "gatk3": "GATK/3.8-1",
         "gatk4": "GATK/4.2.0.0",
         "multiqc": "multiqc/1.11",
+        "minimap2": "minimap2/2.26",
         "vcftools": "vcftools/0.1.16"
     }
 }
