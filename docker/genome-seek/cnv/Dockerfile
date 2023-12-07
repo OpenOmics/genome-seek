@@ -4,7 +4,7 @@
 FROM skchronicles/genome-seek:v0.1.0
 LABEL maintainer="Skyler Kuhn <kuhnsa@nih.gov>" \
     base_image="skchronicles/genome-seek:v0.1.0" \
-    version="v0.2.0"   \
+    version="v0.3.0"   \
     software="genome-seekq cnv" \
     about.summary="An awesome Clinical Whole Genome Sequencing Pipeline" \
     about.home="https://github.com/OpenOmics/genome-seek" \
@@ -152,6 +152,25 @@ RUN mkdir -p /opt2/slivar/0.3.0/bin \
     && wget https://github.com/brentp/slivar/releases/download/v0.3.0/slivar -P /opt2/slivar/0.3.0/bin/ \
     && chmod a+x /opt2/slivar/0.3.0/bin/slivar
 ENV PATH="${PATH}:/opt2/slivar/0.3.0/bin"
+
+# Install cnvkit/0.9.10, for more info see:
+# https://github.com/etal/cnvkit
+# Requires python>=3.7 and for extended
+# functionality, requires the following 
+# R package from Bioconductor: "DNAcopy",
+# python3 version and DNAcopy requirement
+# already satified, cnvkit/0.9.10 not compatiable
+# with pomegranate>=1.0.0, see for more info: 
+# https://github.com/etal/cnvkit/issues/815
+RUN pip3 install pomegranate==0.14.9 && pip3 install cnvkit==0.9.10
+
+# Installs sequenza/3.0.0, for more info see:
+# https://cran.r-project.org/web/packages/sequenza/index.html
+# Requires R, Python, SAMtools, tabix (already satisfied)
+# https://cran.r-project.org/web/packages/sequenza/vignettes/sequenza.html#getting-started
+RUN pip3 install sequenza-utils==3.0.0 \
+      && Rscript -e 'install.packages(c("pbapply", "squash", "iotools", "seqminer"), repos="http://cran.r-project.org");' \
+      && Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/sequenza/sequenza_3.0.0.tar.gz", repos=NULL, type="source")'
 
 
 ################ POST #################
