@@ -24,9 +24,9 @@
 
 
 ## Overview
-Welcome to genome-seek's documentation! This guide is the main source of documentation for users that are getting started with the [whole genome sequencing pipeline](https://github.com/OpenOmics/genome-seek/). 
+Welcome to genome-seek's documentation! This guide is the main source of documentation for users who are getting started with the OpenOmics [whole genome sequencing pipeline](https://github.com/OpenOmics/genome-seek/). 
 
-The **`./genome-seek`** pipeline is composed several inter-related sub commands to setup and run the pipeline across different systems. Each of the available sub commands perform different functions: 
+The **`./genome-seek`** pipeline is composed of several interrelated sub-commands to set up and run the pipeline across different systems. Each of the available sub-commands performs different functions: 
 
 <section align="center" markdown="1" style="display: flex; flex-wrap: row wrap; justify-content: space-around;">
 
@@ -58,17 +58,17 @@ The **`./genome-seek`** pipeline is composed several inter-related sub commands 
 
 </section>
 
-**genome-seek** is a comprehensive clinical WGS pipeline that is focused on speed. Each tool in the pipeline was benchmarked and selected due to its low run times without sacrificing accuracy or precision. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest-level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
+**genome-seek** is a comprehensive clinical WGS pipeline that is focused on speed. Each tool in the pipeline was benchmarked and selected due to its low run times without sacrificing accuracy or precision. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
 
-The pipeline is compatible with data generated from Illumina short-read sequencing technologies. As input, it accepts a set of FastQ files and can be run locally on a compute instance, on-premise using a cluster, or on the cloud (feature coming soon!). A user can define the method or mode of execution. The pipeline can submit jobs to a cluster using a job scheduler like SLURM, or run on AWS using Tibanna (feature coming soon!). A hybrid approach ensures the pipeline is accessible to all users.
+The pipeline is compatible with data generated from Illumina short-read sequencing technologies. As input, it accepts a set of FastQ files and can be run locally on a compute instance or on-premise using a cluster (recommended). A user can define the method or mode of execution. The pipeline can submit jobs to a cluster using a job scheduler like SLURM (more coming soon!). A hybrid approach ensures the pipeline is accessible to all users.
 
-Before getting started, we highly recommend reading through the [usage](usage/run.md) section of each available sub command.
+Before getting started, we highly recommend reading through the [usage](https://openomics.github.io/genome-seek/usage/run/) section of each available sub-command.
 
-For more information about issues or trouble-shooting a problem, please checkout our [FAQ](faq/questions.md) prior to [opening an issue on Github](https://github.com/OpenOmics/genome-seek/issues).
+For more information about issues or troubleshooting a problem, please check out our [FAQ](https://openomics.github.io/genome-seek/faq/questions/) before [opening an issue on Github](https://github.com/OpenOmics/genome-seek/issues).
 
 ## Contribute 
 
-This site is a living document, created for and by members like you. genome-seek is maintained by the members of NCBR and is improved by continous feedback! We encourage you to contribute new content and make improvements to existing content via pull request to our [GitHub repository :octicons-heart-fill-24:{ .heart }](https://github.com/OpenOmics/genome-seek).
+This site is a living document, created for and by members like you. genome-seek is maintained by the members of NCBR and is improved by continuous feedback! We encourage you to contribute new content and make improvements to existing content via pull requests to our [GitHub repository :octicons-heart-fill-24:{ .heart }](https://github.com/OpenOmics/genome-seek).
 
 
 ## References
