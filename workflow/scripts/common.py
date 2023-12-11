@@ -183,7 +183,7 @@ def str_bool(s):
     val = s.lower()
     if val in ['true', '1', 'y', 'yes']:
         return True
-    elif val in ['false', '0', 'n', 'no', '']:
+    elif val in ['false', '0', 'n', 'no', '', 'none']:
         return False
     else:
         # Provided value could not be
