@@ -113,6 +113,7 @@
         "VEP_BUILD": "GRCh38",
         "VEP_DATA": "/data/OpenOmics/references/genome-seek/VEP/106/cache",
         "VEP_SPECIES": "homo_sapiens",
-        "VEP_REF_VERSION": "106"
+        "VEP_REF_VERSION": "106",
+        "WES_BED": "/data/OpenOmics/references/genome-seek/wes_bedfiles/gencode_v44_protein-coding_exons.bed"
     }
 }
