@@ -50,6 +50,7 @@ function require(){
 
 
 # Parse command-line options
+# Set defaults for non-required options
 num_threads=1      # default: number of threads to use
 new_bait="none"    # default: none (i.e. run in WGS-mode)
 while getopts s:t:n:r:c:g:e:b:h OPT; do
@@ -67,9 +68,34 @@ while getopts s:t:n:r:c:g:e:b:h OPT; do
   esac
 done
 
+# Sanity check: was anything was provided?!
+{ [ -z "${1:-}" ] ; } \
+  && fatal "Error: Did not provide any of the required options!"
+
+# Check if all required options 
+# where provided at runtime
+declare -A required_options
+required_options=(
+  ["s"]="${sample_id:-}" 
+  ["t"]="${tumor_bam:-}" 
+  ["n"]="${normal_bam:-}" 
+  ["r"]="${reference_fasta:-}" 
+  ["g"]="${gc_wiggle:-}" 
+  ["e"]="${species:-}" 
+)
+echo "Running with provided required options:"
+for k in "${!required_options[@]}"; do
+  v="${required_options[$k]:-}"
+  echo "  -$k $v"
+  if [[ -z "${v}" ]]; then
+    fatal "Error: Failed to provide all required options... missing -${k} OPTION"
+  fi
+done
+
 
 # Check for software dependencies,
-# as last resort try to module load tool/dep
+# as last resort try to module load 
+# the specified tool or dependency
 require bedtools samtools sequenza-utils
 
 
@@ -83,7 +109,7 @@ else
 fi
 
 
-echo "[$(timestamp)] Running sequenza-utils with the follow bam files: ${normal_bam}  ${tumor_bam}"; 
+echo "[$(timestamp)] Running sequenza-utils bam2seqz with the follow bam files: ${normal_bam}  ${tumor_bam}"; 
 sequenza-utils bam2seqz \
     -n "${normal_bam}" \
     -t "${tumor_bam}" \
@@ -98,7 +124,8 @@ sequenza-utils bam2seqz \
 # Merge the output across all chromosomes,
 # not sure why we are doing it this way but
 # didn't want to change the original script
-# too much
+# too much, it gets the job done, so let's
+# keep it
 {
     for chr in $chromosomes; do
       if [[ "$chr" = "chr1" ]]; then
@@ -111,7 +138,6 @@ sequenza-utils bam2seqz \
       fi
    done
 }
-
 # Merge and gzip, probably could add
 # a clean up step here as well
 cat "sequenza_out/${sample_id}/${sample_id}.combine.chr1.seqz" "sequenza_out/${sample_id}/${sample_id}.combine.chrall.seqz" \
@@ -134,13 +160,15 @@ if [ "$new_bait" != "none" ]; then
     cat "sequenza_out/${sample_id}/head" "sequenza_out/${sample_id}/${sample_id}.combine.seqz.body" \
       | gzip -c \
     > "sequenza_out/${sample_id}/${sample_id}.combine.ontarget.seqz.gz"
-    
+
+    echo "[$(timestamp)] Running sequenza-utils seqz_binning with the follow input file: sequenza_out/${sample_id}/${sample_id}.combine.ontarget.seqz.gz"; 
     sequenza-utils seqz_binning \
       --seqz  "sequenza_out/${sample_id}/${sample_id}.combine.ontarget.seqz.gz" \
       -w 1000 \
       -o "sequenza_out/${sample_id}/${sample_id}.1kb.seqz.gz"
 else
     # Run in WGS-like-mode
+    echo "[$(timestamp)] Running sequenza-utils seqz_binning with the follow input file: sequenza_out/${sample_id}/${sample_id}.combine.seqz.gz"; 
     sequenza-utils seqz_binning \
       --seqz "sequenza_out/${sample_id}/${sample_id}.combine.seqz.gz" \
       -w 1000 \
