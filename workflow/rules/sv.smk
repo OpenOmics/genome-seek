@@ -18,6 +18,7 @@ def get_normal_recal_bam(wildcards):
         # Runs in tumor-only mode
         return []
 
+
 # Germline SV calling 
 rule manta_germline:
     """
@@ -40,13 +41,20 @@ rule manta_germline:
     input: 
         bam = join(workpath, "BAM", "{name}.sorted.bam"),
         bai = join(workpath, "BAM", "{name}.sorted.bam.bai"),
+        bed = provided(join(workpath, "references", "wes_regions_50bp_padded.bed.gz"), run_wes),
     output:
         vcf  = join(workpath, "MANTA", "germline", "{name}", "results", "variants", "diploidSV.vcf.gz"),
     params: 
         rname  = "manta_germline",
         outdir = join(workpath, "MANTA", "germline", "{name}"),
         workflow = join(workpath, "MANTA", "germline", "{name}", "runWorkflow.py"),
-        regions  = config['references']['MANTA_CALLREGIONS'],
+        # Building option for WGS/WES, if WES use padded 
+        # WES BED file, else use manta default
+        regions = lambda _: "{0}".format(
+            join(workpath, "references", "wes_regions_50bp_padded.bed.gz"),
+        ) if run_wes else config['references']['MANTA_CALLREGIONS'],
+        # Building option for WES flag
+        wes = lambda _: "--exome" if run_wes else "",
         genome   = config['references']['GENOME'],
         memory   = allocated("mem", "manta_germline", cluster).rstrip('G'),
     threads: int(allocated("threads", "manta_germline", cluster))
@@ -64,7 +72,7 @@ rule manta_germline:
         --callRegions {params.regions} \\
         --bam {input.bam} \\
         --referenceFasta {params.genome} \\
-        --runDir {params.outdir}
+        --runDir {params.outdir} {params.wes}
     
     # Call germline SV with Manta workflow
     echo "Starting Manta workflow..."
@@ -72,6 +80,7 @@ rule manta_germline:
         -j {threads} \\
         -g {params.memory} 
     """
+
 
 # Somatic SV calling 
 rule manta_somatic:
@@ -94,7 +103,13 @@ rule manta_somatic:
         rname  = "manta_somatic",
         outdir = join(workpath, "MANTA", "somatic", "{name}"),
         workflow = join(workpath, "MANTA", "somatic", "{name}", "runWorkflow.py"),
-        regions  = config['references']['MANTA_CALLREGIONS'],
+        # Building option for WGS/WES, if WES use padded 
+        # WES BED file, else use manta default
+        regions = lambda _: "{0}".format(
+            join(workpath, "references", "wes_regions_50bp_padded.bed.gz"),
+        ) if run_wes else config['references']['MANTA_CALLREGIONS'],
+        # Building option for WES flag
+        wes = lambda _: "--exome" if run_wes else "",
         genome   = config['references']['GENOME'],
         memory   = allocated("mem", "manta_somatic", cluster).rstrip('G'),
         # Building optional argument for paired normal
@@ -126,7 +141,7 @@ rule manta_somatic:
         --tumorBam {input.tumor} \\
         --referenceFasta {params.genome} \\
         --runDir {params.outdir} \\
-        --outputContig
+        --outputContig {params.wes}
     
     # Call somatic SV with Manta workflow
     echo "Starting Manta workflow..."
@@ -135,6 +150,7 @@ rule manta_somatic:
         -g {params.memory}
     {params.symlink}
     """
+
 
 # Filter Somatic SV calls
 rule manta_somatic_filter:
