@@ -6,6 +6,7 @@ from scripts.common import (
     provided 
 )
 
+
 # Pre alignment QC-related rules
 rule fc_lane:
     """
@@ -113,6 +114,7 @@ rule fastq_screen:
         {input.fq2}
     """
 
+
 # Post-alignment QC-related rules
 rule fastqc_bam:
     """
@@ -159,12 +161,14 @@ rule qualimap:
     """
     input:
         bam = join(workpath, "BAM", "{name}.sorted.bam"),
+        bed = provided(wes_bed_file, run_wes),
     output: 
         txt  = join(workpath,"QC","{name}","genome_results.txt"),
         html = join(workpath,"QC","{name}","qualimapReport.html")
     params:
         outdir = join(workpath,"QC","{name}"),
-        rname  = "qualibam"
+        rname  = "qualibam",
+        gff_option = lambda _: "-gff {0}".format(wes_bed_file) if run_wes else "",
     message: "Running QualiMap BAM QC with {threads} threads on '{input.bam}' input file"
     threads: int(allocated("threads", "qualimap", cluster))
     container: config['images']['genome-seek_qc']
@@ -179,7 +183,7 @@ rule qualimap:
         -nt {threads} \\
         --skip-duplicated \\
         -nw 500 \\
-        -p NON-STRAND-SPECIFIC
+        -p NON-STRAND-SPECIFIC {params.gff_option}
     """
 
 
