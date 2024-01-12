@@ -120,6 +120,7 @@ rule octopus_merge:
     """
     input:
         vcfs = expand(join(workpath, "octopus", "somatic", "chunks", "{region}", "{{name}}.vcf.gz"), region=regions),
+        bed = provided(join(workpath, "references", "wes_regions_50bp_padded.bed"), run_wes),
     output:
         lsl  = join(workpath, "octopus", "somatic", "{name}.list"),
         raw  = join(workpath, "octopus", "somatic", "{name}.octopus.raw.vcf"),
@@ -134,7 +135,12 @@ rule octopus_merge:
         genome = config['references']['GENOME'],
         rname  = "octomerge",
         tumor  = "{name}",
-        octopath = join(workpath, "octopus", "somatic", "chunks")
+        octopath = join(workpath, "octopus", "somatic", "chunks"),
+        # Building option for WES, if WES use padded 
+        # WES BED file as regions file
+        wes_regions_option = lambda _: "--regions-file {0}".format(
+            join(workpath, "references", "wes_regions_50bp_padded.bed"),
+        ) if run_wes else '',
     threads: 
         int(allocated("threads", "octopus_merge", cluster))
     container: config['images']['genome-seek']
@@ -173,7 +179,7 @@ rule octopus_merge:
         -a \\
         -f {output.sortlsl} \\
         -o {output.raw} \\
-        -O v
+        -O v {params.wes_regions_option}
     # Filter Octopus callset for 
     # variants with SOMATIC tag
     grep -E "#|CHROM|SOMATIC" {output.raw} \\
@@ -343,6 +349,7 @@ rule gatk_gather_mutect2:
     """
     input: 
         vcf = expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.vcf"), chrom=chunks),
+        bed = provided(wes_bed_file, run_wes),
     output:
         vcf = temp(join(workpath, "mutect2", "somatic", "{name}.mutect2.tmp.vcf")),
     params:
@@ -355,6 +362,11 @@ rule gatk_gather_mutect2:
             '--variant',
             expand(join(workpath, "mutect2", "chrom_split", "{{name}}.{chrom}.vcf"), chrom=chunks),
         ),
+        # Building option for WES, if WES run
+        # build option for intervals file
+        wes_intervals_option = lambda _: "--intervals {0}".format(
+            wes_bed_file,
+        ) if run_wes else '',
     threads: 
         max(int(allocated("threads", "gatk_gather_mutect2", cluster))-1, 1)
     container: config['images']['genome-seek']
@@ -373,7 +385,7 @@ rule gatk_gather_mutect2:
         -R {params.genome} \\
         --filteredrecordsmergetype KEEP_UNCONDITIONAL \\
         --assumeIdenticalSamples \\
-        -o {output.vcf} \\
+        -o {output.vcf} {params.wes_intervals_option} \\
         {params.multi_variant_option}
     """
 
@@ -612,6 +624,10 @@ rule muse:
         normal_header = lambda w: "\\nNORMAL\\t{0}".format(
             tumor2normal[w.name]
         ) if tumor2normal[w.name] else "",
+        # Building option for WGS/WES,
+        # if WES then "muse sump -E"
+        # else (WGS) set "muse sump -G"
+        muse_sump_option = lambda _: "-E" if run_wes else '-G',
     threads: 
         # MuSE over-alllocates threads,
         # see this issue for more info:
@@ -633,7 +649,7 @@ rule muse:
     # sample specific error model
     MuSE sump \\
         -n {threads} \\
-        -G \\
+        {params.muse_sump_option} \\
         -I {output.txt} \\
         -O {output.vcf} \\
         -D {params.dbsnp}
@@ -674,7 +690,6 @@ rule strelka:
         purple_jar = config['references']['HMFTOOLS_PURPLE_JAR'],
         outdir = join(workpath, "strelka", "{name}"),
         workflow = join(workpath, "strelka", "{name}", "runWorkflow.py"),
-        regions  = config['references']['MANTA_CALLREGIONS'],
         genome   = config['references']['GENOME'],
         pon      = config['references']['PON'],
         memory   = allocated("mem", "strelka", cluster).rstrip('G'),
@@ -687,6 +702,13 @@ rule strelka:
         normal_header = lambda w: "\\nNORMAL\\t{0}".format(
             tumor2normal[w.name]
         ) if tumor2normal[w.name] else "",
+        # Building option for WGS/WES, if WES use padded 
+        # WES BED file, else use manta default
+        regions = lambda _: "{0}".format(
+            join(workpath, "references", "wes_regions_50bp_padded.bed"),
+        ) if run_wes else config['references']['MANTA_CALLREGIONS'],
+        # Building option for WES flag
+        wes = lambda _: "--exome" if run_wes else "",
     threads: 
         max(int(allocated("threads", "strelka", cluster))-1, 1)
     container: config['images']['genome-seek_somatic']
@@ -713,7 +735,7 @@ rule strelka:
         --referenceFasta {params.genome} \\
         --tumorBam {input.tumor} {params.normal_option} \\
         --runDir {params.outdir} \\
-        --callRegions {params.regions}
+        --callRegions {params.regions} {params.wes}
     
     # Call somatic variants with Strelka
     echo "Starting Strelka workflow..."
@@ -805,6 +827,7 @@ rule somatic_selectvar:
     """
     input:
         vcf  = join(workpath, "{caller}", "somatic", "{name}.{caller}.vcf"),
+        bed = provided(join(workpath, "references", "wes_regions_50bp_padded.bed"), run_wes),
     output:
         norm = join(workpath, "{caller}", "somatic", "{name}.{caller}.norm.vcf"),
         filt = join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
@@ -813,6 +836,10 @@ rule somatic_selectvar:
         genome = config['references']['GENOME'],
         pon    = config['references']['PON'],
         memory = allocated("mem", "somatic_selectvar", cluster).rstrip('G'),
+        # Building intervals option for WES
+        wes_intervals_option = lambda _: "--intervals {0}".format(
+            join(workpath, "references", "wes_regions_50bp_padded.bed"),
+        ) if run_wes else '',
     threads: 
         int(allocated("threads", "somatic_selectvar", cluster))
     container: config['images']['genome-seek_somatic']
@@ -839,7 +866,7 @@ rule somatic_selectvar:
         -R {params.genome} \\
         --variant {output.norm} \\
         --discordance {params.pon} \\
-        --exclude-filtered \\
+        --exclude-filtered {params.wes_intervals_option} \\
         --output {output.filt}
     # Fix format number metadata, gatk 
     # SelectVariants converts Number
