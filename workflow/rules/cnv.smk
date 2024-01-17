@@ -508,3 +508,68 @@ rule purple_cohort_maftools:
         {output.summary} \\
         {output.oncoplot}
     """
+
+
+rule sequenza:
+    """
+    Sequenza can be used to estimate and quantify of purity/ploidy 
+    and copy number alteration in sequencing experiments. It contains
+    a set of tools to analyze genomic sequencing data from paired 
+    normal-tumor samples, including cellularity and ploidy estimation; 
+    mutation and copy number (allele-specific and total copy number) 
+    detection, quantification and visualization. For more information,
+    please visit: https://bitbucket.org/sequenzatools/sequenza/src/master/
+    Sequenza will only run if a tumor-normal pair is provided.
+    @Input:
+        Realigned, recalibrated BAM file (scatter-per-tumor-sample),
+        WES capture kit BED file
+    """
+    input:
+        tumor  = join(workpath, "BAM", "{name}.recal.bam"),
+        normal = get_normal_recal_bam,
+    output:
+        solutions = join(workpath, "sequenza_out", "{name}_alternative_solutions.txt"),
+    params:
+        rname   = "sequenza",
+        outdir  = workpath,
+        tumor   = "{name}",
+        fasta   = config['references']['GENOME'],
+        species = config['references']['SEQUENZA_SPECIES'],
+        gc      = config['references']['SEQUENZA_GC'],
+        shell_script  = join("workflow", "scripts", "run_sequenza.sh"),
+        rlang_script  = join("workflow", "scripts", "run_sequenza.R"),
+        # Building optional argument for paired normal,
+        # if normal not provided, sequenza will NOT run
+        normal = lambda w: "{0}".format(
+           tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+        # Building optional flag for wes capture kit
+        wes_flag = lambda _: "-b {0}".format(wes_bed_file) if run_wes else "",
+    threads: int(allocated("threads", "sequenza", cluster)),
+    container: config['images']['genome-seek_cnv'],
+    envmodules: 
+        config['tools']['sequenza'],
+    shell: """
+    # Create output directory
+    mkdir -p sequenza_out/{params.tumor}
+    # Runs sequenza-utils bam2seqz to convert BAM 
+    # to seqz file format AND runs sequenza-utils 
+    # seqz_binning to bin seqz file into 1kb bins
+    {params.shell_script} \\
+        -s {params.tumor} \\
+        -t {input.tumor} \\
+        -n {input.normal} \\
+        -r {params.fasta} \\
+        -c {threads} \\
+        -g {params.gc} \\
+        -e {params.species} {params.wes_flag}
+    # Runs sequenza to estimate purity/ploidy and CNVs
+    Rscript {params.rlang_script} \\
+        sequenza_out/{params.tumor}/{params.tumor}.1kb.seqz.gz \\
+        {params.outdir}/sequenza_out/{params.tumor} \\
+        {threads} \\
+        {params.normal}+{params.tumor}
+    mv \\
+        {params.outdir}/sequenza_out/{params.tumor}/{params.normal}+{params.tumor}_alternative_solutions.txt \\
+        {output.solutions}
+    """

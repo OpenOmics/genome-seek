@@ -457,6 +457,14 @@ rule all:
             join(workpath, "hmftools", "purple", "{name}", "{name}.purple.maf"),
             name=provided(provided(tumors, call_somatic), call_cnv)
         ),
+        # Sequenza, estimates purity/ploidy and CNV,
+        # only runs if provided --call-somatic AND --call-cnv 
+        # AND only runs with tumor-normal pairs,
+        # @imported from rules/cnv_smk
+        expand( 
+            join(workpath, "sequenza_out", "{name}_alternative_solutions.txt"),
+            name=provided(provided(tumorWnormal, call_somatic), call_cnv)
+        ),
         # Maftools, create cohort-level summary plots from purple somatic VCF,
         # only runs if provided --call-somatic AND --call-cnv
         # @imported from rules/somatic.smk    
