@@ -100,6 +100,7 @@
         "PEDDY_FILTER": "chr22",
         "PON": "/data/OpenOmics/references/genome-seek/PON/hg38.noCOSMIC_ClinVar.pon.vcf.gz",
         "SEQUENZA_GC": "/data/OpenOmics/references/genome-seek/FREEC/hg38_gc50Base.txt.gz",
+        "SEQUENZA_SPECIES": "Human",
         "SIGPROFILER_GENOME": "GRCh38",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/data/OpenOmics/references/genome-seek/snpEff/4.3t/snpEff.config",
