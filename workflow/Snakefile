@@ -460,10 +460,19 @@ rule all:
         # Sequenza, estimates purity/ploidy and CNV,
         # only runs if provided --call-somatic AND --call-cnv 
         # AND only runs with tumor-normal pairs,
-        # @imported from rules/cnv_smk
+        # @imported from rules/cnv.smk
         expand( 
             join(workpath, "sequenza_out", "{name}_alternative_solutions.txt"),
             name=provided(provided(tumorWnormal, call_somatic), call_cnv)
+        ),
+        # cnvkit, infer and visualize CNVs in targeted sequencing data,
+        # only runs if provided --call-somatic AND --call-cnv AND --wes-mode
+        # AND only runs with tumor-normal pairs
+        # NOTE: currently only being run in the WES pipeline
+        # @imported from rules/wes.smk
+        expand( 
+            join(workpath, "cnvkit", "{name}", "{name}.call.cns"),
+            name=provided(tumorWnormal, call_somatic and call_cnv and run_wes)
         ),
         # Maftools, create cohort-level summary plots from purple somatic VCF,
         # only runs if provided --call-somatic AND --call-cnv

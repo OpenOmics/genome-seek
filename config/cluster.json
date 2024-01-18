@@ -52,7 +52,12 @@
         "partition": "norm",
         "time": "12:00:00"
     },
-    "cnvkit": {
+    "cnvkit_access": {
+        "threads": "2",
+        "mem": "8G",
+        "time": "2:00:00"
+    },
+    "cnvkit_batch": {
         "threads": "8",
         "mem": "64G",
         "time": "1-00:00:00"
