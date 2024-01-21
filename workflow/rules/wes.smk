@@ -55,13 +55,19 @@ rule build_exome_bed:
     > {output.sizes}
 
     # Padding features +/- N base pairs  
-    # according to strand
+    # according to strand and merge any
+    # overlapping features after padding
     bedtools slop \\
         -s \\
         -l {params.padding} \\
         -r {params.padding} \\
         -g {output.sizes} \\
         -i {input.bed} \\
+    | bedtools merge \\
+        -s \\
+        -i - \\
+        -c 4,5,6 \\
+        -o distinct,mean,distinct
     > {output.padded}
 
     # Bgzip padded file and create
