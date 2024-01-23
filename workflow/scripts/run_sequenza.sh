@@ -156,7 +156,7 @@ if [ "$new_bait" != "none" ]; then
     > "sequenza_out/${sample_id}/${sample_id}.combine.seqz.body"
     gunzip -c  "sequenza_out/${sample_id}/${sample_id}.combine.seqz.gz" \
       | head -n 1 \
-    > "sequenza_out/${sample_id}/head"
+    > "sequenza_out/${sample_id}/head" || true # head cmd causes SIGPIPE, so ignore it
     cat "sequenza_out/${sample_id}/head" "sequenza_out/${sample_id}/${sample_id}.combine.seqz.body" \
       | gzip -c \
     > "sequenza_out/${sample_id}/${sample_id}.combine.ontarget.seqz.gz"

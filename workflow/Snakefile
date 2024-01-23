@@ -458,12 +458,12 @@ rule all:
             name=provided(provided(tumors, call_somatic), call_cnv)
         ),
         # Sequenza, estimates purity/ploidy and CNV,
-        # only runs if provided --call-somatic AND --call-cnv 
+        # only runs if provided --call-somatic AND --call-cnv AND --wes-mode
         # AND only runs with tumor-normal pairs,
-        # @imported from rules/cnv.smk
+        # @imported from rules/wes.smk
         expand( 
             join(workpath, "sequenza_out", "{name}_alternative_solutions.txt"),
-            name=provided(provided(tumorWnormal, call_somatic), call_cnv)
+            name=provided(tumorWnormal, call_somatic and call_cnv and run_wes)
         ),
         # cnvkit, infer and visualize CNVs in targeted sequencing data,
         # only runs if provided --call-somatic AND --call-cnv AND --wes-mode

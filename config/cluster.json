@@ -348,6 +348,11 @@
         "mem": "64G",
         "time": "1-00:00:00"
     },
+    "sequenza_utils": {
+        "threads": "8",
+        "mem": "64G",
+        "time": "1-00:00:00"
+    },
     "snpeff": {
         "mem": "24G",
         "time": "12:00:00"
