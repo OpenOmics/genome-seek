@@ -63,11 +63,14 @@ rule build_exome_bed:
         -r {params.padding} \\
         -g {output.sizes} \\
         -i {input.bed} \\
+    # Sorting is required prior
+    # running bedtools merge
+    | bedtools sort -i - \\
     | bedtools merge \\
         -s \\
         -i - \\
         -c 4,5,6 \\
-        -o distinct,mean,distinct
+        -o distinct,mean,distinct \\
     > {output.padded}
 
     # Bgzip padded file and create
