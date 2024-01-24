@@ -63,8 +63,6 @@ rule build_exome_bed:
         -r {params.padding} \\
         -g {output.sizes} \\
         -i {input.bed} \\
-    # Sorting is required prior
-    # running bedtools merge
     | bedtools sort -i - \\
     | bedtools merge \\
         -s \\
