@@ -705,7 +705,7 @@ rule strelka:
         # Building option for WGS/WES, if WES use padded 
         # WES BED file, else use manta default
         regions = lambda _: "{0}".format(
-            join(workpath, "references", "wes_regions_50bp_padded.bed"),
+            join(workpath, "references", "wes_regions_50bp_padded.bed.gz"),
         ) if run_wes else config['references']['MANTA_CALLREGIONS'],
         # Building option for WES flag
         wes = lambda _: "--exome" if run_wes else "",
