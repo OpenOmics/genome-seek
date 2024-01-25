@@ -827,9 +827,11 @@ rule somatic_selectvar:
     """
     input:
         vcf  = join(workpath, "{caller}", "somatic", "{name}.{caller}.vcf"),
-        bed = provided(join(workpath, "references", "wes_regions_50bp_padded.bed"), run_wes),
+        bed = provided(join(workpath, "references", "wes_regions_50bp_padded.bed.gz"), run_wes),
     output:
         norm = join(workpath, "{caller}", "somatic", "{name}.{caller}.norm.vcf"),
+        ngz  = join(workpath, "{caller}", "somatic", "{name}.{caller}.norm.vcf.gz"),
+        tbi  = join(workpath, "{caller}", "somatic", "{name}.{caller}.norm.vcf.gz.tbi"),
         filt = join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
     params:
         rname  = 'somselect',
@@ -838,7 +840,7 @@ rule somatic_selectvar:
         memory = allocated("mem", "somatic_selectvar", cluster).rstrip('G'),
         # Building intervals option for WES
         wes_intervals_option = lambda _: "--intervals {0}".format(
-            join(workpath, "references", "wes_regions_50bp_padded.bed"),
+            join(workpath, "references", "wes_regions_50bp_padded.bed.gz"),
         ) if run_wes else '',
     threads: 
         int(allocated("threads", "somatic_selectvar", cluster))
@@ -859,12 +861,21 @@ rule somatic_selectvar:
         -f {params.genome} \\
         -o {output.norm} \\
         {input.vcf}
+    # Index normalized VCF for GATK
+    # SelectVariants, which requires
+    # a tabix index-ed bgzip-ed VCF
+    # if the --interval option is used
+    bgzip -c \\
+        {output.norm} \\
+    > {output.ngz}
+    tabix -p vcf \\
+        {output.ngz}
     # Remove filtered sites and output
     # variants not called in the PON
     echo "Running SelectVariants..."
     gatk --java-options "-Xmx{params.memory}g" SelectVariants \\
         -R {params.genome} \\
-        --variant {output.norm} \\
+        --variant {output.ngz} \\
         --discordance {params.pon} \\
         --exclude-filtered {params.wes_intervals_option} \\
         --output {output.filt}
