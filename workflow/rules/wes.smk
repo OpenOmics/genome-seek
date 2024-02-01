@@ -121,12 +121,11 @@ rule cnvkit_access:
     @Output:
         BED file of sequence-accessible coordinates
     """
-    input:
-        fa  = config['references']['GENOME'],
     output:
         bed = join(workpath, "references", "genome.cnvkit_access.bed"),
     params:
         rname   = "cnvkit_access",
+        fa      = config['references']['GENOME'],
     threads: int(allocated("threads", "cnvkit_access", cluster)),
     container: config['images']['genome-seek_cnv'],
     envmodules: 
@@ -136,7 +135,7 @@ rule cnvkit_access:
     # sequence-accessible coordinates
     cnvkit.py access \\
         -o {output.bed} \\
-        {input.fa}
+        {params.fa}
     """
 
 
