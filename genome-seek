@@ -32,7 +32,6 @@ EXAMPLE:
 
 # Python standard library
 from __future__ import print_function
-from operator import sub
 import sys, os, subprocess, re, json, textwrap
 
 # 3rd party imports from pypi
@@ -51,13 +50,14 @@ from src.utils import (
     pairs,
     permissions,
     check_cache,
-    require)
+    require
+)
 
 
 # Pipeline Metadata
 __version__ = version
-__authors__ = 'Skyler Kuhn, Justin Lack'
-__email__ = 'skyler.kuhn@nih.gov, justin.lack@nih.gov'
+__authors__ = 'Skyler Kuhn, Justin Lack, Keyur Talsania'
+__email__ = 'skyler.kuhn <AT> nih.gov, justin.lack <AT> nih.gov, keyur.talsania <AT> nih.gov'
 __home__  =  os.path.dirname(os.path.abspath(__file__))
 _name = os.path.basename(sys.argv[0])
 _description = 'Clinical whole genome sequencing pipeline'
@@ -188,6 +188,10 @@ def run(sub_args):
     if sub_args.pon: 
         # Use custom provided PON
         config['references']['PON'] = sub_args.pon
+    
+    if sub_args.wes_bed:
+        # Use custom provided WES catpure kit
+        config['references']['WES_BED'] = sub_args.wes_bed
 
     # Save config to output directory
     with open(os.path.join(sub_args.output, 'config.json'), 'w') as fh:
@@ -355,8 +359,9 @@ def parsed_arguments(name, description):
                 [--mode {{slurm,local}}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \\
                 [--call-cnv] [--call-sv] [--call-hla] [--call-somatic] [--open-cravat] \\
                 [--skip-qc] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \\
-                [--pairs PAIRS] [--pon PANEL_OF_NORMALS] [--tmp-dir TMP_DIR] [--silent] \\
-                [--sif-cache SIF_CACHE] [--singularity-cache SINGULARITY_CACHE] \\
+                [--pairs PAIRS] [--pon PANEL_OF_NORMALS] [--wes-mode] [--wes-bed WES_BED] \\
+                [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \\
+                [--singularity-cache SINGULARITY_CACHE] \\
                 [--dry-run] [--threads THREADS] \\
                 --input INPUT [INPUT ...] \\
                 --output OUTPUT
@@ -419,6 +424,24 @@ def parsed_arguments(name, description):
                                 changes to data processing steps or when evaluating 
                                 the overall accuracy and precision of the pipeline.
                                   Example: --skip-qc
+          
+          --wes-mode            Run the whole exome pipeline. By default, the whole
+                                genome sequencing pipeline is run. This option allows
+                                a user to process and analyze whole exome sequencing 
+                                data. Please note when this mode is enabled, a sub-
+                                set of the WGS rules will run. Please see the option
+                                below for more information about providing a custom
+                                exome targets BED file.
+                                  Example: --wes-mode
+
+          --wes-bed WES_BED
+                                Path to exome targets BED file. This file can be
+                                obtained from the manufacturer of the target capture
+                                kit that was used. By default, a set of BED files 
+                                generated from GENCODE's exon annotation for protein
+                                coding gene's exon is used.
+                                  Example: --wes-bed gencode_v44_protein-coding_exons.bed
+        
           --batch-id BATCH_ID   
                                 Unique identifer for a batch of samples. A batch 
                                 identifer should be a string containing no spaces.
@@ -664,6 +687,25 @@ def parsed_arguments(name, description):
         action = 'store_true',
         required = False,
         default = False,
+        help = argparse.SUPPRESS
+    )
+
+    # Run the WES pipeline
+    subparser_run.add_argument(
+        '--wes-mode',
+        action = 'store_true',
+        required = False,
+        default = False,
+        help = argparse.SUPPRESS
+    )
+
+    # WES capture targets BED file
+    subparser_run.add_argument(
+        '--wes-bed',
+        # Check if the file exists and if it is readable
+        type = lambda file: permissions(parser, file, os.R_OK),
+        required = False,
+        default = None,
         help = argparse.SUPPRESS
     )
 

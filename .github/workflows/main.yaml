@@ -15,7 +15,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: docker://snakemake/snakemake:v7.25.3
-    - name: Dry Run with test data, all options
+    - name: Dry Run WGS pipeline with test data, all options
       run: |
         docker run -v $PWD:/opt2 snakemake/snakemake:v7.25.3 \
         /opt2/genome-seek run --input \
@@ -27,7 +27,20 @@ jobs:
         --call-hla --call-sv --call-cnv --call-somatic --open-cravat \
         --oc-annotators encode_tfbs ccre_screen vista_enhancer gnomad3 thousandgenomes cadd \
         --pon /opt2/.tests/1000g_pon.hg38.vcf.gz --dry-run
-    - name: Dry Run with test data, skip QC
+    - name: Dry Run WES pipeline with test data, all options
+      run: |
+        docker run -v $PWD:/opt2 snakemake/snakemake:v7.25.3 \
+        /opt2/genome-seek run --input \
+        /opt2/.tests/WT_S1.R1.fastq.gz /opt2/.tests/WT_S1.R2.fastq.gz \
+        /opt2/.tests/WT_S2_R1.fastq.gz /opt2/.tests/WT_S2_R2.fastq.gz \
+        /opt2/.tests/WT_S3_1.fastq.gz /opt2/.tests/WT_S3_2.fastq.gz \
+        /opt2/.tests/WT_S4_R1.001.fastq.gz /opt2/.tests/WT_S4_R2.001.fastq.gz \
+        --output /opt2/output --mode local --pairs /opt2/.tests/pairs.tsv \
+        --call-hla --call-sv --call-cnv --call-somatic --open-cravat \
+        --oc-annotators encode_tfbs ccre_screen vista_enhancer gnomad3 thousandgenomes cadd \
+        --pon /opt2/.tests/1000g_pon.hg38.vcf.gz \
+        --wes-mode --wes-bed /opt2/.tests/wes_regions.bed --dry-run
+    - name: Dry Run WGS pipeline with test data, skip QC
       run: |
         docker run -v $PWD:/opt2 snakemake/snakemake:v7.25.3 \
         /opt2/genome-seek run --input \

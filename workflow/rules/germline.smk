@@ -1,6 +1,9 @@
 # Functions and rules for calling germline variants
-from scripts.common import abstract_location, allocated
-
+from scripts.common import (
+    abstract_location, 
+    allocated,
+    provided
+)
 
 rule deepvariant:
     """
@@ -25,6 +28,10 @@ rule deepvariant:
         rname  = "deepvar",
         genome = config['references']['GENOME'],
         tmpdir = tmpdir,
+        # Building option for glnexus config, where:
+        #  @WES = --model_type=WES
+        #  @WGS = --model_type=WGS
+        dv_model_type = lambda _: "WES" if run_wes else "WGS",
     message: "Running DeepVariant on '{input.bam}' input file"
     threads: int(allocated("threads", "deepvariant", cluster))
     container: config['images']['deepvariant']
@@ -38,7 +45,7 @@ rule deepvariant:
     trap 'rm -rf "${{tmp}}"' EXIT
 
     run_deepvariant \\
-        --model_type=WGS \\
+        --model_type={params.dv_model_type} \\
         --ref={params.genome} \\
         --reads={input.bam} \\
         --output_gvcf={output.gvcf} \\
@@ -62,6 +69,7 @@ rule glnexus:
     """
     input: 
         gvcf = expand(join(workpath,"deepvariant","gVCFs","{name}.g.vcf.gz"), name=samples),
+        bed  = provided(join(workpath, "references", "wes_regions_50bp_padded.bed"), run_wes),
     output:
         gvcfs = join(workpath, "deepvariant", "VCFs", "gvcfs.list"),
         bcf   = join(workpath, "deepvariant", "VCFs", "joint.bcf"),
@@ -73,6 +81,16 @@ rule glnexus:
         gvcfdir = join(workpath, "deepvariant", "gVCFs"),
         memory  = allocated("mem", "glnexus", cluster).rstrip('G'),
         genome = config['references']['GENOME'],
+        # Building option for glnexus config, where:
+        #  @WES = --config DeepVariantWES
+        #  @WGS = --config DeepVariant_unfiltered
+        gl_config = lambda _: "DeepVariantWES" if run_wes else "DeepVariant_unfiltered",
+        # Building option for GLnexus bed file:
+        #  @WES = --bed wes_regions_50bp_padded.bed
+        #  @WGS = '' 
+        wes_bed_option = lambda _: "--bed {0}".format(
+            join(workpath, "references", "wes_regions_50bp_padded.bed"),
+        ) if run_wes else "",
     message: "Running GLnexus on a set of gVCF files"
     threads: int(allocated("threads", "glnexus", cluster))
     container: config['images']['glnexus']
@@ -96,7 +114,7 @@ rule glnexus:
 
     glnexus_cli \\
         --dir ${{tmp_dne}} \\
-        --config DeepVariant_unfiltered \\
+        --config {params.gl_config} {params.wes_bed_option} \\
         --list {output.gvcfs} \\
         --threads {threads} \\
         --mem-gbytes {params.memory} \\
@@ -138,20 +156,26 @@ rule gatk_selectvariants:
     """
     input: 
         vcf = join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
+        bed = provided(wes_bed_file, run_wes),
     output: 
         vcf = join(workpath, "deepvariant", "VCFs", "{name}.germline.vcf.gz"),
     params: 
         rname  = "varselect",
         genome = config['references']['GENOME'], 
         sample = "{name}", 
-        memory = allocated("mem", "gatk_selectvariants", cluster).rstrip('G')
+        memory = allocated("mem", "gatk_selectvariants", cluster).rstrip('G'),
+        # Building WES options for gatk selectvariants, where:
+        #  @WES = --intervals gencode_v44_protein-coding_exons.bed -ip 100
+        #  @WGS = ''
+        wes_bed_option  = lambda _: "--intervals {0}".format(wes_bed_file) if run_wes else "",
+        wes_bed_padding = lambda _: "-ip 100" if run_wes else "",
     message: "Running GATK4 SelectVariants on '{input.vcf}' input file"
     threads: int(allocated("threads", "gatk_selectvariants", cluster))
     container: config['images']['genome-seek']
     envmodules: config['tools']['gatk4']
     shell: """
     gatk --java-options '-Xmx{params.memory}g -XX:ParallelGCThreads={threads}' SelectVariants \\
-        -R {params.genome} \\
+        -R {params.genome} {params.wes_bed_option} {params.wes_bed_padding} \\
         --variant {input.vcf} \\
         --sample-name {params.sample} \\
         --exclude-non-variants \\

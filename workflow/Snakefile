@@ -33,6 +33,7 @@ tumors   = list(config['pairs'].keys())        # List of tumor samples
 normals  = list(set(config['pairs'].values())) # List of normal samples
 normals  = [n for n in normals if n]           # Remove tumor-onlys, i.e. empty strings
 tumor2normal =  config['pairs']                # Dict to map a tumor to its normal
+
 # List of tumor samples with a paired normal
 tumorWnormal = [t for t in tumors if tumor2normal[t]]
 
@@ -55,6 +56,20 @@ skip_qc  = str_bool(                      # Skip over QC steps,
 run_oc  = str_bool(                      # Run OpenCRAVAT rules,
     config['options']['open_cravat']     # default: False
 )
+
+# Whole-exome sequencing pipeline options
+# By default, the WGS pipeline runs.
+# The WES pipeline will run if the 
+# --wes  option or the --wes-bed
+# option are provided. If just the
+# --wes option is provided the default
+# GENCODE exons BED file is used.
+wes_bed_provided = config['options']['wes_bed']   # default: None
+wes_bed_file = config['references']['WES_BED']    # default: gencode_v44_protein-coding_exons.bed
+# Run WES pipeline, default: False
+run_wes = (wes_bed_provided != "None" or str_bool(config['options']['wes_mode']))
+
+
 
 # List of somatic callers
 # TODO: add as cli option,
@@ -80,6 +95,14 @@ with open(join('config', 'cluster.json')) as fh:
 # Final ouput files of the pipeline
 rule all:
     input:
+        # Build and reformats WES BED capture kit,
+        # Optional step, only runs if --wes or --wes-bed
+        # option(s) provided.
+        # @imported from rules/wes.smk
+        provided(
+            [join(workpath, "references", "wes_regions_50bp_padded.bed")],
+            run_wes
+        ),
         # FastQ Information, flowcell and lanes
         # Optional step, not run if --skip-qc 
         # @imported from rules/qc.smk
@@ -418,33 +441,53 @@ rule all:
         # HMF Tools Purple, estimates CNV, purity and ploidy
         # only runs if provided --call-somatic AND --call-cnv,
         # purple will optionally use somatic SVs from MANTA 
-        # if --call-sv is also provided at runtime.
+        # if --call-sv is also provided at runtime. These
+        # steps will only run for WGS data, if the --wes-mode
+        # option is provided the steps will be skipped. 
         # @imported from rules/cnv.smk
         expand( 
             join(workpath, "hmftools", "amber", "{name}", "{name}.amber.baf.tsv"),
-            name=provided(provided(tumors, call_somatic), call_cnv)
+            name=provided(provided(tumors, call_somatic), call_cnv and not run_wes)
         ),
         expand( 
             join(workpath, "hmftools", "cobalt", "{name}", "{name}.cobalt.ratio.tsv"),
-            name=provided(provided(tumors, call_somatic), call_cnv)
+            name=provided(provided(tumors, call_somatic), call_cnv and not run_wes)
         ),
         expand( 
             join(workpath, "hmftools", "purple", "{name}", "{name}.purple.cnv.somatic.tsv"),
-            name=provided(provided(tumors, call_somatic), call_cnv)
+            name=provided(provided(tumors, call_somatic), call_cnv and not run_wes)
         ),
         expand( 
             join(workpath, "hmftools", "purple", "{name}", "{name}.purple.maf"),
-            name=provided(provided(tumors, call_somatic), call_cnv)
+            name=provided(provided(tumors, call_somatic), call_cnv and not run_wes)
         ),
         # Maftools, create cohort-level summary plots from purple somatic VCF,
-        # only runs if provided --call-somatic AND --call-cnv
+        # only runs if provided --call-somatic AND --call-cnv and NOT WES mode,
+        # This step will only run for WGS data.
         # @imported from rules/somatic.smk    
         provided(
             provided(
                 [join(workpath, "hmftools", "cohort_oncoplot.pdf")],
                 call_somatic
             ),
-            call_cnv
+            call_cnv and not run_wes
+        ),
+        # Sequenza, estimates purity/ploidy and CNV,
+        # only runs if provided --call-somatic AND --call-cnv AND --wes-mode
+        # AND only runs with tumor-normal pairs,
+        # @imported from rules/wes.smk
+        expand( 
+            join(workpath, "sequenza_out", "{name}_alternative_solutions.txt"),
+            name=provided(tumorWnormal, call_somatic and call_cnv and run_wes)
+        ),
+        # cnvkit, infer and visualize CNVs in targeted sequencing data,
+        # only runs if provided --call-somatic AND --call-cnv AND --wes-mode
+        # AND only runs with tumor-normal pairs
+        # NOTE: currently only being run in the WES pipeline
+        # @imported from rules/wes.smk
+        expand( 
+            join(workpath, "cnvkit", "{name}", "{name}.call.cns"),
+            name=provided(tumorWnormal, call_somatic and call_cnv and run_wes)
         ),
         # OpenCRAVAT, somatic annotation, rank and score variants,
         # only runs if provided --open-cravat AND --call-somatic
@@ -478,4 +521,5 @@ include: join("rules", "sv.smk")
 include: join("rules", "open_cravat.smk")
 include: join("rules", "gatk_recal.smk")
 include: join("rules", "somatic.smk")
+include: join("rules", "wes.smk")
 include: join("rules", "hooks.smk")

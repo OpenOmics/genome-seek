@@ -52,6 +52,16 @@
         "partition": "norm",
         "time": "12:00:00"
     },
+    "cnvkit_access": {
+        "threads": "2",
+        "mem": "8G",
+        "time": "2:00:00"
+    },
+    "cnvkit_batch": {
+        "threads": "8",
+        "mem": "64G",
+        "time": "1-00:00:00"
+    },
     "collectvariantcallmetrics": {
         "threads": "2",
         "time": "12:00:00"
@@ -332,6 +342,16 @@
         "threads": "6",
         "time": "12:00:00",
         "mem": "24G"
+    },
+    "sequenza": {
+        "threads": "8",
+        "mem": "64G",
+        "time": "1-00:00:00"
+    },
+    "sequenza_utils": {
+        "threads": "8",
+        "mem": "64G",
+        "time": "1-00:00:00"
     },
     "snpeff": {
         "mem": "24G",

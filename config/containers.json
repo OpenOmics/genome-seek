@@ -5,7 +5,7 @@
         "genome-seek_somatic":  "docker://skchronicles/genome-seek_somatic:v0.1.0",
         "genome-seek_qc":       "docker://skchronicles/genome-seek_qc:v0.1.0",
         "genome-seek_sv":       "docker://skchronicles/genome-seek_sv:v0.2.0",
-        "genome-seek_cnv":      "docker://skchronicles/genome-seek_cnv:v0.2.0",
+        "genome-seek_cnv":      "docker://skchronicles/genome-seek_cnv:v0.3.0",
         "genome-seek_hla":      "docker://skchronicles/genome-seek_hla:v0.1.0",
         "base":                 "docker://skchronicles/ccbr_wes_base:v0.1.0",
         "deepvariant_gpu":      "docker://google/deepvariant:1.5.0-gpu",
@@ -14,6 +14,7 @@
         "open_cravat":          "docker://skchronicles/ncbr_opencravat:v0.1.0",
         "octopus":              "docker://skchronicles/ncbr_octopus:v0.2.0",
         "sigprofiler":          "docker://skchronicles/ncbr_sigprofiler:v0.1.0",
+        "sequenza":             "docker://sequenza/sequenza:3.0.0",
         "vcf2maf":              "docker://skchronicles/ncbr_vcf2maf:v0.1.0"
     }
 }

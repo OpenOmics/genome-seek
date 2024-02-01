@@ -99,6 +99,8 @@
         "OCTOPUS_ERROR_MODEL": "PCR-FREE.NOVASEQ",
         "PEDDY_FILTER": "chr22",
         "PON": "/data/OpenOmics/references/genome-seek/PON/hg38.noCOSMIC_ClinVar.pon.vcf.gz",
+        "SEQUENZA_GC": "/data/OpenOmics/references/genome-seek/FREEC/hg38_gc50Base.txt.gz",
+        "SEQUENZA_SPECIES": "Human",
         "SIGPROFILER_GENOME": "GRCh38",
         "SNPEFF_GENOME": "GRCh38.86",
         "SNPEFF_CONFIG": "/data/OpenOmics/references/genome-seek/snpEff/4.3t/snpEff.config",
@@ -113,6 +115,7 @@
         "VEP_BUILD": "GRCh38",
         "VEP_DATA": "/data/OpenOmics/references/genome-seek/VEP/106/cache",
         "VEP_SPECIES": "homo_sapiens",
-        "VEP_REF_VERSION": "106"
+        "VEP_REF_VERSION": "106",
+        "WES_BED": "/data/OpenOmics/references/genome-seek/wes_bedfiles/gencode_v44_protein-coding_exons.bed"
     }
 }
