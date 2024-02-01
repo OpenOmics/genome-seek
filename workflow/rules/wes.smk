@@ -54,18 +54,48 @@ rule build_exome_bed:
         | cut -f1,2 \\
     > {output.sizes}
 
+    # Determine if BED file contains strand
+    # information. If so, pass this along to
+    # bedtools merge cmd, via the '-s' option.
+    # If any features in the BED file are set
+    # to '.' for strand (6th column), then
+    # strand information is used with merge
+    # cmd. This is important because bedtools
+    # merge will not merge or consider any 
+    # features where the strand is set to 
+    # '.' with the '-s' option. This will
+    # result in an empty BED file to be 
+    # produced or for entries in the BED
+    # file to be dropped if the strand 
+    # column contains a mixture of "+/-/."
+    # strandedness=$(
+    #    awk -F '\\t' -v OFS='\\t' -v option="-s" \\
+    #    '$6=="." || $6=="" {{option=""; exit}} END {{print option}}' \\
+    #    {input.bed}
+    # )
+    # echo "Setting the bedtools merge strandedness option: ${{strandedness}}"
+    # Enforcing BED is in BED6 format,
     # Padding features +/- N base pairs  
     # according to strand and merge any
     # overlapping features after padding
-    bedtools slop \\
+    awk -F '\\t' -v OFS='\\t' \\
+        'function trim(s) {{ sub(/^[ ]+/, "", s); sub(/[ ]+$/, "", s); return s }}; \\
+        NF>="3" {{print \\
+            trim($1), \\
+            trim($2), \\
+            trim($3), \\
+            ((trim($4)=="" || trim($4)==".") ? trim($1)"_"trim($2)"_"trim($3)"_"NR : trim($4)), \\
+            ($5=="" ? "." : trim($5)), \\
+            ($6=="" ? "." : trim($6)) \\
+    }}' {input.bed} \\
+    | bedtools slop \\
         -s \\
         -l {params.padding} \\
         -r {params.padding} \\
         -g {output.sizes} \\
-        -i {input.bed} \\
+        -i - \\
     | bedtools sort -i - \\
     | bedtools merge \\
-        -s \\
         -i - \\
         -c 4,5,6 \\
         -o distinct,mean,distinct \\
