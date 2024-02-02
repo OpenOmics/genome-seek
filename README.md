@@ -2,7 +2,7 @@
    
   <h1>genome-seek 🔬</h1>
   
-  **_Whole Genome Clinical Sequencing Pipeline._**
+  **_Whole Genome and Exome Clinical Sequencing Pipeline._**
 
   [![tests](https://github.com/OpenOmics/genome-seek/workflows/tests/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/main.yaml) [![docs](https://github.com/OpenOmics/genome-seek/workflows/docs/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/docs.yml) [![GitHub issues](https://img.shields.io/github/issues/OpenOmics/genome-seek?color=brightgreen)](https://github.com/OpenOmics/genome-seek/issues)  [![GitHub license](https://img.shields.io/github/license/OpenOmics/genome-seek)](https://github.com/OpenOmics/genome-seek/blob/main/LICENSE) 
   
@@ -20,7 +20,7 @@ The **`./genome-seek`** pipeline is composed of several interrelated sub-command
  * [<code>genome-seek <b>unlock</b></code>](https://openomics.github.io/genome-seek/usage/unlock/): Unlocks a previous runs output directory.
  * [<code>genome-seek <b>cache</b></code>](https://openomics.github.io/genome-seek/usage/cache/): Cache software containers locally.
 
-**genome-seek** is a comprehensive clinical WGS pipeline that is focused on speed. Each tool in the pipeline was benchmarked and selected due to its low run times without sacrificing accuracy or precision. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
+**genome-seek** is a comprehensive clinical WGS and WES pipeline that is focused on speed. Each tool in the pipeline was benchmarked and selected due to its low run times without sacrificing accuracy or precision. It relies on technologies like [Singularity<sup>1</sup>](https://singularity.lbl.gov/) to maintain the highest level of reproducibility. The pipeline consists of a series of data processing and quality-control steps orchestrated by [Snakemake<sup>2</sup>](https://snakemake.readthedocs.io/en/stable/), a flexible and scalable workflow management system, to submit jobs to a cluster.
 
 The pipeline is compatible with data generated from Illumina short-read sequencing technologies. As input, it accepts a set of FastQ files and can be run locally on a compute instance or on-premise using a cluster (recommended). A user can define the method or mode of execution. The pipeline can submit jobs to a cluster using a job scheduler like SLURM (more coming soon!). A hybrid approach ensures the pipeline is accessible to all users.
 
