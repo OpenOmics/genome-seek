@@ -60,16 +60,36 @@ rule fastqc_raw:
         join(workpath,"rawQC","{name}.R2_fastqc.zip"),
     params:
         rname  = 'rawfqc',
-        outdir = join(workpath,"rawQC"),
+        tmpdir = tmpdir,
+        outdir = join(workpath,"rawQC"), 
     threads: int(allocated("threads", "fastqc_raw", cluster))
     container: config['images']['genome-seek_qc']
     envmodules: config['tools']['fastqc']
     shell: """
+    # Setups temporary directory for
+    # intermediate files with built-in 
+    # mechanism for deletion on exit
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+    tmp=$(mktemp -d -p "{params.tmpdir}")
+    trap 'rm -rf "${{tmp}}"' EXIT
+
+    # Running fastqc with local
+    # disk or a tmpdir, fastqc
+    # has been observed to lock
+    # up gpfs filesystems, adding
+    # this on request by HPC staff. 
     fastqc \\
         {input.r1} \\
         {input.r2} \\
         -t {threads} \\
-        -o {params.outdir}
+        -o "${{tmp}}"
+    
+    # Copy output files from tmpdir
+    # to output directory
+    find "${{tmp}}" \\
+        -type f \\
+        \\( -name '*.html' -o -name '*.zip' \\) \\
+        -exec cp {{}} {params.outdir} \\;
     """
 
 
@@ -133,6 +153,7 @@ rule fastqc_bam:
         report  =  join(workpath,"QC","{name}.sorted_fastqc.html")
     params:
         rname  = "bamfqc",
+        tmpdir = tmpdir,
         outdir =  join(workpath,"QC"),
         adapters = config['references']['FASTQC_ADAPTERS']
     message: "Running FastQC with {threads} threads on '{input.bam}' input file"
@@ -140,11 +161,30 @@ rule fastqc_bam:
     container: config['images']['genome-seek_qc']
     envmodules: config['tools']['fastqc']
     shell: """
+    # Setups temporary directory for
+    # intermediate files with built-in 
+    # mechanism for deletion on exit
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+    tmp=$(mktemp -d -p "{params.tmpdir}")
+    trap 'rm -rf "${{tmp}}"' EXIT
+    
+    # Running fastqc with local
+    # disk or a tmpdir, fastqc
+    # has been observed to lock
+    # up gpfs filesystems, adding
+    # this on request by HPC staff.
     fastqc -t {threads} \\
         -f bam \\
         --contaminants {params.adapters} \\
-        -o {params.outdir} \\
-        {input.bam} 
+        -o "${{tmp}}" \\
+        {input.bam}
+    
+    # Copy output files from tmpdir
+    # to output directory
+    find "${{tmp}}" \\
+        -type f \\
+        \\( -name '*.html' -o -name '*.zip' \\) \\
+        -exec cp {{}} {params.outdir} \\;
     """
 
 
