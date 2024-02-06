@@ -91,12 +91,14 @@
     "fastqc_bam": {
         "threads": "8",
         "mem": "32G",
-        "time": "12:00:00"
+        "time": "12:00:00",
+        "gres": "lscratch:64"
     },
     "fastqc_raw": {
         "threads": "8",
         "mem": "32G",
-        "time": "12:00:00"
+        "time": "12:00:00",
+        "gres": "lscratch:64"
     },
     "fc_lane": {
         "threads": "4",
