@@ -221,6 +221,38 @@ def git_commit_hash(repo_path):
     return githash
 
 
+def tool_version(tool, cmd, strict = False):
+    """Gets a tool's version using a known command.
+    @param cmd list[<str>]:
+        Command to run to get version of software.
+    @param tool <str>:
+        Name of software to check version.
+    @param strict <bool>:
+        If True, will exit with a fatal error if the software is not installed.
+    @return version <str>:
+        Version of the tool, default: ''. If strict is True, will exit with a fatal error.
+    """
+    # Get version information for a tool,
+    # the resulting sematic version can be 
+    # parsed with the following regex:
+    # match = regex.search('^(?P<prefix>v)?(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)', version.split()[-1])
+    c = Colors
+    version = ''
+    try:
+        version = subprocess.check_output(cmd).strip().decode('utf-8')
+    except Exception as e:
+        err("\n{0}{1}Warning: could not get version of {2} using: '{3}'{4}".format(
+            c.bg_black, c.yellow, tool, ' '.join(cmd), c.end)
+        )
+        if strict:
+            fatal(
+                "{0}{1}Error: Please ensure {2} is installed and in $PATH.{3}".format(
+                    c.bg_red, c.white, tool, c.end
+                )
+            )
+    return version
+
+
 def join_jsons(templates):
     """Joins multiple JSON files to into one data structure
     Used to join multiple template JSON files to create a global config dictionary.
@@ -425,3 +457,16 @@ if __name__ == '__main__':
     # which is similar to following unix command: 
     # dd if=utils.py bs=512 count=1 2>/dev/null | md5sum 
     print('{}  {}'.format(md5sum(sys.argv[0], first_block_only = True, blocksize = 512), sys.argv[0]))
+    # Get version of software
+    print("Using snakemake version: {}".format(
+            tool_version(
+                tool='snakemake', 
+                cmd=['snakemake', '--version'])
+        )
+    )
+    print("Using singularity version: {}".format(
+            tool_version(
+                tool='singularity', 
+                cmd=['singularity', '--version'])
+        )
+    )
