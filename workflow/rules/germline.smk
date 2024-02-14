@@ -12,7 +12,16 @@ rule deepvariant:
     takes aligned reads (in BAM or CRAM format), produces pileup image 
     tensors from them, classifies each tensor using a convolutional 
     neural network, and finally reports the results in a standard VCF 
-    or gVCF file.
+    or gVCF file. This rule runs all three steps in the deepvariant
+    pipeline as a single step, i.e.: make_examples, call_variants, and
+    postprocess_variants. This is not optimal for large-scale projects
+    as it will consume a lot of resources inefficently (only the 2nd
+    step in the dv pipeline can make use of GPU-computing). As so, it
+    is better to run the 1st/3rd step on a normal compute node and run
+    the 2nd step on a GPU node. This rule is depreciated. Please see 
+    the deepvariant_makeexamples, deepvariant_callvariants, and
+    deepvariant_postprocessvariants rules for the optimal way to
+    run this tool.
     @Input:
         Duplicate marked, sorted BAM file (scatter)
     @Output:
@@ -52,6 +61,78 @@ rule deepvariant:
         --output_vcf={output.vcf} \\
         --num_shards={threads} \\
         --intermediate_results_dir=${{tmp}}
+    """
+
+
+rule deepvariant_make_examples:
+    """
+    Data processing step to call germline variants using deep neural 
+    network. The make_examples step prepares the input data for the
+    deepvariant's CNN. DeepVariant is a deep learning-based variant 
+    caller composed of multiple steps that takes aligned reads (in 
+    BAM or CRAM format), produces pileup image tensors from them, 
+    classifies each tensor using a convolutional neural network, 
+    and finally reports the results in a standard VCF or gVCF file. 
+    This rule is the first step in the deepvariant pipeline:
+      1. make_examples        (CPU, parallelizable with gnu-parallel)
+      2. call_variants        (GPU, use a GPU node)
+      3. postprocess_variants (CPU)
+    Running deepvariant in a single step using run_deepvariant is not 
+    optimal for large-scale projects as it will consume resources very
+    inefficently. As so, it is better to run the 1st/3rd step on a compute 
+    node and run the 2nd step on a GPU node.
+    @Input:
+        Duplicate marked, sorted BAM file (scatter)
+    @Output:
+        Single-sample gVCF file with called variants
+    """
+    input: 
+        bam = join(workpath, "BAM", "{name}.sorted.bam"),
+        bai = join(workpath, "BAM", "{name}.sorted.bam.bai"),
+    output:
+        success = join(workpath, "deepvariant", "mk_examples", "{name}.make_examples.success"),
+    params: 
+        rname  = "dv_mkexamples",
+        genome = config['references']['GENOME'],
+        tmpdir = tmpdir,
+        nshards = int(allocated("threads", "deepvariant", cluster))-1,
+        example = lambda w: join(workpath, "deepvariant", "mk_examples", "{0}.make_examples.tfrecord@{1}.gz".format(
+            w.name,
+            int(allocated("threads", "deepvariant", cluster))
+        )),
+        gvcf = lambda w: join(workpath, "deepvariant", "mk_examples", "{0}.gvcf.tfrecord@{1}.gz".format(
+            w.name,
+            int(allocated("threads", "deepvariant", cluster))
+        )),
+    message: "Running DeepVariant make_examples on '{input.bam}' input file"
+    threads: int(allocated("threads", "deepvariant", cluster))
+    container: config['images']['deepvariant']
+    envmodules: config['tools']['deepvariant']
+    shell: """
+    # Setups temporary directory for
+    # intermediate files with built-in 
+    # mechanism for deletion on exit
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+    tmp=$(mktemp -d -p "{params.tmpdir}")
+    trap 'rm -rf "${{tmp}}"' EXIT
+
+    # Run DeepVariant make_examples and
+    # parallelize it using gnu-parallel 
+    time seq 0 {params.nshards} \\
+        | parallel \\
+            --eta \\
+            -q \\
+            --halt 2 \\
+            --line-buffer \\
+            make_examples \\
+                --mode calling \\
+                --ref {params.genome} \\
+                --reads {input.bam} \\
+                --examples {params.example} \\
+                --channels "insert_size" \\
+                --gvcf {params.gvcf} \\
+                --task {{}} \\
+    && touch {output.success}
     """
 
 
