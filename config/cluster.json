@@ -92,8 +92,8 @@
         "time": "1-00:00:00"
     },
     "deepvariant_postprocess_variants": {
-        "threads": "32",
-        "mem": "64G",
+        "threads": "4",
+        "mem": "32G",
         "time": "1-00:00:00"
     },
     "fastp": {
