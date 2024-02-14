@@ -79,6 +79,23 @@
         "gres": "gpu:v100x:1,lscratch:256",
         "time": "1-00:00:00"
     },
+    "deepvariant_make_examples": {
+        "threads": "32",
+        "mem": "64G",
+        "time": "1-00:00:00"
+    },
+    "deepvariant_call_variants": {
+        "threads": "18",
+        "mem": "48G",
+        "partition": "gpu",
+        "gres": "gpu:v100x:1,lscratch:256",
+        "time": "1-00:00:00"
+    },
+    "deepvariant_postprocess_variants": {
+        "threads": "32",
+        "mem": "64G",
+        "time": "1-00:00:00"
+    },
     "fastp": {
         "threads": "32",
         "time": "48:00:00"

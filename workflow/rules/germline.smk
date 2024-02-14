@@ -95,17 +95,17 @@ rule deepvariant_make_examples:
         rname  = "dv_mkexamples",
         genome = config['references']['GENOME'],
         tmpdir = tmpdir,
-        nshards = int(allocated("threads", "deepvariant", cluster))-1,
+        nshards = int(allocated("threads", "deepvariant_make_examples", cluster))-1,
         example = lambda w: join(workpath, "deepvariant", "mk_examples", "{0}.make_examples.tfrecord@{1}.gz".format(
             w.name,
-            int(allocated("threads", "deepvariant", cluster))
+            int(allocated("threads", "deepvariant_make_examples", cluster))
         )),
         gvcf = lambda w: join(workpath, "deepvariant", "mk_examples", "{0}.gvcf.tfrecord@{1}.gz".format(
             w.name,
-            int(allocated("threads", "deepvariant", cluster))
+            int(allocated("threads", "deepvariant_make_examples", cluster))
         )),
     message: "Running DeepVariant make_examples on '{input.bam}' input file"
-    threads: int(allocated("threads", "deepvariant", cluster))
+    threads: int(allocated("threads", "deepvariant_make_examples", cluster))
     container: config['images']['deepvariant']
     envmodules: config['tools']['deepvariant']
     shell: """
