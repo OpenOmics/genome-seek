@@ -158,7 +158,7 @@ rule deepvariant_call_variants:
     @Input:
         Flag file to indicate success of make_examples (scatter)
     @Output:
-        Single-sample gVCF file with called variants
+        Per sample call_variants tensorflow records file
     """
     input: 
         success = join(workpath, "deepvariant", "mk_examples", "{name}.make_examples.success"),
@@ -169,10 +169,13 @@ rule deepvariant_call_variants:
         genome = config['references']['GENOME'],
         tmpdir = tmpdir,
         # NOTE: There BE dragons here!
-        # We need allocation info from previous rule
+        # We need allocation info from make_examples rule
         # to determine the number of shards that were
         # used in the make_examples step, this is used
-        # to resolve the input to this rule.
+        # to resolve a dependency file of this rule,
+        # which is the examples tf record file produced by 
+        # make_examples. This file gets passed to the
+        # --examples option of call_variants. 
         example = lambda w: join(workpath, "deepvariant", "mk_examples", "{0}.make_examples.tfrecord@{1}.gz".format(
             w.name,
             int(allocated("threads", "deepvariant_make_examples", cluster))
@@ -200,6 +203,74 @@ rule deepvariant_call_variants:
         --outfile {output.callvar} \\
         --examples {params.example} \\
         --checkpoint {params.ckpt}
+    """
+
+
+
+rule deepvariant_postprocess_variants:
+    """
+    Data processing step to call germline variants using deep neural 
+    network. The postprocess_variants interprets the classifications 
+    output. DeepVariant is a deep learning-based variant caller composed 
+    ofcmultiple steps that takes aligned reads (in BAM or CRAM format),
+    produces pileup image tensors from them, classifies each tensor
+    using a convolutional neural network, and finally reports the
+    results in a standard VCF or gVCF file. 
+    This rule is the first step in the deepvariant pipeline:
+      1. make_examples        (CPU, parallelizable with gnu-parallel)
+      2. call_variants        (GPU, use a GPU node)
+      3. postprocess_variants (CPU, single-threaded)
+    Running deepvariant in a single step using run_deepvariant is not 
+    optimal for large-scale projects as it will consume resources very
+    inefficently. As so, it is better to run the 1st/3rd step on a 
+    compute node and run the 2nd step on a GPU node.
+    @Input:
+        Per-sample call_variants tensorflow records file (scatter)
+    @Output:
+        Single-sample gVCF file with called variants
+    """
+    input: 
+        callvar = join(workpath, "deepvariant", "call_variants", "{name}.call_variants.tfrecord.gz"),
+    output:
+        gvcf = join(workpath, "deepvariant", "gVCFs", "{name}.g.vcf.gz"),
+        vcf  = join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"),
+    params: 
+        rname  = "dv_postprovars",
+        genome = config['references']['GENOME'],
+        tmpdir = tmpdir,
+        # NOTE: There BE dragons here!
+        # We need allocation info from make_examples rule
+        # to determine the number of shards that were
+        # used in the make_examples step, this is used
+        # to resolve a dependency file of this rule,
+        # which is the gvcf tf record file produced by 
+        # make_examples. This file gets passed to the
+        # --nonvariant_site_tfrecord_path option. 
+        gvcf = lambda w: join(workpath, "deepvariant", "mk_examples", "{0}.gvcf.tfrecord@{1}.gz".format(
+            w.name,
+            int(allocated("threads", "deepvariant_make_examples", cluster))
+        )),
+    message: "Running DeepVariant postprocess_variants on '{input.callvar}' input file"
+    threads: int(allocated("threads", "deepvariant_postprocess_variants", cluster))
+    container: config['images']['deepvariant']
+    envmodules: config['tools']['deepvariant']
+    shell: """
+    # Setups temporary directory for
+    # intermediate files with built-in 
+    # mechanism for deletion on exit
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+    tmp=$(mktemp -d -p "{params.tmpdir}")
+    trap 'rm -rf "${{tmp}}"' EXIT
+    echo "Using tmpdir: ${{tmp}}"
+    export TMPDIR="${{tmp}}"
+
+    # Run DeepVariant postprocess_variants
+    time postprocess_variants \\
+        --ref {params.genome} \\
+        --infile {input.callvar} \\
+        --outfile {output.vcf} \\
+        --nonvariant_site_tfrecord_path {params.gvcf} \\
+        --gvcf_outfile {output.gvcf}
     """
 
 
