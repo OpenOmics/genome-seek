@@ -80,9 +80,10 @@
         "time": "1-00:00:00"
     },
     "deepvariant_make_examples": {
-        "threads": "32",
+        "threads": "24",
         "mem": "64G",
-        "time": "1-00:00:00"
+        "time": "1-00:00:00",
+        "gres": "lscratch:256"
     },
     "deepvariant_call_variants": {
         "threads": "18",
@@ -94,7 +95,8 @@
     "deepvariant_postprocess_variants": {
         "threads": "4",
         "mem": "32G",
-        "time": "1-00:00:00"
+        "time": "1-00:00:00",
+        "gres": "lscratch:256"
     },
     "fastp": {
         "threads": "32",
