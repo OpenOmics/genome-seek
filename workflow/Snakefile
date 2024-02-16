@@ -183,18 +183,6 @@ rule all:
             join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"),
             name=samples
         ),
-        # Deepvariant make_examples, prepares the input for DV CNN
-        # @imported from rules/germline.smk
-        # expand(
-        #     join(workpath, "deepvariant", "mk_examples", "{name}.make_examples.success"),
-        #     name=samples
-        # ),
-        # Deepvariant call_variants, calls variants with DV CNN
-        # @imported from rules/germline.smk
-        # expand(
-        #     join(workpath, "deepvariant", "call_variants", "{name}.call_variants.tfrecord.gz"),
-        #     name=samples,
-        # ),
         # GLnexus, jointly-called norm multi-sample VCF file
         # @imported from rules/germline.smk
         join(workpath, "deepvariant", "VCFs", "joint.glnexus.norm.vcf.gz"),
