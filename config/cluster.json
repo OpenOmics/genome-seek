@@ -35,7 +35,7 @@
         "threads": "24",
         "mem": "230G",
         "time": "1-12:00:00",
-        "gres": "lscratch:256"
+        "gres": "lscratch:300"
     },
     "canvas": {
         "threads": "4",
