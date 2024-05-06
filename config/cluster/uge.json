@@ -1,0 +1,447 @@
+{
+  "__default__": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "apply_indel": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "4"
+  },
+  "apply_snp": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "4"
+  },
+  "bam": {
+    "mem": "16G",
+    "partition": "",
+    "threads": "2"
+  },
+  "bam2fastq": {
+    "mem": "36G",
+    "partition": "",
+    "threads": "2"
+  },
+  "bcftools_stats": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "2"
+  },
+  "bwa_mem2": {
+    "mem": "10G",
+    "partition": "",
+    "threads": "12"
+  },
+  "canvas": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "chrom_selectvariants": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "2"
+  },
+  "cnv_post": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "4"
+  },
+  "cnvkit_access": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "2"
+  },
+  "cnvkit_batch": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "collectvariantcallmetrics": {
+    "mem": "16G",
+    "partition": "",
+    "threads": "2"
+  },
+  "dbgenotype": {
+    "mem": "48G",
+    "partition": "",
+    "threads": "2"
+  },
+  "deepvariant": {
+    "mem": "3G",
+    "partition": "",
+    "threads": "12"
+  },
+  "deepvariant_call_variants": {
+    "mem": "3G",
+    "partition": "",
+    "threads": "8"
+  },
+  "deepvariant_make_examples": {
+    "mem": "3G",
+    "partition": "",
+    "threads": "8"
+  },
+  "deepvariant_postprocess_variants": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "fastp": {
+    "mem": "2G",
+    "partition": "",
+    "threads": "8"
+  },
+  "fastq_screen": {
+    "mem": "2G",
+    "partition": "",
+    "threads": "8"
+  },
+  "fastqc_bam": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "4"
+  },
+  "fastqc_raw": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "4"
+  },
+  "fc_lane": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "filter_cnv": {
+    "mem": "1G",
+    "partition": "",
+    "threads": "2"
+  },
+  "gatk_apply_recal": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "gatk_contamination": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "gatk_filter_mutect2": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "gatk_gather_mutect2": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "gatk_gather_recal": {
+    "mem": "7G",
+    "partition": "",
+    "threads": "4"
+  },
+  "gatk_learnReadOrientationModel": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "6"
+  },
+  "gatk_normalPileup": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "gatk_realign": {
+    "mem": "24G",
+    "partition": "",
+    "threads": "2"
+  },
+  "gatk_scatter_mutect2": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "gatk_scatter_recal": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "gatk_selectvariants": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "2"
+  },
+  "gatk_tumorPileup": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "gatk_varianteval": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "genotype": {
+    "mem": "48G",
+    "partition": "",
+    "threads": "2"
+  },
+  "glnexus": {
+    "mem": "16G",
+    "partition": "",
+    "threads": "12"
+  },
+  "gtype_refinement": {
+    "mem": "24G",
+    "partition": "",
+    "threads": "2"
+  },
+  "haplotypecaller": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "hla": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "hmftools_amber": {
+    "mem": "7G",
+    "partition": "",
+    "threads": "12"
+  },
+  "hmftools_cobalt": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "12"
+  },
+  "hmftools_purple": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "8"
+  },
+  "inbreeding": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "8"
+  },
+  "manta_germline": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "12"
+  },
+  "manta_somatic": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "12"
+  },
+  "manta_somatic_filter": {
+    "mem": "18G",
+    "partition": "",
+    "threads": "4"
+  },
+  "mergegvcfs": {
+    "mem": "48G",
+    "partition": "",
+    "threads": "2"
+  },
+  "multiqc": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "4"
+  },
+  "muse": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "12"
+  },
+  "namesort": {
+    "mem": "5G",
+    "partition": "",
+    "threads": "8"
+  },
+  "novocraft_sort": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "8"
+  },
+  "octopus_filter": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "octopus_germline": {
+    "mem": "2G",
+    "partition": "",
+    "threads": "12"
+  },
+  "octopus_merge": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "4"
+  },
+  "octopus_somatic": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "12"
+  },
+  "opencravat_germline": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "12"
+  },
+  "opencravat_germline_merge": {
+    "mem": "30G",
+    "partition": "",
+    "threads": "4"
+  },
+  "opencravat_somatic": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "12"
+  },
+  "ped": {
+    "mem": "16G",
+    "partition": "",
+    "threads": "2"
+  },
+  "peddy": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "picard_headers": {
+    "mem": "16G",
+    "partition": "",
+    "threads": "2"
+  },
+  "picard_markdups": {
+    "mem": "16G",
+    "partition": "",
+    "threads": "2"
+  },
+  "purple_cohort_maf": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "2"
+  },
+  "purple_cohort_maftools": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "2"
+  },
+  "qc": {
+    "mem": "16G",
+    "partition": "",
+    "threads": "2"
+  },
+  "qualimap": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "8"
+  },
+  "samtools_flagstats": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "6"
+  },
+  "sequenza": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "8"
+  },
+  "sequenza_utils": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "8"
+  },
+  "snpeff": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "4"
+  },
+  "somalier": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "somatic_cohort_maf": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "2"
+  },
+  "somatic_cohort_maftools": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "2"
+  },
+  "somatic_cohort_sigprofiler": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "2"
+  },
+  "somatic_merge_tumor": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "2"
+  },
+  "somatic_purple_maf": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
+  "somatic_sample_maf": {
+    "mem": "3G",
+    "partition": "",
+    "threads": "6"
+  },
+  "somatic_sample_sigprofiler": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "2"
+  },
+  "somatic_selectvar": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "6"
+  },
+  "somatic_split_normal": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "2"
+  },
+  "somatic_split_tumor": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "2"
+  },
+  "strelka": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "12"
+  },
+  "strelka_format": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "12"
+  },
+  "vcftools": {
+    "mem": "16G",
+    "partition": "",
+    "threads": "2"
+  },
+  "vqsr_indel": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "8"
+  },
+  "vqsr_snp": {
+    "mem": "6G",
+    "partition": "",
+    "threads": "8"
+  }
+}

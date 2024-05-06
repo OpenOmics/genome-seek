@@ -156,7 +156,67 @@ def rename(filename):
     return filename
 
 
-def setup(sub_args, ifiles, repo_path, output_path):
+def update_resource_bundle_path(d, old_path, new_path):
+    """Updates the default resource bundle path with a new path.
+    The default base resource bundle path located on Biowulf in the
+    following directory: "/data/OpenOmics/references/genome-seek".
+    This function recursively searches through a nested dictionary
+    to find any occurrences of the old path and replaces it with the
+    the new path, which was provided by the user via the following
+    option: --resource-bundle. This function checks the type of the 
+    each element in the dictionary to ensure nested data structures
+    are traversed and updated accordingly.
+    NOTE: In python dictionaries copied by reference (not by value), 
+    so the changes are made in place to the passed object/dictionary.
+    If you want to keep the original dictionary, make a copy of it
+    using the dict.copy() method before passing it to this function.
+    @param d <dict['references']>: 
+        A dictionary to containing the default reference bundle path
+        or location. This dict is traversed and updated with the new
+        resource bundle path.
+    @param old_path <str>: 
+        Default resource bundle path to replace. This is the default
+        path to OpenOmics shared group area on Biowulf.
+    @param new_path <str>:
+        New resource bundle path to replace with. This is the path
+        provided by the user via the --resource-bundle option.
+    @return None: Dictionary is updated in place, i.e. it is passed
+        by reference.
+    """
+    if isinstance(d, list):
+        for i in d:
+            # Check instance type of element,
+            # if dictionary or list type, keep
+            # recursively traversing
+            if isinstance(i, dict) or isinstance(i, list):
+                # Keep traversing through the 
+                # nested dictionary/list
+                update_resource_bundle_path(i, old_path, new_path)
+            elif isinstance(i, str):
+                # Element is not an iterable-like,
+                # data structure such as a list/dict,
+                # check if the default resource path 
+                # is in the string and replace it
+                # with the new resource bundle path
+                if old_path in i:
+                    d[d.index(i)] = i.replace(old_path, new_path)
+
+    elif isinstance(d, dict):
+        for k, v in d.items():
+            if isinstance(v, dict) or isinstance(v, list):
+                # Dictionary type
+                # Recursively traverse through 
+                # the nested dictionary
+                update_resource_bundle_path(v, old_path, new_path)
+            elif isinstance(v, str):
+                # Check if the old path resource bundle path 
+                # is a string, replace it with the new resource
+                # bundle path as needed
+                if old_path in v:
+                    d[k] = v.replace(old_path, new_path)
+
+
+def setup(sub_args, ifiles, repo_path, output_path, resource_bundle=None):
     """Setup the pipeline for execution and creates config file from templates
     @param sub_args <parser.parse_args() object>:
         Parsed arguments for run sub-command
@@ -224,6 +284,21 @@ def setup(sub_args, ifiles, repo_path, output_path):
             # CLI value can be converted to a string
             v = str(v)
         config['options'][opt] = v
+
+    # Override path of reference files from
+    # default in OpenOmics shared group area
+    # to base path provided by user
+    if sub_args.resource_bundle:
+        default_ref_path = '/data/OpenOmics/references/genome-seek'
+        new_ref_path = resource_bundle.rstrip('/')
+        # Updates any default reference file paths
+        # defined in config/genome.json to new path
+        # provided by user via --resource-bundle
+        update_resource_bundle_path(
+            config, 
+            default_ref_path, 
+            new_ref_path
+        )
 
     return config
 
@@ -345,7 +420,7 @@ def bind(sub_args, config):
                 bindpaths.append(value)
     
     # Bind input file paths, working 
-    # directory, and other reference 
+    # directory, and other reference
     # genome paths
     rawdata_bind_paths = [os.path.realpath(p) for p in config['project']['datapath'].split(',')]
     working_directory =  os.path.realpath(config['project']['workpath'])
@@ -645,6 +720,7 @@ def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None,
     """Runs the pipeline via selected executor: local or slurm.
     If 'local' is selected, the pipeline is executed locally on a compute node/instance.
     If 'slurm' is selected, jobs will be submited to the cluster using SLURM job scheduler.
+    If 'uge' is selected, jobs will be submited to the cluster using UGE job scheduler.
     Support for additional job schedulers (i.e. PBS, SGE, LSF) may be added in the future.
     @param outdir <str>:
         Pipeline output PATH
@@ -652,6 +728,7 @@ def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None,
         Execution method or mode:
             local runs serially a compute instance without submitting to the cluster.
             slurm will submit jobs to the cluster using the SLURM job scheduler.
+            uge will submit jobs to the cluster using the UGE job scheduler.
     @param additional_bind_paths <str>:
         Additional paths to bind to container filesystem (i.e. input file paths)
     @param alt_cache <str>:
@@ -729,8 +806,8 @@ def runner(mode, outdir, alt_cache, logger, additional_bind_paths = None,
                 '--configfile=config.json'
             ], cwd = outdir, stderr=subprocess.STDOUT, stdout=logger, env=my_env)
 
-    # Submitting jobs to cluster via SLURM's job scheduler
-    elif mode == 'slurm':
+    # Submitting jobs to cluster via SLURM/UGE job scheduler
+    elif mode in ['slurm', 'uge']:
         # Run pipeline's main process
         # Look into later: it maybe worth 
         # replacing Popen subprocess with a direct

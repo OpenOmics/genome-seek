@@ -207,7 +207,7 @@ function main(){
   # Setting defaults for non-required arguments
   tmp="${Arguments[t]:-/tmp/$USER/SIFs/.singularity/}"
   # Sanitize single quoted input
-  tmp=$(echo "$tmp" | sed "s/\${SLURM_JOB_ID}/${SLURM_JOB_ID}/g" | sed "s/\$SLURM_JOB_ID/${SLURM_JOB_ID}/g")
+  tmp=$(echo "$tmp" | sed "s/\${SLURM_JOB_ID}/${SLURM_JOB_ID:-$USER}/g" | sed "s/\$SLURM_JOB_ID/${SLURM_JOB_ID:-$USER}/g")
   mkdir -p "$tmp"
   tmp=$(abspath "${tmp}")
 

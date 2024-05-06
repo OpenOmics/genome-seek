@@ -124,11 +124,15 @@ def run(sub_args):
     # Step 2. Setup pipeline for execution, 
     # dynamically create config.json config
     # file from user inputs and base config
-    # templates
+    # templates. Also override path of any 
+    # reference files from default in the 
+    # OpenOmics shared group area to base 
+    # path provided by user via the option
     config = setup(sub_args, 
         ifiles = input_files,
         repo_path = git_repo,
-        output_path = sub_args.output
+        output_path = sub_args.output,
+        resource_bundle = sub_args.resource_bundle
     )
 
     # Step 3. Resolve docker/singularity bind
@@ -217,7 +221,8 @@ def run(sub_args):
     else: 
         log = os.path.join(sub_args.output, 'logfiles', 'master.log')
     logfh = open(log, 'w')
-    mjob = runner(mode = sub_args.mode, 
+    mjob = runner(
+        mode = sub_args.mode, 
         outdir = sub_args.output, 
         # additional_bind_paths = all_bind_paths,
         alt_cache = sub_args.singularity_cache,  
@@ -245,7 +250,7 @@ def run(sub_args):
         else:
             fatal('{} pipeline failed. Please see {} for more information.'.format(_name,
                 os.path.join(sub_args.output, 'logfiles', 'snakemake.log')))
-    elif sub_args.mode == 'slurm':
+    elif sub_args.mode in ['slurm', 'uge']:
         jobid = open(os.path.join(sub_args.output, 'logfiles', 'mjobid.log')).read().strip()
         if not sub_args.silent:
             if int(mjob.returncode) == 0:
@@ -308,7 +313,7 @@ def cache(sub_args):
                 ' local ' +
                 " -s '{}' ".format(sif_cache) +
                 " -i '{}' ".format(','.join(pull)) + 
-                " -t '{0}/{1}/.singularity/' ".format(sif_cache, username)
+                " -t '{0}/.{1}/.singularity/' ".format(sif_cache, username)
             )
             # Check exitcode of caching script 
             if exitcode != 0:
@@ -356,12 +361,13 @@ def parsed_arguments(name, description):
 
         {3}{4}Synopsis:{5}
           $ {2} run [--help] \\
-                [--mode {{slurm,local}}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \\
+                [--mode {{slurm,uge,local}}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \\
                 [--call-cnv] [--call-sv] [--call-hla] [--call-somatic] [--open-cravat] \\
                 [--skip-qc] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \\
                 [--pairs PAIRS] [--pon PANEL_OF_NORMALS] [--wes-mode] [--wes-bed WES_BED] \\
                 [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \\
                 [--singularity-cache SINGULARITY_CACHE] \\
+                [--resource-bundle RESOURCE_BUNDLE] \\
                 [--dry-run] [--threads THREADS] \\
                 --input INPUT [INPUT ...] \\
                 --output OUTPUT
@@ -506,22 +512,25 @@ def parsed_arguments(name, description):
                                   Example: --oc-modules /data/$USER/CRAVAT/modules
 
         {3}{4}Orchestration options:{5}
-          --mode {{slurm,local}}  
+          --mode {{slurm,uge,local}}  
                                 Method of execution. Defines the mode of execution. 
-                                Vaild options for this mode include: local or slurm. 
-                                Additional modes of exection are coming soon, default:  
-                                slurm.
+                                Vaild options for this mode include: local, slurm, 
+                                or uge. Additional modes of exection are coming soon, 
+                                default: slurm.
                                 Here is a brief description of each mode:
+                                  • slurm: uses slurm execution backend. This method 
+                                will submit jobs to a  cluster  using sbatch. It is 
+                                recommended running the pipeline in this mode as it 
+                                will be significantly faster.
+                                  • uge: uses UGE execution backend. This method will
+                                submit jobs to a cluster using qsub. Please set the 
+                                mode to uge when running the pipeline on LOCUS. 
                                    • local: uses local method of execution. local runs 
                                 will run serially on compute instance. This is useful 
                                 for testing, debugging, or when a users does not have
                                 access to a  high  performance  computing environment.
                                 If this option is not provided, it will default to a 
                                 slurm mode of execution. 
-                                   • slurm: uses slurm execution backend. This method 
-                                will submit jobs to a  cluster  using sbatch. It is 
-                                recommended running the pipeline in this mode as it 
-                                will be significantly faster. 
                                   Example: --mode slurm
           --job-name JOB_NAME   
                                 Overrides the name of the pipeline's master job. When 
@@ -555,6 +564,16 @@ def parsed_arguments(name, description):
                                 sub command can be used to create a local SIF cache. 
                                 Please see {2} cache for more information.
                                    Example: --sif-cache /data/$USER/sifs/
+
+          --resource-bundle RESOURCE_BUNDLE
+                                Path to a resource bundle. Only provide this option
+                                if you are running the pipeline outside of Biowulf. If 
+                                you are running the pipeline on Biowulf, the pipeline 
+                                will automatically resolve the correct path to any 
+                                references files. The resource bundle contains the set
+                                of required reference files for processing any data. 
+                                  Example: --resource-bundle /path/to/refs/genome-seek
+                                           
           --tmp-dir TMP_DIR     
                                 Path on the file system for writing temporary output 
                                 files. By default, the temporary directory is set to 
@@ -797,7 +816,7 @@ def parsed_arguments(name, description):
         type = str,
         required = False,
         default = "slurm",
-        choices = ['slurm', 'local'],
+        choices = ['slurm', 'uge', 'local'],
         help = argparse.SUPPRESS
     )
 
@@ -845,6 +864,18 @@ def parsed_arguments(name, description):
         '--sif-cache',
         type = lambda option: os.path.abspath(os.path.expanduser(option)),
         required = False,
+        help = argparse.SUPPRESS
+    )
+
+    # Output Directory of downloaded resource bundle:
+    #  - Biowulf: /data/OpenOmics/references/genome-seek    (default)
+    #  - LOCUS:   /hpcdata/openomics/references/genome-seek
+    #  - BigSky:  /data/openomics/references/genome-seek
+    subparser_run.add_argument(
+        '--resource-bundle',
+        type = lambda option: os.path.abspath(os.path.expanduser(option)),
+        required = False,
+        default = None,
         help = argparse.SUPPRESS
     )
 
