@@ -364,7 +364,14 @@ rule gatk_varianteval:
         genome   = config['references']['GENOME'],
         dbsnp    = config['references']['DBSNP'],
         ver_gatk = config['tools']['gatk4'],
-        memory   = allocated("mem", "gatk_varianteval", cluster).lower().rstrip('g')
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "gatk_varianteval", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_varianteval", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_varianteval", cluster).lower().rstrip('g'),
     message: "Running GATK4 VariantEval on '{input.vcf}' input file"
     threads: int(allocated("threads", "gatk_varianteval", cluster))
     container: config['images']['genome-seek']
@@ -400,7 +407,14 @@ rule snpeff:
         genome = config['references']['SNPEFF_GENOME'],
         config = config['references']['SNPEFF_CONFIG'],
         bundle = config['references']['SNPEFF_BUNDLE'],
-        memory = allocated("mem", "snpeff", cluster).lower().rstrip('g')
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "snpeff", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "snpeff", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "snpeff", cluster).lower().rstrip('g'),
     threads: int(allocated("threads", "snpeff", cluster))
     container: config['images']['genome-seek_qc']
     envmodules: config['tools']['snpeff']
@@ -464,7 +478,14 @@ rule collectvariantcallmetrics:
         rname  = "varcallmetrics",
         dbsnp  = config['references']['DBSNP'],
         prefix = join(workpath, "QC", "{batch}_variants"),
-        memory = allocated("mem", "collectvariantcallmetrics", cluster).lower().rstrip('g')
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "collectvariantcallmetrics", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "collectvariantcallmetrics", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "collectvariantcallmetrics", cluster).lower().rstrip('g'),
     message: "Running Picard CollectVariantCallingMetrics on '{input.vcf}' input file"
     threads: int(allocated("threads", "collectvariantcallmetrics", cluster))
     container: config['images']['genome-seek']

@@ -186,6 +186,7 @@ rule octopus_merge:
         > {output.vcf}
     """
 
+
 rule octopus_filter:
     """
     Data-processing step to merge scattered variant calls from Octopus. Octopus 
@@ -238,6 +239,7 @@ rule octopus_filter:
         -O v \\
         {output.vcfc}
     """
+
 
 rule octopus_germline:
     """
@@ -356,7 +358,14 @@ rule gatk_gather_mutect2:
         tmpdir = tmpdir,
         rname  = 'merge_mutect2',
         genome = config['references']['GENOME'],
-        memory = allocated("mem", "gatk_gather_mutect2", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "gatk_gather_mutect2", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_gather_mutect2", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_gather_mutect2", cluster).lower().rstrip('g'),
         # Building optional argument for paired normal
         multi_variant_option = joint_option(
             '--variant',
@@ -465,7 +474,14 @@ rule gatk_tumorPileup:
         rname  = 'tumorPileup',
         genome = config['references']['GENOME'],
         gsnp   = config['references']['1000GSNP'],
-        memory = allocated("mem", "gatk_tumorPileup", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "gatk_tumorPileup", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_tumorPileup", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_tumorPileup", cluster).lower().rstrip('g'),
     threads: 
         int(allocated("threads", "gatk_tumorPileup", cluster))
     container: config['images']['genome-seek']
@@ -501,7 +517,14 @@ rule gatk_normalPileup:
         rname  = 'normalPileup',
         genome = config['references']['GENOME'],
         gsnp   = config['references']['1000GSNP'],
-        memory = allocated("mem", "gatk_tumorPileup", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "gatk_normalPileup", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_normalPileup", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_normalPileup", cluster).lower().rstrip('g'),
     threads: 
         int(allocated("threads", "gatk_normalPileup", cluster))
     container: config['images']['genome-seek']
@@ -692,7 +715,14 @@ rule strelka:
         workflow = join(workpath, "strelka", "{name}", "runWorkflow.py"),
         genome   = config['references']['GENOME'],
         pon      = config['references']['PON'],
-        memory   = allocated("mem", "strelka", cluster).rstrip('G'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "strelka", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "strelka", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "strelka", cluster).lower().rstrip('g'),
         # Building optional argument for paired normal
         normal_option = lambda w: "--normalBam {0}.recal.bam".format(
             join(workpath, "BAM", tumor2normal[w.name])
@@ -765,7 +795,8 @@ rule strelka:
         -s {output.header} \\
         {output.vcf}
     """  
-    
+
+
 rule strelka_format:
     """Data-processing step to call somatic mutations with Strelka. This tool is 
     optimized for rapid clinical analysis of germline variation in small cohorts 
@@ -790,7 +821,14 @@ rule strelka_format:
         regions  = config['references']['MANTA_CALLREGIONS'],
         genome   = config['references']['GENOME'],
         pon      = config['references']['PON'],
-        memory   = allocated("mem", "strelka_format", cluster).rstrip('G'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "strelka_format", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "strelka_format", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "strelka_format", cluster).lower().rstrip('g'),
         # Building optional argument for paired normal
         normal_option = lambda w: "--normalBam {0}.recal.bam".format(
             join(workpath, "BAM", tumor2normal[w.name])
@@ -806,7 +844,7 @@ rule strelka_format:
     envmodules:
         config['tools']['rlang'],
     shell: """
-    #Adding AD annotation to VCF
+    # Adding AD annotation to VCF
     java -Xmx{params.memory}g -cp {params.purple_jar} \\
         com.hartwig.hmftools.purple.tools.AnnotateStrelkaWithAllelicDepth \\
         -in {input.rehead} \\
@@ -837,7 +875,14 @@ rule somatic_selectvar:
         rname  = 'somselect',
         genome = config['references']['GENOME'],
         pon    = config['references']['PON'],
-        memory = allocated("mem", "somatic_selectvar", cluster).rstrip('G'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "somatic_selectvar", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "somatic_selectvar", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "somatic_selectvar", cluster).lower().rstrip('g'),
         # Building intervals option for WES
         wes_intervals_option = lambda _: "--intervals {0}".format(
             join(workpath, "references", "wes_regions_50bp_padded.bed.gz"),
@@ -908,7 +953,14 @@ rule somatic_merge_tumor:
     params:
         rname  = 'tumormerge',
         genome = config['references']['GENOME'],
-        memory = allocated("mem", "somatic_merge_tumor", cluster).rstrip('G'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "somatic_merge_tumor", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "somatic_merge_tumor", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "somatic_merge_tumor", cluster).lower().rstrip('g'),
         tmpdir = tmpdir,
         # Dynamically update the priority list
         # based on wether a sample is a tumor-only

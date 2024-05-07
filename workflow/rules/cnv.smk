@@ -215,7 +215,14 @@ rule hmftools_amber:
         outdir    = join(workpath, "hmftools", "amber", "{name}"),
         amber_jar = config['references']['HMFTOOLS_AMBER_JAR'],
         loci_ref  = config['references']['HMFTOOLS_AMBER_LOCI'],
-        memory    = allocated("mem", "hmftools_amber", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated 
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "hmftools_amber", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "hmftools_amber", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "hmftools_amber", cluster).lower().rstrip('g'),
         # Building optional argument for paired normal
         normal_name = lambda w: "-reference {0}".format(
             tumor2normal[w.name]
@@ -262,7 +269,14 @@ rule hmftools_cobalt:
         outdir    = join(workpath, "hmftools", "cobalt", "{name}"),
         cobalt_jar = config['references']['HMFTOOLS_COBALT_JAR'],
         gc_profile = config['references']['HMFTOOLS_GC_PROFILE'],
-        memory    = allocated("mem", "hmftools_cobalt", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated 
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "hmftools_cobalt", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "hmftools_cobalt", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "hmftools_cobalt", cluster).lower().rstrip('g'),
         # Building optional argument for paired normal
         normal_name = lambda w: "-reference {0}".format(
             tumor2normal[w.name]
@@ -328,7 +342,14 @@ rule hmftools_purple:
         panel      = config['references']['HMFTOOLS_DRIVER_PANEL'],
         somatic_hotspot  = config['references']['HMFTOOLS_SOMATIC_HOTSPOT'],
         germline_hotspot = config['references']['HMFTOOLS_GERMLINE_HOTSPOT'],
-        memory     = allocated("mem", "hmftools_purple", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "hmftools_purple", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "hmftools_purple", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "hmftools_purple", cluster).lower().rstrip('g'),
         # Building optional argument for paired normal
         normal_name = lambda w: "-reference {0}".format(
             tumor2normal[w.name]

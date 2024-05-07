@@ -56,7 +56,14 @@ rule manta_germline:
         # Building option for WES flag
         wes = lambda _: "--exome" if run_wes else "",
         genome   = config['references']['GENOME'],
-        memory   = allocated("mem", "manta_germline", cluster).rstrip('G'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "manta_germline", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "manta_germline", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "manta_germline", cluster).lower().rstrip('g'),
     threads: int(allocated("threads", "manta_germline", cluster))
     container: config['images']['genome-seek_sv']
     envmodules: config['tools']['manta']
@@ -111,7 +118,14 @@ rule manta_somatic:
         # Building option for WES flag
         wes = lambda _: "--exome" if run_wes else "",
         genome   = config['references']['GENOME'],
-        memory   = allocated("mem", "manta_somatic", cluster).rstrip('G'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "manta_somatic", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "manta_somatic", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "manta_somatic", cluster).lower().rstrip('g'),
         # Building optional argument for paired normal
         normal_option = lambda w: "--normalBam {0}.recal.bam".format(
             join(workpath, "BAM", tumor2normal[w.name])
@@ -177,7 +191,14 @@ rule manta_somatic_filter:
         filtermanta = join(workpath, "workflow", "scripts", "FilterManta.pl"),
         genome      = config['references']['GENOME'],
         filter_ref  = config['references']['MANTA_FILTER_CHROMOSEQ_TRANSLOCATION'],
-        memory      = allocated("mem", "manta_somatic_filter", cluster).rstrip('G'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "manta_somatic_filter", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "manta_somatic_filter", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "manta_somatic_filter", cluster).lower().rstrip('g'),
     threads: int(allocated("threads", "manta_somatic_filter", cluster))
     container: config['images']['genome-seek_sv']
     envmodules: 

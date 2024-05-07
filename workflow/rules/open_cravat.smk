@@ -23,7 +23,14 @@ rule chrom_selectvariants:
         rname  = "chrselect",
         genome = config['references']['GENOME'], 
         chrom  = "{chunk}", 
-        memory = allocated("mem", "chrom_selectvariants", cluster).rstrip('G')
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "chrom_selectvariants", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "chrom_selectvariants", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "chrom_selectvariants", cluster).lower().rstrip('g'),
     threads: int(allocated("threads", "chrom_selectvariants", cluster))
     container: config['images']['genome-seek']
     envmodules: 

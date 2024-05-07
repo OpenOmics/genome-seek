@@ -245,7 +245,14 @@ rule glnexus:
         rname  = "glnexus",
         tmpdir =  tmpdir,
         gvcfdir = join(workpath, "deepvariant", "gVCFs"),
-        memory  = allocated("mem", "glnexus", cluster).rstrip('G'),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "glnexus", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "glnexus", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "glnexus", cluster).lower().rstrip('g'),
         genome = config['references']['GENOME'],
         # Building option for glnexus config, where:
         #  @WES = --config DeepVariantWES
@@ -328,8 +335,15 @@ rule gatk_selectvariants:
     params: 
         rname  = "varselect",
         genome = config['references']['GENOME'], 
-        sample = "{name}", 
-        memory = allocated("mem", "gatk_selectvariants", cluster).rstrip('G'),
+        sample = "{name}",
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "gatk_selectvariants", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_selectvariants", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_selectvariants", cluster).lower().rstrip('g'),
         # Building WES options for gatk selectvariants, where:
         #  @WES = --intervals gencode_v44_protein-coding_exons.bed -ip 100
         #  @WGS = ''

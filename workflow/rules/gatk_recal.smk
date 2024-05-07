@@ -21,7 +21,14 @@ rule gatk_realign:
     params: 
         genome = config['references']['GENOME'],
         knowns = joint_option('-known', config['references']['KNOWNINDELS']),
-        memory = allocated("mem", "gatk_realign", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated 
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "gatk_realign", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_realign", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_realign", cluster).lower().rstrip('g'),
         rname  = "realign"
     threads: 
         int(allocated("threads", "gatk_realign", cluster))
@@ -68,7 +75,14 @@ rule gatk_scatter_recal:
         genome = config['references']['GENOME'],
         knowns = joint_option('--known-sites', config['references']['KNOWNRECAL']),
         intervals = lambda w: joint_option('-L', config['references']['NRECALS'][w.recal]),
-        memory = allocated("mem", "gatk_scatter_recal", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated 
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "gatk_scatter_recal", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_scatter_recal", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_scatter_recal", cluster).lower().rstrip('g'),
         rname = 'scatter_recal'
     container: config['images']['genome-seek']
     envmodules: config['tools']['gatk4']
@@ -103,7 +117,14 @@ rule gatk_gather_recal:
     params: 
         sample = "{name}",
         bams   = join(workpath, "BAM"),
-        memory = allocated("mem", "gatk_gather_recal", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated 
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "gatk_gather_recal", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_gather_recal", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_gather_recal", cluster).lower().rstrip('g'),
         rname  = 'gather_recal'
     container: config['images']['genome-seek']
     envmodules: config['tools']['gatk4']
@@ -139,7 +160,14 @@ rule gatk_apply_recal:
         bai   = join(workpath, "BAM", "{name}.recal.bam.bai"),
     params: 
         genome = config['references']['GENOME'],     
-        memory = allocated("mem", "gatk_apply_recal", cluster).lower().rstrip('g'),
+        # For UGE/SGE clusters memory is allocated 
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "gatk_apply_recal", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_apply_recal", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_apply_recal", cluster).lower().rstrip('g'),
         rname  = 'apply_recal'
     container: config['images']['genome-seek']
     envmodules:
