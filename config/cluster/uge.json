@@ -2,7 +2,8 @@
   "__default__": {
     "mem": "8G",
     "partition": "",
-    "threads": "4"
+    "threads": "4",
+    "simd": ""
   },
   "apply_indel": {
     "mem": "6G",
@@ -30,7 +31,7 @@
     "threads": "2"
   },
   "bwa_mem2": {
-    "mem": "10G",
+    "mem": "12G",
     "partition": "",
     "threads": "12"
   },
@@ -190,9 +191,10 @@
     "threads": "2"
   },
   "glnexus": {
-    "mem": "16G",
+    "mem": "20G",
     "partition": "",
-    "threads": "12"
+    "threads": "12",
+    "simd": "-l avx2"
   },
   "gtype_refinement": {
     "mem": "24G",
@@ -210,12 +212,12 @@
     "threads": "4"
   },
   "hmftools_amber": {
-    "mem": "7G",
+    "mem": "14G",
     "partition": "",
     "threads": "12"
   },
   "hmftools_cobalt": {
-    "mem": "6G",
+    "mem": "8G",
     "partition": "",
     "threads": "12"
   },
@@ -272,12 +274,14 @@
   "octopus_filter": {
     "mem": "12G",
     "partition": "",
-    "threads": "4"
+    "threads": "4",
+    "simd": "-l avx2"
   },
   "octopus_germline": {
-    "mem": "2G",
+    "mem": "6G",
     "partition": "",
-    "threads": "12"
+    "threads": "12",
+    "simd": "-l avx2"
   },
   "octopus_merge": {
     "mem": "12G",
@@ -285,9 +289,10 @@
     "threads": "4"
   },
   "octopus_somatic": {
-    "mem": "6G",
+    "mem": "12G",
     "partition": "",
-    "threads": "12"
+    "threads": "12",
+    "simd": "-l avx2"
   },
   "opencravat_germline": {
     "mem": "6G",

@@ -245,7 +245,7 @@ EOF
           # Create directory for logfiles
           mkdir -p "$3/logfiles/ugefiles/"
           UGE_DIR="$3/logfiles/ugefiles"
-          CLUSTER_OPTS="qsub -pe threaded {cluster.threads} {cluster.partition} -l h_vmem={cluster.mem} -N {params.rname} -o '$UGE_DIR/uge-\\\$JOB_ID-{params.rname}.out' -j y"
+          CLUSTER_OPTS="qsub -pe threaded {cluster.threads} {cluster.partition} -l h_vmem={cluster.mem} {cluster.simd} -N {params.rname} -o '$UGE_DIR/uge-\\\$JOB_ID-{params.rname}.out' -j y"
           # Create qsub script for master job
     cat << EOF > kickoff.sh
 #!/usr/bin/env bash
