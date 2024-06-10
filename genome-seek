@@ -5,7 +5,7 @@
 ABOUT: This is the main entry for the pipeline.
 REQUIRES:
   - python>=3.6
-  - snakemake   (recommended>=6.0.0)
+  - snakemake   (required<8.0.0)
   - singularity (recommended==latest)
 DISCLAIMER:
                     PUBLIC DOMAIN NOTICE
@@ -362,10 +362,10 @@ def parsed_arguments(name, description):
         {3}{4}Synopsis:{5}
           $ {2} run [--help] \\
                 [--mode {{slurm,uge,local}}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \\
-                [--call-cnv] [--call-sv] [--call-hla] [--call-somatic] [--open-cravat] \\
-                [--skip-qc] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \\
+                [--call-cnv] [--call-sv] [--call-hla] [--call-somatic] [--gatk-germline] \\
+                [--open-cravat] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \\
                 [--pairs PAIRS] [--pon PANEL_OF_NORMALS] [--wes-mode] [--wes-bed WES_BED] \\
-                [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \\
+                [--skip-qc] [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \\
                 [--singularity-cache SINGULARITY_CACHE] \\
                 [--resource-bundle RESOURCE_BUNDLE] \\
                 [--dry-run] [--threads THREADS] \\
@@ -414,6 +414,13 @@ def parsed_arguments(name, description):
                                 Options section below for more information about the
                                 somatic variant calling pipeline and its options.
                                   Example: --call-somatic
+
+          --gatk-germline       Call germline variants using GATK4 best pratices.
+                                By default, the pipeline will call germline variants
+                                using deepvariant. If this option is provided, the
+                                pipeline will additionally call germline variants
+                                using GATK4's set of best practices.
+                                  Example: --gatk-germline
         
           --open-cravat         Run OpenCRAVAT to annotate variants. See Annotation
                                 Options for more information about what modules are
@@ -694,6 +701,17 @@ def parsed_arguments(name, description):
     # Call somatic variants
     subparser_run.add_argument(
         '--call-somatic',
+        action = 'store_true',
+        required = False,
+        default = False,
+        help = argparse.SUPPRESS
+    )
+
+    # Call variants using GATK4's
+    # set of best practices for
+    # germline variants
+    subparser_run.add_argument(
+        '--gatk-germline',
         action = 'store_true',
         required = False,
         default = False,

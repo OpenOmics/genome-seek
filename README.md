@@ -29,7 +29,7 @@ Before getting started, we highly recommend reading through the [usage](https://
 For more information about issues or troubleshooting a problem, please check out our [FAQ](https://openomics.github.io/genome-seek/faq/questions/) before [opening an issue on Github](https://github.com/OpenOmics/genome-seek/issues).
 
 ## Dependencies
-**Requires:** `singularity>=3.5`  `snakemake>=7.8`
+**Requires:** `singularity>=3.5`  `snakemake<=7.32.3`
 
 At the current moment, the pipeline only has two dependencies: snakemake and singularity/apptainer. With that being said, [snakemake](https://snakemake.readthedocs.io/en/stable/getting_started/installation.html) and ([singularity](https://singularity.lbl.gov/all-releases) or [apptainer](https://apptainer.org/docs/admin/main/installation.html)) must be installed on the target system. Snakemake orchestrates the execution of each step in the pipeline. The second dependency, i.e singularity/apptainer, handles downloading/distribution of the pipeline's software dependencies. To guarantee the highest level of reproducibility, each step of the pipeline relies on versioned images from [DockerHub](https://hub.docker.com/repositories/skchronicles). Snakemake uses singularity to pull these images onto the local filesystem prior to job execution, and as so, snakemake and singularity/apptainer will be the only two dependencies in the future.
 
