@@ -76,6 +76,12 @@ wes_bed_file = config['references']['WES_BED']    # default: gencode_v44_protein
 # Run WES pipeline, default: False
 run_wes = (wes_bed_provided != "None" or str_bool(config['options']['wes_mode']))
 
+# Call variants with GATK4's set of 
+# best practices for germline variants
+# only runs if provided --gatk-germline,
+# default: False
+call_gatk_germline = str_bool(config['options']['gatk_germline']) 
+
 # List of somatic callers
 # TODO: add as cli option,
 # make sure at least one
@@ -96,6 +102,7 @@ purple_callers  = list(set(purple_callers) & set(somatic_callers))
 # mode is set to local.
 with open(join('config', 'cluster', '{0}.json'.format(run_mode))) as fh:
     cluster = json.load(fh)
+
 
 # Final ouput files of the pipeline
 rule all:
@@ -517,6 +524,19 @@ rule all:
             ),
             call_somatic
         ),
+        # Call germline variants with GATK4 HaplotypeCaller,
+        # scattered/merged on chroms per-sample, only runs 
+        # if provided --gatk-germline and NOT WES mode,
+        # @imported from rules/germline.smk
+        # expand( 
+        #     join(workpath, "haplotypecaller", "gVCFs", "chunks", "{name}", "{chrom}.g.vcf.gz"),
+        #     name=provided(samples, call_gatk_germline and not run_wes),
+        #     chrom=provided(chunks, call_gatk_germline and not run_wes)
+        # ),
+        # expand( 
+        #     join(workpath, "haplotypecaller", "gVCFs", "{name}.g.vcf.gz"),
+        #     name=provided(samples, call_gatk_germline and not run_wes)
+        # ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
@@ -533,4 +553,5 @@ include: join("rules", "open_cravat.smk")
 include: join("rules", "gatk_recal.smk")
 include: join("rules", "somatic.smk")
 include: join("rules", "wes.smk")
+include: join("rules", "gatk_germline.smk")
 include: join("rules", "hooks.smk")
