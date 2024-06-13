@@ -209,10 +209,15 @@
         "mem": "48G",
         "time": "2-00:00:00"
     },
-    "haplotypecaller": {
+    "gatk_germline_haplotypecaller": {
         "threads": "4",
         "mem": "48G",
         "time": "2-00:00:00"
+    },
+    "gatk_germline_merge_gcvfs_across_chromosomes": {
+        "threads": "4",
+        "mem": "64G",
+        "time": "1-12:00:00"
     },
     "hla": {
         "threads": "8",

@@ -201,10 +201,15 @@
     "partition": "",
     "threads": "2"
   },
-  "haplotypecaller": {
+  "gatk_germline_haplotypecaller": {
     "mem": "12G",
     "partition": "",
     "threads": "4"
+  },
+  "gatk_germline_merge_gcvfs_across_chromosomes": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "5"
   },
   "hla": {
     "mem": "12G",
