@@ -97,7 +97,6 @@ rule gatk_germline_merge_gcvfs_across_chromosomes:
         lsl  = join(workpath, "haplotypecaller", "gVCFs", "{name}.gvcfs.list"),
     params:
         rname  = "gatk_gl_merge_chroms",
-        genome = config['references']['GENOME'], 
         sample = "{name}",
         gvcfdir = join(workpath, "haplotypecaller", "gVCFs", "chunks", "{name}"),
         # For UGE/SGE clusters memory is allocated
@@ -125,4 +124,61 @@ rule gatk_germline_merge_gcvfs_across_chromosomes:
     gatk --java-options '-Xmx{params.memory}g' MergeVcfs \\
         --OUTPUT {output.gvcf} \\
         --INPUT {output.lsl}
+    """
+
+
+rule gatk_germline_list_gcvfs_across_samples:
+    """
+    Data-processing step to create a TSV file to map each sample to its gVCF file.
+    This tab-delimited sample map is used by the GenomicsDBImport tool to import
+    gVCFs into a GenomicsDB database before joint genotyping. The GATK4 Best Practice
+    Workflow for SNP and Indel calling uses GenomicsDBImport to merge GVCFs from 
+    multiple samples. GenomicsDBImport for the most part offers the same functionality
+    as CombineGVCFs and comes from the Intel-Broad Center for Genomics. The datastore 
+    transposes sample-centric variant information across genomic loci to make data 
+    more accessible to downstream tools.
+    @Input:
+        Single-sample GVCF file with raw, unfiltered SNP and indel calls. 
+        (gather-across-all-samples)
+    @Output:
+        GenomicsDBImport sample map file (TSV). 
+    """
+    input: 
+        gvcfs = expand( 
+            join(workpath, "haplotypecaller", "gVCFs", "{name}.g.vcf.gz"),
+            name=samples
+        ),
+    output:
+        lsl  = join(workpath, "haplotypecaller", "gVCFs", "genomicsdbimport_gvcfs.lsl"),
+        tsv  = join(workpath, "haplotypecaller", "gVCFs", "genomicsdbimport_gvcfs.tsv"),
+    params:
+        rname  = "gatk_gl_list_samples",
+        gvcfdir = join(workpath, "haplotypecaller", "gVCFs"),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory  = lambda _: int(
+            int(allocated("mem", "gatk_germline_list_gcvfs_across_samples", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_list_gcvfs_across_samples", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "gatk_germline_list_gcvfs_across_samples", cluster).lower().rstrip('g'),
+    threads: int(allocated("threads", "gatk_germline_list_gcvfs_across_samples", cluster))
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
+    shell: """
+    # Get a list of gVCFs across samples
+    # for joint genotyping. This avoids
+    # ARG_MAX issue which will limit max
+    # length of a command.
+    find {params.gvcfdir}/ -type f \\
+        -maxdepth 1 \\
+        -iname '*.g.vcf.gz' \\
+    > {output.lsl}
+
+    # Create a TSV file to map each sample
+    # to its gVCF file for GenomicsDBImport.
+    paste \\
+        <(awk -F '/' '{{print $NF}}' {output.lsl} | sed 's/\.g\.vcf\.gz$//g') \\
+        {output.lsl} \\
+    > {output.tsv}
     """
