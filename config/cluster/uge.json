@@ -211,6 +211,11 @@
     "partition": "",
     "threads": "5"
   },
+  "gatk_germline_genomicsdbimport": {
+    "threads": "8",
+    "partition": "",
+    "mem": "6G"
+},
   "hla": {
     "mem": "12G",
     "partition": "",

@@ -219,6 +219,11 @@
         "mem": "64G",
         "time": "1-12:00:00"
     },
+    "gatk_germline_genomicsdbimport": {
+        "threads": "8",
+        "mem": "48G",
+        "time": "1-12:00:00"
+    },
     "hla": {
         "threads": "8",
         "partition": "norm",

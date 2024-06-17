@@ -182,3 +182,67 @@ rule gatk_germline_list_gcvfs_across_samples:
         {output.lsl} \\
     > {output.tsv}
     """
+
+
+rule gatk_germline_genomicsdbimport:
+    """
+    Data-processing step to import single-sample GVCFs into a GenomicsDB before 
+    joint genotyping. The GATK4 Best Practice workflow for SNP and Indel calling
+    uses GenomicsDBImport to merge GVCFs from multiple samples. GenomicsDBImport
+    for the most part offers the same functionality as CombineGVCFs and comes from
+    the Intel-Broad Center for Genomics. The datastore transposes sample-centric
+    variant information across genomic loci to make data more accessible to 
+    downstream tools.
+    @Input:
+        GenomicsDBImport sample map file (TSV) 
+        (scatter-across-all-samples-per-chrom_chunks)
+    @Output:
+        Chromosome chunk-ed (chr:start-stop) TileDB for joint genotyping. 
+    """
+    input: 
+        tsv   = join(workpath, "haplotypecaller", "gVCFs", "genomicsdbimport_gvcfs.tsv"),
+    output:
+        flg   = join(workpath, "haplotypecaller", "gVCFs", "genomicsdb", "{region}", "gvcf_to_tiledb_import.done"),
+    params:
+        rname = "gatk_gl_gdb_import",
+        gdb   = join(workpath, "haplotypecaller", "gVCFs", "genomicsdb", "{region}"),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory.
+        # NOTE: We subtract 4GB from the total memory
+        # as the -Xmx value the tool is run with should
+        # be less than the total amount of physical 
+        # memory available by at least a few GB, as 
+        # the native TileDB library requires additional 
+        # memory on top of the Java memory. Failure to 
+        # leave enough memory for the native code can
+        # result in confusing error messages!
+        memory  = lambda _: int(
+            int(allocated("mem", "gatk_germline_genomicsdbimport", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_genomicsdbimport", cluster)) 
+        )-4 if run_mode == "uge" \
+        else int(allocated("mem", "gatk_germline_genomicsdbimport", cluster).lower().rstrip('g')) - 4,
+        chunk = "{region}",
+    threads: int(allocated("threads", "gatk_germline_genomicsdbimport", cluster)) - 2,
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
+    shell: """
+    # The --genomicsdb-workspace-path must point 
+    # to a non-existent or empty directory.
+    if [ -d "{params.gdb}" ]; then
+        rm -rf "{params.gdb}";
+        mkdir -p "{params.gdb}";
+    fi
+
+    # Import gVCFs into a TileDB GenomicsDB 
+    # datastore before joint genotyping.
+    gatk --java-options '-Xmx{params.memory}g' GenomicsDBImport \\
+        --batch-size {threads} \\
+        --genomicsdb-workspace-path {params.gdb} \\
+        --sample-name-map {input.tsv} \\
+        --intervals {params.chunk}
+    
+    # Touch a flag file to indicate that the
+    # GenomicsDBImport step has completed.
+    touch {output.flg}
+    """
