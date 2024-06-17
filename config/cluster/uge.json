@@ -215,7 +215,12 @@
     "threads": "8",
     "partition": "",
     "mem": "6G"
-},
+  },
+  "gatk_germline_genotypegvcfs": {
+    "threads": "4",
+    "partition": "",
+    "mem": "6G"
+  },
   "hla": {
     "mem": "12G",
     "partition": "",

@@ -224,6 +224,11 @@
         "mem": "48G",
         "time": "1-12:00:00"
     },
+    "gatk_germline_genotypegvcfs": {
+        "threads": "4",
+        "mem": "24G",
+        "time": "1-12:00:00"
+    },
     "hla": {
         "threads": "8",
         "partition": "norm",

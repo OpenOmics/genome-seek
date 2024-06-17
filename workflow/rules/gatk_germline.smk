@@ -195,7 +195,7 @@ rule gatk_germline_genomicsdbimport:
     downstream tools.
     @Input:
         GenomicsDBImport sample map file (TSV) 
-        (scatter-across-all-samples-per-chrom_chunks)
+        (scatter-across-all-samples-per-chrom-chunks)
     @Output:
         Chromosome chunk-ed (chr:start-stop) TileDB for joint genotyping. 
     """
@@ -237,6 +237,8 @@ rule gatk_germline_genomicsdbimport:
     # Import gVCFs into a TileDB GenomicsDB 
     # datastore before joint genotyping.
     gatk --java-options '-Xmx{params.memory}g' GenomicsDBImport \\
+        --use-jdk-inflater \\
+        --use-jdk-deflater \\
         --batch-size {threads} \\
         --genomicsdb-workspace-path {params.gdb} \\
         --sample-name-map {input.tsv} \\
@@ -245,4 +247,53 @@ rule gatk_germline_genomicsdbimport:
     # Touch a flag file to indicate that the
     # GenomicsDBImport step has completed.
     touch {output.flg}
+    """
+
+
+
+rule gatk_germline_genotypegvcfs:
+    """
+    Data-processing step to perform joint genotyping on one or more samples 
+    pre-called with HaplotypeCaller. A final VCF in which all samples have 
+    been jointly genotyped for a given region is produced.
+    @Input:
+        Chromosome chunk-ed (chr:start-stop) TileDB for joint genotyping. 
+        (scatter-across-all-samples-per-chrom-chunks)
+    @Output:
+        Joint genotyped VCF for a given region (chr:start-stop). 
+    """
+    input: 
+        flg   = join(workpath, "haplotypecaller", "gVCFs", "genomicsdb", "{region}", "gvcf_to_tiledb_import.done"),
+    output:
+        vcf  = join(workpath, "haplotypecaller", "VCFs", "chunk", "raw_variants_{region}.vcf.gz"),
+    params:
+        rname = "gatk_gl_genotype",
+        genome   = config['references']['GENOME'], 
+        snpsites = config['references']['DBSNP'],
+        dburi    = join("gendb://haplotypecaller", "gVCFs", "genomicsdb", "{region}"),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory.
+        memory  = lambda _: int(
+            int(allocated("mem", "gatk_germline_genotypegvcfs", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_genotypegvcfs", cluster)) 
+        )-2 if run_mode == "uge" \
+        else int(allocated("mem", "gatk_germline_genotypegvcfs", cluster).lower().rstrip('g')) - 2,
+        chunk = "{region}",
+    threads: int(allocated("threads", "gatk_germline_genotypegvcfs", cluster)),
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
+    shell: """
+    # Perform joint genotyping on one or more samples
+    # at a given region (chr:start-stop).
+    gatk --java-options '-Xmx{params.memory}g' GenotypeGVCFs \\
+        --reference {params.genome} \\
+        --use-jdk-inflater \\
+        --use-jdk-deflater \\
+        --annotation-group StandardAnnotation \\
+        --annotation-group AS_StandardAnnotation \\
+        --dbsnp {params.snpsites} \\
+        --output {output.vcf} \\
+        --variant {params.dburi} \\
+        --intervals {params.chunk}
     """
