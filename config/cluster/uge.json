@@ -225,7 +225,27 @@
     "mem": "12G",
     "partition": "",
     "threads": "6"
-},
+  },
+  "gatk_germline_build_vqsr_snps": {
+    "threads": "8",
+    "partition": "",
+    "mem": "6G"
+  },
+  "gatk_germline_apply_vqsr_snps": {
+      "threads": "8",
+      "partition": "",
+      "mem": "6G"
+  },
+  "gatk_germline_build_vqsr_indels": {
+      "threads": "8",
+      "partition": "",
+      "mem": "6G"
+  },
+  "gatk_germline_apply_vqsr_indels": {
+      "threads": "8",
+      "partition": "",
+      "mem": "6G"
+  },
   "hla": {
     "mem": "12G",
     "partition": "",

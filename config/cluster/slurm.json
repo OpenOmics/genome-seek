@@ -234,6 +234,26 @@
         "mem": "64G",
         "time": "1-12:00:00"
     },
+    "gatk_germline_build_vqsr_snps": {
+        "threads": "8",
+        "mem": "48G",
+        "time": "4-12:00:00"
+    },
+    "gatk_germline_apply_vqsr_snps": {
+        "threads": "8",
+        "mem": "48G",
+        "time": "2-00:00:00"
+    },
+    "gatk_germline_build_vqsr_indels": {
+        "threads": "8",
+        "mem": "48G",
+        "time": "4-12:00:00"
+    },
+    "gatk_germline_apply_vqsr_indels": {
+        "threads": "8",
+        "mem": "48G",
+        "time": "2-00:00:00"
+    },
     "hla": {
         "threads": "8",
         "partition": "norm",
