@@ -214,7 +214,7 @@
         "mem": "48G",
         "time": "2-00:00:00"
     },
-    "gatk_germline_merge_gcvfs_across_chromosomes": {
+    "gatk_germline_merge_gvcfs_across_chromosomes": {
         "threads": "4",
         "mem": "64G",
         "time": "1-12:00:00"
@@ -227,6 +227,11 @@
     "gatk_germline_genotypegvcfs": {
         "threads": "4",
         "mem": "24G",
+        "time": "1-12:00:00"
+    },
+    "gatk_germline_create_cohort_vcf_across_regions": {
+        "threads": "4",
+        "mem": "64G",
         "time": "1-12:00:00"
     },
     "hla": {

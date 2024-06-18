@@ -71,7 +71,7 @@ rule gatk_germline_haplotypecaller:
     """
 
 
-rule gatk_germline_merge_gcvfs_across_chromosomes:
+rule gatk_germline_merge_gvcfs_across_chromosomes:
     """
     Data-processing step to merge gVCFs for each chromosome into a single gVCF.
     This rule is intended to be used in conjunction with the HaplotypeCaller to
@@ -103,11 +103,11 @@ rule gatk_germline_merge_gcvfs_across_chromosomes:
         # per cpu, so we must calculate total mem
         # as the product of threads and memory
         memory  = lambda _: int(
-            int(allocated("mem", "gatk_germline_merge_gcvfs_across_chromosomes", cluster).lower().rstrip('g')) * \
-            int(allocated("threads", "gatk_germline_merge_gcvfs_across_chromosomes", cluster)) 
+            int(allocated("mem", "gatk_germline_merge_gvcfs_across_chromosomes", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_merge_gvcfs_across_chromosomes", cluster)) 
         )-1 if run_mode == "uge" \
-        else allocated("mem", "gatk_germline_merge_gcvfs_across_chromosomes", cluster).lower().rstrip('g'),
-    threads: int(allocated("threads", "gatk_germline_merge_gcvfs_across_chromosomes", cluster))
+        else allocated("mem", "gatk_germline_merge_gvcfs_across_chromosomes", cluster).lower().rstrip('g'),
+    threads: int(allocated("threads", "gatk_germline_merge_gvcfs_across_chromosomes", cluster))
     container: config['images']['genome-seek']
     envmodules: config['tools']['gatk4']
     shell: """
@@ -115,7 +115,8 @@ rule gatk_germline_merge_gcvfs_across_chromosomes:
     # to merge into a single gVCF. Avoids
     # ARG_MAX issue which will limit max
     # length of a command.
-    find {params.gvcfdir}/ -type f \\
+    find {params.gvcfdir}/ \\
+        -type f \\
         -iname '*.g.vcf.gz' \\
     > {output.lsl}
 
@@ -127,7 +128,7 @@ rule gatk_germline_merge_gcvfs_across_chromosomes:
     """
 
 
-rule gatk_germline_list_gcvfs_across_samples:
+rule gatk_germline_list_gvcfs_across_samples:
     """
     Data-processing step to create a TSV file to map each sample to its gVCF file.
     This tab-delimited sample map is used by the GenomicsDBImport tool to import
@@ -158,11 +159,11 @@ rule gatk_germline_list_gcvfs_across_samples:
         # per cpu, so we must calculate total mem
         # as the product of threads and memory
         memory  = lambda _: int(
-            int(allocated("mem", "gatk_germline_list_gcvfs_across_samples", cluster).lower().rstrip('g')) * \
-            int(allocated("threads", "gatk_germline_list_gcvfs_across_samples", cluster)) 
+            int(allocated("mem", "gatk_germline_list_gvcfs_across_samples", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_list_gvcfs_across_samples", cluster)) 
         )-1 if run_mode == "uge" \
-        else allocated("mem", "gatk_germline_list_gcvfs_across_samples", cluster).lower().rstrip('g'),
-    threads: int(allocated("threads", "gatk_germline_list_gcvfs_across_samples", cluster))
+        else allocated("mem", "gatk_germline_list_gvcfs_across_samples", cluster).lower().rstrip('g'),
+    threads: int(allocated("threads", "gatk_germline_list_gvcfs_across_samples", cluster))
     container: config['images']['genome-seek']
     envmodules: config['tools']['gatk4']
     shell: """
@@ -170,8 +171,9 @@ rule gatk_germline_list_gcvfs_across_samples:
     # for joint genotyping. This avoids
     # ARG_MAX issue which will limit max
     # length of a command.
-    find {params.gvcfdir}/ -type f \\
+    find {params.gvcfdir}/ \\
         -maxdepth 1 \\
+        -type f \\
         -iname '*.g.vcf.gz' \\
     > {output.lsl}
 
@@ -250,7 +252,6 @@ rule gatk_germline_genomicsdbimport:
     """
 
 
-
 rule gatk_germline_genotypegvcfs:
     """
     Data-processing step to perform joint genotyping on one or more samples 
@@ -265,7 +266,7 @@ rule gatk_germline_genotypegvcfs:
     input: 
         flg   = join(workpath, "haplotypecaller", "gVCFs", "genomicsdb", "{region}", "gvcf_to_tiledb_import.done"),
     output:
-        vcf  = join(workpath, "haplotypecaller", "VCFs", "chunk", "raw_variants_{region}.vcf.gz"),
+        vcf  = join(workpath, "haplotypecaller", "VCFs", "chunks", "raw_variants_{region}.vcf.gz"),
     params:
         rname = "gatk_gl_genotype",
         genome   = config['references']['GENOME'], 
@@ -296,4 +297,55 @@ rule gatk_germline_genotypegvcfs:
         --output {output.vcf} \\
         --variant {params.dburi} \\
         --intervals {params.chunk}
+    """
+
+
+rule gatk_germline_create_cohort_vcf_across_regions:
+    """
+    Data-processing step to merge the jointly genotyped VCFs for each region 
+    into a single VCF file containing variants across all samples.
+    @Input:
+        Joint genotyped VCF for a given region (chr:start-stop).
+        (gather-per-cohort-across-regions) ~ singleton.
+    @Output:
+        Joint genotyped VCF of the entire cohort across all regions. 
+    """
+    input: 
+        vcfs = expand(
+            join(workpath, "haplotypecaller", "VCFs", "chunks", "raw_variants_{region}.vcf.gz"),
+            region=regions
+        ),
+    output: 
+        vcf = join(workpath, "haplotypecaller", "VCFs", "raw_variants.vcf.gz"),
+        lsl = join(workpath, "haplotypecaller", "VCFs", "raw_variants.region.vcfs.list"),
+    params:
+        rname  = "gatk_gl_merge_cohort",
+        vcfdir = join(workpath, "haplotypecaller", "VCFs", "chunks"),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory  = lambda _: int(
+            int(allocated("mem", "gatk_germline_create_cohort_vcf_across_regions", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_create_cohort_vcf_across_regions", cluster)) 
+        )-2 if run_mode == "uge" \
+        else allocated("mem", "gatk_germline_create_cohort_vcf_across_regions", cluster).lower().rstrip('g'),
+    threads: int(allocated("threads", "gatk_germline_create_cohort_vcf_across_regions", cluster))
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
+    shell: """
+    # Get a list of region VCF files to
+    # merge into a single VCF. Avoids an
+    # ARG_MAX issue which will limit max
+    # length of a command.
+    find {params.vcfdir}/ \\
+        -maxdepth 1 \\
+        -type f \\
+        -iname '*.vcf.gz' \\
+    > {output.lsl}
+
+    # Merge GATK Germline joint genotyped VCFs 
+    # across regions into a single VCF file.
+    gatk --java-options '-Xmx{params.memory}g' MergeVcfs \\
+        --OUTPUT {output.vcf} \\
+        --INPUT {output.lsl}
     """

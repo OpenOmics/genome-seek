@@ -206,10 +206,10 @@
     "partition": "",
     "threads": "4"
   },
-  "gatk_germline_merge_gcvfs_across_chromosomes": {
+  "gatk_germline_merge_gvcfs_across_chromosomes": {
     "mem": "12G",
     "partition": "",
-    "threads": "5"
+    "threads": "6"
   },
   "gatk_germline_genomicsdbimport": {
     "threads": "8",
@@ -221,6 +221,11 @@
     "partition": "",
     "mem": "6G"
   },
+  "gatk_germline_create_cohort_vcf_across_regions": {
+    "mem": "12G",
+    "partition": "",
+    "threads": "6"
+},
   "hla": {
     "mem": "12G",
     "partition": "",
