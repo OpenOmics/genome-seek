@@ -628,3 +628,77 @@ rule gatk_germline_apply_vqsr_indels:
         --truth-sensitivity-filter-level 99.7 \\
         -O {output.vcf}
     """
+
+
+rule gatk_germline_scatter_genotype_refinement:
+    """
+    Data-processing step to calculate genotype posterior probabilities 
+    given known population genotypes. The tool calculates the posterior 
+    genotype probability for each sample genotype in a given VCF format 
+    callset. This tool uses use extra information like allele frequencies
+    in relevant populations to further refine the genotype assignments.
+    @Input:
+        A recalibrated VCF file in which each variant of the requested
+        type is annotated with its VQSLOD and marked as filtered if
+        the score is below the desired quality level containing both
+        SNPs and INDELs for a given region.
+        (gather-per-cohort-scatter-across-regions)
+    @Output:
+        Genotype refined VCF with the following information: Genotype 
+        posteriors added to the FORMAT fields ("PP"), genotypes and GQ 
+        assigned according to these posteriors, per-site genotype priors 
+        added to the INFO field ("PG").
+    """
+    input:
+        vcf = join(workpath, "haplotypecaller", "VCFs", "snp_indel_recal_chunks", "snps_and_indels_recal_variants_{region}.vcf.gz"),
+    output:
+        tmp = temp(
+            join(workpath, "haplotypecaller", "VCFs", "gtype_temp_chunks", "snps_and_indels_recal_refinement_variants_{region}.vcf.gz")
+        ),
+        vcf = temp(
+            join(workpath, "haplotypecaller", "VCFs", "gtype_fixed_chunks", "snps_and_indels_recal_refinement_variants_{region}.GTfix.vcf.gz")
+        ),
+    params:
+        rname  = "gatk_gl_scatter_gtype_refine",
+        # Reference files for GType Refinement
+        genome = config['references']['GENOME'],
+        onekg  = config['references']['1000G'],
+        exac   = config['references']['EXAC'],
+        chunk  = "{region}",
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory = lambda _: int(
+            int(allocated("mem", "gatk_germline_scatter_genotype_refinement", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_scatter_genotype_refinement", cluster)) 
+        )-2 if run_mode == "uge" \
+        else int(allocated("mem", "gatk_germline_scatter_genotype_refinement", cluster).lower().rstrip('g')) - 2,
+    threads: int(allocated("threads", "gatk_germline_scatter_genotype_refinement", cluster))
+    container: config['images']['genome-seek']
+    envmodules:
+        config['tools']['gatk4'],
+        config['tools']['bcftools']
+    shell: """
+    # Calculate genotype posterior probabilities
+    # in relevant populations to further refine
+    # the genotype assignments.
+    gatk --java-options '-Xmx{params.memory}g' CalculateGenotypePosteriors \\
+        --reference {params.genome} \\
+        --use-jdk-inflater --use-jdk-deflater \\
+        -V {input.vcf} \\
+        -supporting {params.onekg} \\
+        -supporting {params.exac} \\
+        -O {output.tmp} \\
+        -L {params.chunk}
+
+    # Unphase all genotypes and sort by allele
+    # frequency, example: (1|0 becomes 0/1)
+    bcftools +setGT \\
+        {output.tmp} \\
+        -O z \\
+        -o {output.vcf} \\
+        -- -t a -n u
+
+    # Create an tabix index for the VCF file
+    tabix -p vcf {output.vcf}
+    """

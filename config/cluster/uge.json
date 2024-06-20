@@ -246,6 +246,11 @@
       "partition": "",
       "mem": "6G"
   },
+  "gatk_germline_scatter_genotype_refinement": {
+    "mem": "24G",
+    "partition": "",
+    "threads": "2"
+  },
   "hla": {
     "mem": "12G",
     "partition": "",

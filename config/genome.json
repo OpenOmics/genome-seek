@@ -55,6 +55,7 @@
             "chrX:120000001-150000001", "chrX:150000001-156040895", "chrY:1-30000001",
             "chrY:30000001-57227415", "chrM:1-16569"
         ],
+        "EXAC": "/data/OpenOmics/references/genome-seek/GATK_resource_bundle/hg38bundle/exacv1_grch38_release1_ExAC.r1.sites.liftover.GRCh38.vcf.gz",
         "GENOME": "/data/OpenOmics/references/genome-seek/Homo_sapiens_assembly38.fasta",
         "GNOMAD": "/data/OpenOmics/references/genome-seek/GNOMAD/somatic-hg38-af-only-gnomad.hg38.vcf.gz",
         "SLIVARGNOMAD": "/data/OpenOmics/references/genome-seek/slivar/gnomad.hg38.v2.zip",
@@ -116,6 +117,7 @@
             "SPECIES": "homo_sapiens"
         },
         "1000GSNP": "/data/OpenOmics/references/genome-seek/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz",
+        "1000G": "/data/OpenOmics/references/genome-seek/1000G/ALL.GRCh38_sites.nuclear.20170504.vcf.gz",
         "VEP_BUILD": "GRCh38",
         "VEP_DATA": "/data/OpenOmics/references/genome-seek/VEP/106/cache",
         "VEP_SPECIES": "homo_sapiens",
