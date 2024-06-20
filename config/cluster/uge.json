@@ -251,6 +251,11 @@
     "partition": "",
     "threads": "2"
   },
+  "gatk_germline_gather_genotype_refinement": {
+    "mem": "32G",
+    "partition": "",
+    "threads": "2"
+  },
   "hla": {
     "mem": "12G",
     "partition": "",

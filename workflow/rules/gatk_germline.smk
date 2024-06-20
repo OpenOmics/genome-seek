@@ -632,9 +632,9 @@ rule gatk_germline_apply_vqsr_indels:
 
 rule gatk_germline_scatter_genotype_refinement:
     """
-    Data-processing step to calculate genotype posterior probabilities 
-    given known population genotypes. The tool calculates the posterior 
-    genotype probability for each sample genotype in a given VCF format 
+    Data-processing step to calculate genotype posterior probabilities
+    given known population genotypes. The tool calculates the posterior
+    genotype probability for each sample genotype in a given VCF format
     callset. This tool uses use extra information like allele frequencies
     in relevant populations to further refine the genotype assignments.
     @Input:
@@ -644,10 +644,11 @@ rule gatk_germline_scatter_genotype_refinement:
         SNPs and INDELs for a given region.
         (gather-per-cohort-scatter-across-regions)
     @Output:
-        Genotype refined VCF with the following information: Genotype 
-        posteriors added to the FORMAT fields ("PP"), genotypes and GQ 
-        assigned according to these posteriors, per-site genotype priors 
-        added to the INFO field ("PG").
+        Genotype refined VCF with the following information at a given
+        region (chr:start-stop): Genotype posteriors added to the FORMAT
+        fields ("PP"), genotypes and GQ assigned according to these
+        posteriors, per-site genotype priors added to the INFO field
+        ("PG").
     """
     input:
         vcf = join(workpath, "haplotypecaller", "VCFs", "snp_indel_recal_chunks", "snps_and_indels_recal_variants_{region}.vcf.gz"),
@@ -701,4 +702,77 @@ rule gatk_germline_scatter_genotype_refinement:
 
     # Create an tabix index for the VCF file
     tabix -p vcf {output.vcf}
+    """
+
+
+rule gatk_germline_gather_genotype_refinement:
+    """
+    Data-processing step to merge the chunked (chr:start-stop) genotype
+    refinements into a single VCF file.
+    @Input:
+        Genotype refined VCF across all regions.
+        (gather-per-cohort) ~ singleton.
+    @Output:
+        Genotype refined VCF file.
+    """
+    input:
+        tmps = expand(
+            join(workpath, "haplotypecaller", "VCFs", "gtype_temp_chunks", "snps_and_indels_recal_refinement_variants_{region}.vcf.gz"),
+            region=regions
+        ),
+        vcfs = expand(
+            join(workpath, "haplotypecaller", "VCFs", "gtype_fixed_chunks", "snps_and_indels_recal_refinement_variants_{region}.GTfix.vcf.gz"),
+            region=regions
+        ),
+    output:
+        t_lsl = join(workpath, "haplotypecaller", "VCFs", "gtype_temp_chunks", "snps_and_indels_recal_refinement.region.vcfs.list"),
+        t_vcf = join(workpath, "haplotypecaller", "VCFs", "snps_and_indels_recal_refinement_variants.vcf.gz"),
+        v_lsl = join(workpath, "haplotypecaller", "VCFs", "gtype_fixed_chunks", "snps_and_indels_recal_refinement.region.GTfix.vcf.list"),
+        v_vcf = join(workpath, "haplotypecaller", "VCFs", "snps_and_indels_recal_refinement_variants.GTfix.vcf.gz"),
+    params:
+        rname  = "gatk_gl_gather_gtype_refine",
+        t_dir = join(workpath, "haplotypecaller", "VCFs", "gtype_temp_chunks"),
+        v_dir = join(workpath, "haplotypecaller", "VCFs", "gtype_fixed_chunks"),
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory = lambda _: int(
+            int(allocated("mem", "gatk_germline_gather_genotype_refinement", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_gather_genotype_refinement", cluster)) 
+        )-2 if run_mode == "uge" \
+        else int(allocated("mem", "gatk_germline_gather_genotype_refinement", cluster).lower().rstrip('g')) - 2,
+    threads: int(allocated("threads", "gatk_germline_gather_genotype_refinement", cluster))
+    container: config['images']['genome-seek']
+    envmodules:
+        config['tools']['gatk4']
+    shell: """
+    # Get a list of region VCF files to
+    # merge into a single VCF. Avoids an
+    # ARG_MAX issue which will limit max
+    # length of a command.
+    find {params.t_dir}/ \\
+        -maxdepth 1 \\
+        -type f \\
+        -iname '*.vcf.gz' \\
+    > {output.t_lsl}
+    # Merge the chunked (chr:start-stop) genotype
+    # refinements into a single VCF file.
+    gatk --java-options '-Xmx{params.memory}g' MergeVcfs \\
+        --OUTPUT {output.t_vcf} \\
+        --INPUT  {output.t_lsl}
+
+    # Get a list of region VCF files to
+    # merge into a single VCF. Avoids an
+    # ARG_MAX issue which will limit max
+    # length of a command.
+    find {params.v_dir}/ \\
+        -maxdepth 1 \\
+        -type f \\
+        -iname '*.vcf.gz' \\
+    > {output.v_lsl}
+    # Merge the chunked (chr:start-stop) genotype
+    # refinements into a single VCF file.
+    gatk --java-options '-Xmx{params.memory}g' MergeVcfs \\
+        --OUTPUT {output.v_vcf} \\
+        --INPUT  {output.v_lsl}
     """

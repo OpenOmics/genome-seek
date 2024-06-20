@@ -259,6 +259,11 @@
         "mem": "48G",
         "time": "2-00:00:00"
     },
+    "gatk_germline_gather_genotype_refinement": {
+        "threads": "2",
+        "mem": "64G",
+        "time": "1-12:00:00"
+    },
     "hla": {
         "threads": "8",
         "partition": "norm",
