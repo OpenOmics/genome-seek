@@ -2,6 +2,7 @@
     "references": {
         "ANNOTSV_BUILD": "GRCh38",
         "ANNOTSV_ANNOTATIONS": "/data/OpenOmics/references/genome-seek/AnnotSV/3.3.5/share/AnnotSV",
+        "AXIOM": "/data/OpenOmics/references/genome-seek/GATK_resource_bundle/hg38bundle/Axiom_Exome_Plus.genotypes.all_populations.poly.hg38.vcf.gz",
         "CANVAS_GENOME": "/data/OpenOmics/references/genome-seek/CANVAS/WholeGenomeFasta",
         "CANVAS_KMER": "/data/OpenOmics/references/genome-seek/CANVAS/kmer.fa",
         "CANVAS_FILTER": "/data/OpenOmics/references/genome-seek/CANVAS/filter13.bed",
@@ -93,6 +94,7 @@
         },
         "MANTA_CALLREGIONS": "/data/OpenOmics/references/genome-seek/Manta/Homo_sapiens_assembly38_main_chromosomes.bed.gz",
         "MANTA_FILTER_CHROMOSEQ_TRANSLOCATION": "/data/OpenOmics/references/genome-seek/chromoseq/chromoseq_translocations.bedpe",
+        "MILLS": "/data/OpenOmics/references/genome-seek/GATK_resource_bundle/hg38bundle/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz",
         "OC_LIFTOVER": "hg38",
         "OC_MODULES": "/data/OpenOmics/references/genome-seek/OpenCRAVAT/modules",
         "OCTOPUS_SOMATIC_FOREST_MODEL": "/data/OpenOmics/references/genome-seek/Octopus/somatic.v0.7.4.forest",
@@ -108,11 +110,11 @@
         "SNPEFF_CONFIG": "/data/OpenOmics/references/genome-seek/snpEff/4.3t/snpEff.config",
         "SNPEFF_BUNDLE": "/data/OpenOmics/references/genome-seek/snpEff/4.3t/",
         "SOMALIER": {
-			"ANCESTRY_DB": "/data/OpenOmics/references/genome-seek/somalier/1kg-somalier",
-			"SITES_VCF": "/data/OpenOmics/references/genome-seek/somalier/sites.hg38.vcf.gz",
-			"NCBI_BUILD": "GRCh38",
-			"SPECIES": "homo_sapiens"
-		},
+            "ANCESTRY_DB": "/data/OpenOmics/references/genome-seek/somalier/1kg-somalier",
+            "SITES_VCF": "/data/OpenOmics/references/genome-seek/somalier/sites.hg38.vcf.gz",
+            "NCBI_BUILD": "GRCh38",
+            "SPECIES": "homo_sapiens"
+        },
         "1000GSNP": "/data/OpenOmics/references/genome-seek/GATK_resource_bundle/hg38bundle/1000G_phase1.snps.high_confidence.hg38.vcf.gz",
         "VEP_BUILD": "GRCh38",
         "VEP_DATA": "/data/OpenOmics/references/genome-seek/VEP/106/cache",

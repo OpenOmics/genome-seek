@@ -44,7 +44,7 @@ rule gatk_germline_haplotypecaller:
         # For UGE/SGE clusters memory is allocated
         # per cpu, so we must calculate total mem
         # as the product of threads and memory
-        memory    = lambda _: int(
+        memory = lambda _: int(
             int(allocated("mem", "gatk_germline_haplotypecaller", cluster).lower().rstrip('g')) * \
             int(allocated("threads", "gatk_germline_haplotypecaller", cluster)) 
         )-2 if run_mode == "uge" \
@@ -96,8 +96,8 @@ rule gatk_germline_merge_gvcfs_across_chromosomes:
         idx  = join(workpath, "haplotypecaller", "gVCFs", "{name}.g.vcf.gz.tbi"),
         lsl  = join(workpath, "haplotypecaller", "gVCFs", "{name}.gvcfs.list"),
     params:
-        rname  = "gatk_gl_merge_chroms",
-        sample = "{name}",
+        rname   = "gatk_gl_merge_chroms",
+        sample  = "{name}",
         gvcfdir = join(workpath, "haplotypecaller", "gVCFs", "chunks", "{name}"),
         # For UGE/SGE clusters memory is allocated
         # per cpu, so we must calculate total mem
@@ -153,7 +153,7 @@ rule gatk_germline_list_gvcfs_across_samples:
         lsl  = join(workpath, "haplotypecaller", "gVCFs", "genomicsdbimport_gvcfs.lsl"),
         tsv  = join(workpath, "haplotypecaller", "gVCFs", "genomicsdbimport_gvcfs.tsv"),
     params:
-        rname  = "gatk_gl_list_samples",
+        rname   = "gatk_gl_list_samples",
         gvcfdir = join(workpath, "haplotypecaller", "gVCFs"),
         # For UGE/SGE clusters memory is allocated
         # per cpu, so we must calculate total mem
@@ -219,7 +219,7 @@ rule gatk_germline_genomicsdbimport:
         # memory on top of the Java memory. Failure to 
         # leave enough memory for the native code can
         # result in confusing error messages!
-        memory  = lambda _: int(
+        memory = lambda _: int(
             int(allocated("mem", "gatk_germline_genomicsdbimport", cluster).lower().rstrip('g')) * \
             int(allocated("threads", "gatk_germline_genomicsdbimport", cluster)) 
         )-4 if run_mode == "uge" \
@@ -324,7 +324,7 @@ rule gatk_germline_create_cohort_vcf_across_regions:
         # For UGE/SGE clusters memory is allocated
         # per cpu, so we must calculate total mem
         # as the product of threads and memory
-        memory  = lambda _: int(
+        memory = lambda _: int(
             int(allocated("mem", "gatk_germline_create_cohort_vcf_across_regions", cluster).lower().rstrip('g')) * \
             int(allocated("threads", "gatk_germline_create_cohort_vcf_across_regions", cluster)) 
         )-2 if run_mode == "uge" \
@@ -382,7 +382,7 @@ rule gatk_germline_build_vqsr_snps:
         rscript = join(workpath, "haplotypecaller", "VCFs", "SNP.output.AS.R"),
     params:
         rname  = "gatk_gl_bld_vqsr_snps",
-        # Reference files for VQSR
+        # Reference files for SNP VQSR
         genome = config['references']['GENOME'],
         dbsnp  = config['references']['DBSNP'],
         onekg  = config['references']['1000GSNP'],
@@ -391,7 +391,7 @@ rule gatk_germline_build_vqsr_snps:
         # For UGE/SGE clusters memory is allocated
         # per cpu, so we must calculate total mem
         # as the product of threads and memory
-        memory  = lambda _: int(
+        memory = lambda _: int(
             int(allocated("mem", "gatk_germline_build_vqsr_snps", cluster).lower().rstrip('g')) * \
             int(allocated("threads", "gatk_germline_build_vqsr_snps", cluster)) 
         )-2 if run_mode == "uge" \
@@ -432,24 +432,25 @@ rule gatk_germline_build_vqsr_snps:
 
 rule gatk_germline_apply_vqsr_snps:
     """
-    Data-processing step to apply a score cutoff to filter variants based 
+    Data-processing step to apply a score cutoff to filter variants based
     on a recalibration table. This tool performs the second pass in a two-
-    stage process called Variant Quality Score Recalibration (VQSR). 
-    Specifically, it applies filtering to the input variants based on the 
-    recalibration table produced in the first step by VariantRecalibrator 
-    and a target sensitivity value, which the tool matches internally to 
-    a VQSLOD score cutoff based on the model's estimated sensitivity to 
+    stage process called Variant Quality Score Recalibration (VQSR).
+    Specifically, it applies filtering to the input variants based on the
+    recalibration table produced in the first step by VariantRecalibrator
+    and a target sensitivity value, which the tool matches internally to
+    a VQSLOD score cutoff based on the model's estimated sensitivity to
     a set of true variants.
     @Input:
         Recalibration table file for ApplyVQSR.
         Tranches file with various recalibration metrics.
         Rscript file to visualize the recalibration plots.
+        (gather-per-cohort-scatter-across-regions)
     @Output:
-        A recalibrated VCF file in which each variant of the requested 
-        type is annotated with its VQSLOD and marked as filtered if 
+        A recalibrated VCF file in which each variant of the requested
+        type is annotated with its VQSLOD and marked as filtered if
         the score is below the desired quality level.
     """
-    input: 
+    input:
         vcf    = join(workpath, "haplotypecaller", "VCFs", "raw_variants.vcf.gz"),
         recal  = join(workpath, "haplotypecaller", "VCFs", "SNP.output.AS.recal"),
         tranch = join(workpath, "haplotypecaller", "VCFs", "SNP.output.AS.tranches"),
@@ -457,13 +458,13 @@ rule gatk_germline_apply_vqsr_snps:
         vcf = join(workpath, "haplotypecaller", "VCFs", "snp_recal_chunks", "snps_recal_variants_{region}.vcf.gz"),
     params:
         rname  = "gatk_gl_apl_vqsr_snps",
-        # Reference files for VQSR
+        # Reference files for SNP ApplyVQSR
         genome = config['references']['GENOME'],
         chunk  = "{region}",
         # For UGE/SGE clusters memory is allocated
         # per cpu, so we must calculate total mem
         # as the product of threads and memory
-        memory  = lambda _: int(
+        memory = lambda _: int(
             int(allocated("mem", "gatk_germline_apply_vqsr_snps", cluster).lower().rstrip('g')) * \
             int(allocated("threads", "gatk_germline_apply_vqsr_snps", cluster)) 
         )-2 if run_mode == "uge" \
@@ -472,9 +473,9 @@ rule gatk_germline_apply_vqsr_snps:
     container: config['images']['genome-seek']
     envmodules: config['tools']['gatk4']
     shell: """
-    # Apply a score cutoff to filter variants 
-    # based on a recalibration table. This is 
-    # the last step in VQSR to filter out low 
+    # Apply a score cutoff to filter variants
+    # based on a recalibration table. This is
+    # the last step in VQSR to filter out low
     # quality variants.
     gatk --java-options '-Xmx{params.memory}g' ApplyVQSR \\
         --intervals {params.chunk} \\
@@ -483,6 +484,145 @@ rule gatk_germline_apply_vqsr_snps:
         --use-jdk-inflater --use-jdk-deflater \\
         -V {input.vcf} \\
         -mode SNP \\
+        --recal-file {input.recal} \\
+        --tranches-file {input.tranch} \\
+        --truth-sensitivity-filter-level 99.7 \\
+        -O {output.vcf}
+    """
+
+
+rule gatk_germline_build_vqsr_indels:
+    """
+    Data-processing step to filter INDELs by Variant Quality Score 
+    Recalibration (VQSR). GATK's variant calling tools are designed to be 
+    very lenient in order to achieve a high degree of sensitivity. This is 
+    good because it minimizes the chance of missing real variants, but it 
+    does mean that we need to filter the raw callset they produce in order 
+    to reduce the amount of false positives, which can be quite large. The 
+    established way to filter the raw variant callset is to use variant 
+    quality score recalibration (VQSR), which uses machine learning to 
+    identify annotation profiles of variants that are likely to be real, 
+    and assigns a VQSLOD score to each variant that is much more reliable 
+    than the QUAL score calculated by the caller. This tool performs the 
+    first pass in VQSR. Specifically, it builds the model that will be 
+    used in the second step to actually filter variants.
+    @Input:
+        Joint genotyped VCF of the entire cohort across all regions. 
+        (singleton)
+    @Output:
+        Recalibration table file for ApplyVQSR.
+        Tranches file with various recalibration metrics.
+        Rscript file to visualize the recalibration plots.
+    """
+    input: 
+        vcf = join(workpath, "haplotypecaller", "VCFs", "raw_variants.vcf.gz"),
+    output:
+        recal   = join(workpath, "haplotypecaller", "VCFs", "INDEL.output.AS.recal"),
+        tranch  = join(workpath, "haplotypecaller", "VCFs", "INDEL.output.AS.tranches"),
+        rscript = join(workpath, "haplotypecaller", "VCFs", "INDEL.output.AS.R"),
+    params:
+        rname  = "gatk_gl_bld_vqsr_indels",
+        # Reference files for INDEL VQSR
+        genome = config['references']['GENOME'],
+        dbsnp  = config['references']['DBSNP'],
+        mills  = config['references']['MILLS'],
+        axiom  = config['references']['AXIOM'],
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory = lambda _: int(
+            int(allocated("mem", "gatk_germline_build_vqsr_indels", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_build_vqsr_indels", cluster)) 
+        )-2 if run_mode == "uge" \
+        else int(allocated("mem", "gatk_germline_build_vqsr_indels", cluster).lower().rstrip('g')) - 2,
+    threads: int(allocated("threads", "gatk_germline_build_vqsr_indels", cluster))
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
+    shell: """
+    # Build a recalibration model to score 
+    # variant quality for filtering purposes.
+    # This is the first pass in a two-stage 
+    # process called Variant Quality Score 
+    # Recalibration (VQSR). 
+    gatk --java-options '-Xmx{params.memory}g' VariantRecalibrator \\
+        --trust-all-polymorphic \\
+        -tranche 100.0 -tranche 99.95 -tranche 99.9 -tranche 99.5 \\
+        -tranche 99.0 -tranche 97.0 -tranche 96.0 -tranche 95.0 \\
+        -tranche 94.0 -tranche 93.5 -tranche 93.0 -tranche 92.0 \\
+        -tranche 91.0 -tranche 90.0 \\
+        --reference {params.genome} \\
+        --use-jdk-inflater --use-jdk-deflater \\
+        -V {input.vcf} \\
+        --resource:mills,known=false,training=true,truth=true,prior=12.0 \\
+        {params.mills} \\
+        --resource:dbsnp,known=true,training=false,truth=false,prior=2.0 \\
+        {params.dbsnp} \\
+        --resource:axiomPoly,known=false,training=true,truth=false,prior=10 \\
+        {params.axiom} \\
+        -an QD -an DP -an FS -an SOR -an ReadPosRankSum -an MQRankSum \\
+        -mode INDEL \\
+        -O {output.recal} \\
+        --tranches-file {output.tranch} \\
+        --rscript-file {output.rscript} \\
+        --max-gaussians 4
+    """
+
+
+rule gatk_germline_apply_vqsr_indels:
+    """
+    Data-processing step to apply a score cutoff to filter variants based
+    on a recalibration table. This tool performs the second pass in a two-
+    stage process called Variant Quality Score Recalibration (VQSR).
+    Specifically, it applies filtering to the input variants based on the
+    recalibration table produced in the first step by VariantRecalibrator
+    and a target sensitivity value, which the tool matches internally to
+    a VQSLOD score cutoff based on the model's estimated sensitivity to
+    a set of true variants.
+    @Input:
+        Recalibrated, filtered VCF file from apply VQSR for SNPs.
+        Recalibration table file for ApplyVQSR.
+        Tranches file with various recalibration metrics.
+        (gather-per-cohort-scatter-across-regions)
+    @Output:
+        A recalibrated VCF file in which each variant of the requested
+        type is annotated with its VQSLOD and marked as filtered if
+        the score is below the desired quality level containing both
+        SNPs and INDELs for a given region.
+    """
+    input:
+        vcf    = join(workpath, "haplotypecaller", "VCFs", "snp_recal_chunks", "snps_recal_variants_{region}.vcf.gz"),
+        recal  = join(workpath, "haplotypecaller", "VCFs", "INDEL.output.AS.recal"),
+        tranch = join(workpath, "haplotypecaller", "VCFs", "INDEL.output.AS.tranches"),
+    output:
+        vcf = join(workpath, "haplotypecaller", "VCFs", "snp_indel_recal_chunks", "snps_and_indels_recal_variants_{region}.vcf.gz"),
+    params:
+        rname  = "gatk_gl_apl_vqsr_indels",
+        # Reference files for INDEL ApplyVQSR
+        genome = config['references']['GENOME'],
+        chunk  = "{region}",
+        # For UGE/SGE clusters memory is allocated
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory = lambda _: int(
+            int(allocated("mem", "gatk_germline_apply_vqsr_indels", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "gatk_germline_apply_vqsr_indels", cluster)) 
+        )-2 if run_mode == "uge" \
+        else int(allocated("mem", "gatk_germline_apply_vqsr_indels", cluster).lower().rstrip('g')) - 2,
+    threads: int(allocated("threads", "gatk_germline_apply_vqsr_indels", cluster))
+    container: config['images']['genome-seek']
+    envmodules: config['tools']['gatk4']
+    shell: """
+    # Apply a score cutoff to filter variants
+    # based on a recalibration table. This is
+    # the last step in VQSR to filter out low
+    # quality variants. The output VCF file
+    # contains both SNPs and INDELs.
+    gatk --java-options '-Xmx{params.memory}g' ApplyVQSR \\
+        --intervals {params.chunk} \\
+        --reference {params.genome} \\
+        --use-jdk-inflater --use-jdk-deflater \\
+        -V {input.vcf} \\
+        -mode INDEL \\
         --recal-file {input.recal} \\
         --tranches-file {input.tranch} \\
         --truth-sensitivity-filter-level 99.7 \\
