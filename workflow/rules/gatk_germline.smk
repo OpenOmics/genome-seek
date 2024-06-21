@@ -233,7 +233,6 @@ rule gatk_germline_genomicsdbimport:
     # to a non-existent or empty directory.
     if [ -d "{params.gdb}" ]; then
         rm -rf "{params.gdb}";
-        mkdir -p "{params.gdb}";
     fi
 
     # Import gVCFs into a TileDB GenomicsDB 
