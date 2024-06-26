@@ -528,15 +528,68 @@ rule all:
         # scattered/merged on chroms per-sample, only runs 
         # if provided --gatk-germline and NOT WES mode,
         # @imported from rules/germline.smk
-        # expand( 
-        #     join(workpath, "haplotypecaller", "gVCFs", "chunks", "{name}", "{chrom}.g.vcf.gz"),
-        #     name=provided(samples, call_gatk_germline and not run_wes),
-        #     chrom=provided(chunks, call_gatk_germline and not run_wes)
-        # ),
-        # expand( 
-        #     join(workpath, "haplotypecaller", "gVCFs", "{name}.g.vcf.gz"),
-        #     name=provided(samples, call_gatk_germline and not run_wes)
-        # ),
+        expand( 
+            join(workpath, "haplotypecaller", "gVCFs", "chunks", "{name}", "{chrom}.g.vcf.gz"),
+            name=provided(samples, call_gatk_germline and not run_wes),
+            chrom=provided(chunks, call_gatk_germline and not run_wes)
+        ),
+        expand( 
+            join(workpath, "haplotypecaller", "gVCFs", "{name}.g.vcf.gz"),
+            name=provided(samples, call_gatk_germline and not run_wes)
+        ),
+        # GATK4 GenomicsDBImport, merge gVCFs into a single 
+        # TileDB datastore for joint genotyping, only runs
+        # if provided --gatk-germline and NOT WES mode,
+        # @imported from rules/germline.smk
+        provided(
+            [join(workpath, "haplotypecaller", "gVCFs", "genomicsdbimport_gvcfs.tsv")], 
+            call_gatk_germline and not run_wes
+        ),
+        expand( 
+            join(workpath, "haplotypecaller", "gVCFs", "genomicsdb", "{region}", "gvcf_to_tiledb_import.done"),
+            region=provided(regions, call_gatk_germline and not run_wes)
+        ),
+        # GATK4 GenotypeGVCFs, jointly genotype germline
+        # variants on one or more samples, only runs if 
+        # provided --gatk-germline and NOT WES mode,
+        # @imported from rules/germline.smk
+        expand( 
+            join(workpath, "haplotypecaller", "VCFs", "chunks", "raw_variants_{region}.vcf.gz"),
+            region=provided(regions, call_gatk_germline and not run_wes)
+        ),
+        provided(
+            [join(workpath, "haplotypecaller", "VCFs", "raw_variants.vcf.gz")], 
+            call_gatk_germline and not run_wes
+        ),
+        # GATK4 VariantRecalibrator, builds and applies
+        # a recalibration model to the raw variants to
+        # produce a filtered VCF, only runs if provided
+        # --gatk-germline and NOT WES mode,
+        # @imported from rules/germline.smk
+        provided( 
+            [join(workpath, "haplotypecaller", "VCFs", "SNP.output.AS.recal")],
+            call_gatk_germline and not run_wes
+        ),
+        expand( 
+            join(workpath, "haplotypecaller", "VCFs", "snp_recal_chunks", "snps_recal_variants_{region}.vcf.gz"),
+            region=provided(regions, call_gatk_germline and not run_wes)
+        ),
+        provided( 
+            [join(workpath, "haplotypecaller", "VCFs", "INDEL.output.AS.recal")],
+            call_gatk_germline and not run_wes
+        ),
+        expand( 
+            join(workpath, "haplotypecaller", "VCFs", "snp_indel_recal_chunks", "snps_and_indels_recal_variants_{region}.vcf.gz"),
+            region=provided(regions, call_gatk_germline and not run_wes)
+        ),
+        provided( 
+            [join(workpath, "haplotypecaller", "VCFs", "snps_and_indels_recal_refinement_variants.vcf.gz")],
+            call_gatk_germline and not run_wes
+        ),
+        provided( 
+            [join(workpath, "haplotypecaller", "VCFs", "snps_and_indels_recal_refinement_variants.GTfix.vcf.gz")],
+            call_gatk_germline and not run_wes
+        ),
         # MultiQC, QC report and sample statistics
         # @imported from rules/qc.smk 
         join(workpath, "QC", "MultiQC_Report.html"),
