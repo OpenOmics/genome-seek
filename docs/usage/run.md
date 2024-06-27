@@ -11,11 +11,12 @@ Setting up the genome-seek pipeline is fast and easy! In its most basic form, <c
 ```text
 $ genome-seek run [--help] \
       [--mode {slurm,local}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \
-      [--call-cnv] [--call-sv] [--call-hla] [--call-somatic] [--open-cravat] \
-      [--skip-qc] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \
+      [--call-cnv] [--call-sv] [--call-hla] [--call-somatic] [--gatk-germline] \
+      [--open-cravat] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \
       [--pairs PAIRS] [--pon PANEL_OF_NORMALS] [--wes-mode] [--wes-bed WES_BED] \
-      [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \
+      [--skip-qc] [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \
       [--singularity-cache SINGULARITY_CACHE] \
+      [--resource-bundle RESOURCE_BUNDLE] \
       [--dry-run] [--threads THREADS] \
       --input INPUT [INPUT ...] \
       --output OUTPUT
@@ -80,6 +81,24 @@ Each of the following arguments are optional, and do not need to be provided.
 > ***Example:*** `--call-hla`
 
 ---  
+  `--call-somatic`            
+> **Call somatic variants.**  
+> *type: boolean flag*
+> 
+> Runs additional steps to call somatic variants. By default when this option is provided, the pipeline will perform somatic variant calling for each sample in a tumor-only mode; however, if a tumor-normal pairs file is provided via the `--pairs` option then the pipeline will call somatic variants using its matched normal. Please see the **Somatic options** section below for more information about the somatic variant calling pipeline and any additional options.
+>
+> ***Example:*** `--call-somatic`
+
+---  
+  `--gatk-germline`            
+> **Call short germline variants using GATK4 best practices.**  
+> *type: boolean flag*
+> 
+> Runs additional steps to call short (SNPs/INDELs) germline variants using GATK4. By default, the pipeline will call germline variants using deepvariant. If this option is provided, the pipeline will also call germline variants using GATK4's set of recommended best practices for calling short germline variants.
+>
+> ***Example:*** `--gatk-germline`
+
+---  
   `--open-cravat`            
 > **Run OpenCRAVAT to annotate variants.**  
 > *type: boolean flag*
@@ -125,12 +144,43 @@ Each of the following arguments are optional, and do not need to be provided.
 >
 > ***Example:*** `--batch-id WGS_2022-04-19`
 
-
-### 2.3 Anotation options
+### 2.3 Somatic options
 
 Each of the following arguments are optional, and do not need to be provided. 
 
-#### 2.3.1 OpenCRAVAT
+  `--pairs PAIRS`
+> **Path to a tumor-normal pairs file.**
+> *type: TSV file*
+> *default: None*
+> 
+> The tumor-normal pairs file is used to pair a tumor sample with its match normal sample. This file should only be provided when calling somatic variants via the `--call-somatic` option. Please see the option above for more info about calling somatic mutations. By default, the `--call-somatic` option will call somatic variants for each sample in a *tumor-only* mode. 
+>
+> This tab delimited file contains two columns with the names of tumor and normal pairs, one per line. The header of the file needs to be `Tumor` for the tumor column and `Normal` for the normal column. The base name of each sample should be listed in the pairs file. The base name of a given sample can be determined by removing the extension from the sample's R1 FastQ file, e.g. `.R1.fastq.gz`.
+>
+> **Contents of example pairs file:**
+> ```
+> Tumor    Normal
+> Sample4_CRL1622_S31  Sample10_ARK1_S37
+> Sample4_CRL1622_S31  Sample11_ACI_158_S38
+> ```
+> 
+> ***Example:*** `--pairs .tests/pairs.tsv`
+
+---  
+  `--pon PANEL_OF_NORMALS`
+> **Path to a panel of normals file.**
+> *type: VCF.gz file*
+> *default: None*
+> 
+> A VCF file of containing sites observed in normal tissue. Normal in this context refers to samples derived from healthy tissue that is NOT believed to have any somatic alterations. By default, the pipeline will use a PON included with its resource bundle. You can provide your own PON with this option. The PON should be gzipped, AND there should be a tabix index for the PON in the same directory.
+> 
+> ***Example:*** `--pon 1000g_pon.hg38.vcf.gz`
+
+### 2.4 Anotation options
+
+Each of the following arguments are optional, and do not need to be provided. 
+
+#### 2.4.1 OpenCRAVAT
 
   `--oc-annotators OC_ANNOTATORS`            
 > **List of OpenCRAVAT annotators to use.**  
@@ -151,7 +201,7 @@ OpenCRAVAT has installed its modules, please run `oc config system`. Also, pleas
 >
 > ***Example:*** `--oc-modules /data/$USER/CRAVAT/modules`
 
-### 2.4 Orchestration options
+### 2.5 Orchestration options
 
 Each of the following arguments are optional, and do not need to be provided. 
 
@@ -215,7 +265,16 @@ Each of the following arguments are optional, and do not need to be provided.
 >
 > Uses a local cache of SIFs on the filesystem. This SIF cache can be shared across users if permissions are set correctly. If a SIF does not exist in the SIF cache, the image will be pulled from Dockerhub and a warning message will be displayed. The `genome-seek cache` subcommand can be used to create a local SIF cache. Please see `genome-seek cache` for more information. This command is extremely useful for avoiding DockerHub pull rate limits. It also remove any potential errors that could occur due to network issues or DockerHub being temporarily unavailable. We recommend running genome-seek with this option when ever possible.
 > 
-> ***Example:*** `--singularity-cache /data/$USER/SIFs`
+> ***Example:*** `--sif-cache /data/$USER/SIFs`
+
+---  
+  `--resource-bundle RESOURCE_BUNDLE`
+> **Path to a local resource bundle.**  
+> *type: path*  
+>
+> This is a path to a local resource bundle containing all of the pipeline's reference files. Please only provide this option if you are running the pipeline outside of Biowulf. If you are running the pipeline on Biowulf, the pipeline will automatically resolve the correct path to any references files. The resource bundle contains the set of required reference files for processing any data, and it is extrememly large. Several terabytes of storage space will be needed to download it. As a result, we always recommend using the resource bundle provided by the pipeline. If you are unsure if the resource bundle is installed on your system, please contact us or your system administrator.
+> 
+> ***Example:*** `--resource-bundle /path/to/refs/genome-seek`
 
 ---  
   `--threads THREADS`   
@@ -238,7 +297,7 @@ Each of the following arguments are optional, and do not need to be provided.
 > 
 > ***Example:*** `--tmp-dir /scratch/$USER/`
 
-### 2.5 Miscellaneous options  
+### 2.6 Miscellaneous options  
 Each of the following arguments are optional, and do not need to be provided. 
 
   `-h, --help`            
@@ -259,19 +318,23 @@ module load singularity snakemake
 
 # Step 2A.) Dry-run the pipeline
 ./genome-seek run --input .tests/*.R?.fastq.gz \
-                  --output /data/$USER/output \
-                  --call-cnv --call-sv \
-                  --call-hla --open-cravat \
-                  --mode slurm \
-                  --dry-run
+        --output results/ \
+        --call-cnv --call-sv \
+        --call-hla --open-cravat \
+        --gatk-germline \
+        --call-somatic \
+        --mode slurm \
+        --dry-run
 
 # Step 2B.) Run the genome-seek pipeline
 # The slurm mode will submit jobs to 
 # the cluster. It is recommended running 
 # the pipeline in this mode.
 ./genome-seek run --input .tests/*.R?.fastq.gz \
-                  --output /data/$USER/output \
-                  --call-cnv --call-sv \
-                  --call-hla --open-cravat \
-                  --mode slurm
+        --output results/ \
+        --call-cnv --call-sv \
+        --call-hla --open-cravat \
+        --gatk-germline \
+        --call-somatic \
+        --mode slurm
 ```
