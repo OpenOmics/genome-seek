@@ -10,7 +10,7 @@ Setting up the genome-seek pipeline is fast and easy! In its most basic form, <c
 ## 2. Synopsis
 ```text
 $ genome-seek run [--help] \
-      [--mode {slurm,local}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \
+      [--mode {slurm,uge,local}] [--job-name JOB_NAME] [--batch-id BATCH_ID] \
       [--call-cnv] [--call-sv] [--call-hla] [--call-somatic] [--gatk-germline] \
       [--open-cravat] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \
       [--pairs PAIRS] [--pon PANEL_OF_NORMALS] [--wes-mode] [--wes-bed WES_BED] \
@@ -172,7 +172,7 @@ Each of the following arguments are optional, and do not need to be provided.
 > *type: VCF.gz file*
 > *default: None*
 > 
-> A VCF file of containing sites observed in normal tissue. Normal in this context refers to samples derived from healthy tissue that is NOT believed to have any somatic alterations. By default, the pipeline will use a PON included with its resource bundle. You can provide your own PON with this option. The PON should be gzipped, AND there should be a tabix index for the PON in the same directory.
+> A VCF file of containing sites observed in normal tissue. Normal in this context refers to samples derived from healthy tissue that is NOT believed to have any somatic alterations. By default, the pipeline will use a PON included with its resource bundle. You can provide your own PON with this option. The PON should be gzipped **and** there should be a tabix index for the PON in the same directory.
 > 
 > ***Example:*** `--pon 1000g_pon.hg38.vcf.gz`
 
@@ -223,15 +223,18 @@ Each of the following arguments are optional, and do not need to be provided.
 > ***Example:*** `--silent`
 
 ---  
-  `--mode {slurm,local}`  
+  `--mode {slurm,uge,local}`  
 > **Execution Method.**  
-> *type: string*  
+> *type: enum*  
 > *default: slurm*
 > 
 > Execution Method. Defines the mode or method of execution. Vaild mode options include: slurm or local. 
 > 
 > ***slurm***    
 > The slurm execution method will submit jobs to the [SLURM workload manager](https://slurm.schedmd.com/). It is recommended running genome-seek in this mode as execution will be significantly faster in a distributed environment. This is the default mode of execution.
+>
+> ***uge***    
+> The ueg execution method will submit jobs to the [Univa Grid Engine](https://en.wikipedia.org/wiki/Univa_Grid_Engine). This method will submit jobs to a cluster using qsub. Please set the mode to uge when running the pipeline on LOCUS.
 >
 > ***local***  
 > Local executions will run serially on compute instance. This is useful for testing, debugging, or when a users does not have access to a high performance computing environment. If this option is not provided, it will default to a local execution mode. 
@@ -285,7 +288,6 @@ Each of the following arguments are optional, and do not need to be provided.
 > Max number of threads for each process. This option is more applicable when running the pipeline with `--mode local`.  It is recommended setting this vaule to the maximum number of CPUs available on the host machine.
 > 
 > ***Example:*** `--threads 12`
-
 
 ---  
   `--tmp-dir TMP_DIR`   
