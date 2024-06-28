@@ -4,7 +4,7 @@
   
   **_Whole Genome and Exome Clinical Sequencing Pipeline._**
 
-  [![tests](https://github.com/OpenOmics/genome-seek/workflows/tests/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/main.yaml) [![docs](https://github.com/OpenOmics/genome-seek/workflows/docs/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/docs.yml) [![GitHub issues](https://img.shields.io/github/issues/OpenOmics/genome-seek?color=brightgreen)](https://github.com/OpenOmics/genome-seek/issues)  [![GitHub license](https://img.shields.io/github/license/OpenOmics/genome-seek)](https://github.com/OpenOmics/genome-seek/blob/main/LICENSE) 
+  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.12586652.svg)](https://doi.org/10.5281/zenodo.12586652) [![GitHub release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/OpenOmics/genome-seek?color=blue&include_prereleases)](https://github.com/OpenOmics/genome-seek/releases) [![Docker Pulls](https://img.shields.io/docker/pulls/skchronicles/genome-seek)](https://hub.docker.com/repository/docker/skchronicles/genome-seek)<br>[![tests](https://github.com/OpenOmics/genome-seek/workflows/tests/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/main.yaml) [![docs](https://github.com/OpenOmics/genome-seek/workflows/docs/badge.svg)](https://github.com/OpenOmics/genome-seek/actions/workflows/docs.yml) [![GitHub issues](https://img.shields.io/github/issues/OpenOmics/genome-seek?color=brightgreen)](https://github.com/OpenOmics/genome-seek/issues)  [![GitHub license](https://img.shields.io/github/license/OpenOmics/genome-seek)](https://github.com/OpenOmics/genome-seek/blob/main/LICENSE) 
   
   <i>
     This is the home of the pipeline, genome-seek. Its long-term goals: to accurately call germline and somatic variants, to infer SVs & CNVs, and to boldly annotate variants like no pipeline before!
@@ -53,6 +53,41 @@ module load snakemake singularity
 ## Contribute
 
 This site is a living document, created for and by members like you. genome-seek is maintained by the members of NCBR and is improved by continuous feedback! We encourage you to contribute new content and make improvements to existing content via pull requests to our [GitHub repository](https://github.com/OpenOmics/genome-seek).
+
+## Cite
+
+If you use this software, please cite it as below:  
+
+<details>
+  <summary><b><i>@BibText</i></b></summary>
+ 
+```text
+@software{Kuhn_OpenOmics_genome-seek_2024,
+  author       = {Kuhn, Skyler and
+                  Lack, Justin and
+                  Talsania, Keyur},
+  title        = {OpenOmics/genome-seek: v0.9.0},
+  month        = jun,
+  year         = 2024,
+  publisher    = {Zenodo},
+  version      = {v0.9.0},
+  doi          = {10.5281/zenodo.12586652},
+  url          = {https://doi.org/10.5281/zenodo.12586652}
+}
+```
+
+</details>
+
+<details>
+  <summary><b><i>@APA</i></b></summary>
+
+```text
+Kuhn, S., Lack, J., & Talsania, K. (2024). OpenOmics/genome-seek: v0.9.0 (v0.9.0). Zenodo. https://doi.org/10.5281/zenodo.12586652
+```
+
+</details>
+
+For more citation style options, please visit the pipeline's [Zenodo page](https://doi.org/10.5281/zenodo.12586652).
 
 ## References
 
