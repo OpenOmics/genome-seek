@@ -239,7 +239,10 @@ def tool_version(tool, cmd, strict = False):
     c = Colors
     version = ''
     try:
-        version = subprocess.check_output(cmd).strip().decode('utf-8')
+        # Merge standard error to standard output
+        # some tools print version information to 
+        # stderr instead of stdout
+        version = subprocess.check_output(cmd, stderr=subprocess.STDOUT).strip().decode('utf-8')
     except Exception as e:
         err("\n{0}{1}Warning: could not get version of {2} using: '{3}'{4}".format(
             c.bg_black, c.yellow, tool, ' '.join(cmd), c.end)

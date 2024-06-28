@@ -50,7 +50,8 @@ from src.utils import (
     pairs,
     permissions,
     check_cache,
-    require
+    require,
+    tool_version
 )
 
 
@@ -100,6 +101,27 @@ def run(sub_args):
     # The pipelines has only two requirements:
     # snakemake and singularity 
     require(['snakemake', 'singularity'], ['snakemake', 'singularity'])
+    # Check the version of snakemake in the
+    # user's $PATH, the pipeline supports
+    # snakemake versions < 8.0.0.
+    snakemake_version = tool_version('snakemake', ['snakemake', '--version'], strict = True)
+    parsed_version = re.search(
+        '^(?P<prefix>v)?(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)',
+        snakemake_version.split()[-1]
+    )
+    # Check the parsed major version of snakemake
+    if int(parsed_version.group('major')) >= 8:
+        # Snakemake versions greater than or equal
+        # to 8.0.0 are not supported by genome-seek.
+        # This verison of snakemake introduced a set
+        # of breaking changes that are not compatible
+        # with the current pipeline. We will strictly 
+        # enforce this until we move to profiles. 
+        fatal(
+            'Error: Snakemake version "{}" is not supported! Please use a version less than "8.0.0".'.format(
+                snakemake_version
+            )
+        )
 
     if not sub_args.batch_id:
       # Set value of batch identifer by 
