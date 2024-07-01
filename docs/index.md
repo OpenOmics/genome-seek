@@ -3,6 +3,15 @@
   <h1 style="font-size: 250%">genome-seek 🔬</h1>
 
   <b><i>Whole Genome and Exome Clinical Sequencing Pipeline</i></b><br> 
+  <a href="https://doi.org/10.5281/zenodo.12586652">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.12586652.svg" alt="DOI">
+  </a>
+  <a href="https://github.com/OpenOmics/genome-seek/releases">
+    <img alt="GitHub release" src="https://img.shields.io/github/v/release/OpenOmics/genome-seek?color=blue&include_prereleases">
+  </a>
+  <a href="https://hub.docker.com/repository/docker/skchronicles/genome-seek">
+    <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/skchronicles/genome-seek">
+  </a><br>
   <a href="https://github.com/OpenOmics/genome-seek/actions/workflows/main.yaml">
     <img alt="tests" src="https://github.com/OpenOmics/genome-seek/workflows/tests/badge.svg">
   </a>
@@ -70,6 +79,35 @@ For more information about issues or troubleshooting a problem, please check out
 ## Contribute
 
 This site is a living document, created for and by members like you. genome-seek is maintained by the members of NCBR and is improved by continuous feedback! We encourage you to contribute new content and make improvements to existing content via pull requests to our [GitHub repository :octicons-heart-fill-24:{ .heart }](https://github.com/OpenOmics/genome-seek).
+
+## Citation
+
+If you use this software, please cite it as below:  
+
+=== "BibTex"
+
+    ```
+    @software{Kuhn_OpenOmics_genome-seek_2024,
+      author       = {Kuhn, Skyler and
+                      Lack, Justin and
+                      Talsania, Keyur},
+      title        = {OpenOmics/genome-seek: v0.9.0},
+      month        = jun,
+      year         = 2024,
+      publisher    = {Zenodo},
+      version      = {v0.9.0},
+      doi          = {10.5281/zenodo.12586652},
+      url          = {https://doi.org/10.5281/zenodo.12586652}
+    }
+    ```
+
+=== "APA"
+
+    ```
+    Kuhn, S., Lack, J., & Talsania, K. (2024). OpenOmics/genome-seek: v0.9.0 (v0.9.0). Zenodo. https://doi.org/10.5281/zenodo.12586652
+    ```
+
+For more citation style options, please visit the pipeline's [Zenodo page](https://doi.org/10.5281/zenodo.12586652).
 
 ## References
 
