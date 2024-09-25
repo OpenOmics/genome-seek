@@ -285,6 +285,11 @@
         "time" : "48:00:00",
         "threads": "8"
     },
+    "hmftools_sage": {
+        "mem": "48G",
+        "time" : "1-00:00:00",
+        "threads": "24"
+    },
     "somatic_purple_maf": {
         "threads": "4",
         "mem": "32G",
