@@ -19,6 +19,21 @@ def get_normal_recal_bam(wildcards):
         # Runs in tumor-only mode
         return []
 
+
+def get_normal_sorted_bam(wildcards):
+    """
+    Returns a tumor samples paired normal
+    See config['pairs'] for tumor, normal pairs.
+    """
+    normal = tumor2normal[wildcards.name]
+    if normal:
+        # Runs in a tumor, normal mode
+        return join(workpath, "BAM", "{0}.sorted.bam".format(normal))
+    else:
+        # Runs in tumor-only mode
+        return []
+
+
 def get_normal_pileup_table(wildcards):
     """
     Returns a tumor samples paired normal pileup
@@ -609,6 +624,69 @@ rule gatk_filter_mutect2:
         --contamination-table {input.summary} \\
         -O {output.vcf} \\
         --stats {input.stats} 
+    """
+
+
+rule hmftools_sage:
+    """Data-processing step to call somatic variants in TO and TN 
+    samples using hmftools sage. HMF Tools is a suite of tools the
+    Hartwig Medical Foundation developed to analyze genomic data. Amber 
+    and cobalt must be run prior to running purple. For more information 
+    about hmftools visit: https://github.com/hartwigmedical/hmftools
+    @Input:
+        Sorted BAM file (scatter-per-tumor-sample)
+    @Output:
+        Per sample somatic variants in VCF format
+    """
+    input:
+        tumor  = join(workpath, "BAM", "{name}.sorted.bam"),
+        normal = get_normal_sorted_bam
+    output:
+        vcf  = join(workpath, "sage", "somatic", "{name}.sage.vcf"),
+    params:
+        rname     = 'hmfsage',
+        tumor     = '{name}',
+        genome       = config['references']['GENOME'],
+        amber_jar    = config['references']['HMFTOOLS_SAGE_JAR'],
+        ref_version  = config['references']['HMFTOOLS_SAGE_REF_VERSION'],
+        hotspots     = config['references']['HMFTOOLS_SAGE_HOTSPOTS'],
+        panel        = config['references']['HMFTOOLS_SAGE_PANEL'],
+        high_conf    = config['references']['HMFTOOLS_SAGE_HIGH_CONF'],
+        ensembl_data = config['references']['HMFTOOLS_SAGE_ENSEMBL_DATA'],
+        # For UGE/SGE clusters memory is allocated 
+        # per cpu, so we must calculate total mem
+        # as the product of threads and memory
+        memory    = lambda _: int(
+            int(allocated("mem", "hmftools_sage", cluster).lower().rstrip('g')) * \
+            int(allocated("threads", "hmftools_sage", cluster)) 
+        )-1 if run_mode == "uge" \
+        else allocated("mem", "hmftools_sage", cluster).lower().rstrip('g'),
+        # Building optional argument for paired normal
+        normal_name = lambda w: "-reference {0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+        normal_bam = lambda w: "-reference_bam {0}.sorted.bam".format(
+            join(workpath, "BAM", tumor2normal[w.name])
+        ) if tumor2normal[w.name] else "",
+    threads: 
+        int(allocated("threads", "hmftools_sage", cluster)),
+    container: config['images']['genome-seek_cnv']
+    envmodules: config['tools']['rlang']
+    shell: """
+    # Call somatic variants with hmftools
+    # Somatic Alterations in Genome (SAGE)
+    java -Xmx{params.memory}g -cp {params.amber_jar} \\
+        com.hartwig.hmftools.sage.SageApplication \\
+            -threads {threads} \\
+            -tumor {params.tumor} {params.normal_name} \\
+            -tumor_bam {input.tumor}  {params.normal_bam} \\
+            -ref_genome_version {params.ref_version} \\
+            -ref_genome {params.genome} \\
+            -hotspots {params.hotspots} \\
+            -panel_bed {params.panel} \\
+            -high_confidence_bed {params.high_conf} \\
+            -ensembl_data_dir {params.ensembl_data} \\
+            -output_vcf {output.vcf}
     """
 
 
