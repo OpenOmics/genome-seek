@@ -277,9 +277,9 @@
     "threads": "8"
   },
   "hmftools_sage": {
-    "mem": "3G",
+    "mem": "4G",
     "partition": "",
-    "threads": "12"
+    "threads": "8"
   },
   "inbreeding": {
     "mem": "4G",

@@ -286,7 +286,7 @@
         "threads": "8"
     },
     "hmftools_sage": {
-        "mem": "48G",
+        "mem": "64G",
         "time" : "1-00:00:00",
         "threads": "24"
     },
