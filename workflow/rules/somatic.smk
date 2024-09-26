@@ -690,6 +690,62 @@ rule hmftools_sage:
     """
 
 
+rule clairs_tumor_only:
+    """Data-processing step to call somatic variants in tumor-only samples using 
+    ClairS. ClairS is a deep-learning based variant caller that uses an ensembl
+    of two neural networks to call somatic variants. ClairS-TO is unique in that
+    it can call somatic variants without a matched normal. More information about 
+    ClairS-TO can be found here: https://github.com/HKU-BAL/ClairS-TO
+    @Input:
+        Realigned, recalibrated BAM file (scatter-per-tumor-sample)
+    @Output:
+        Per sample somatic variants in VCF format
+    """
+    input:
+        tumor = join(workpath, "BAM", "{name}.recal.bam"),
+    output:
+        snps   = join(workpath, "clairs", "somatic", "{name}", "snv.vcf.gz"),
+        indels = join(workpath, "clairs", "somatic", "{name}", "indel.vcf.gz"),
+        tmp    = join(workpath, "clairs", "somatic", "{name}", "clairs_snps_indels.vcf"),
+        vcf    = join(workpath, "clairs", "somatic", "{name}.clairs.vcf"),
+    params:
+        rname   = 'clairs_to',
+        tumor   = '{name}',
+        genome  = config['references']['GENOME'],
+        outdir = join(workpath, "clairs", "somatic", "{name}"),
+    threads: 
+        int(allocated("threads", "clairs_tumor_only", cluster)),
+    container: config['images']['clairs-to']
+    envmodules: config['tools']['rlang']
+    shell: """
+    # Call somatic variants with ClairS-TO,
+    # run in isolated sample directory to
+    # collisions in file names
+    /opt/bin/run_clairs_to \\
+        --tumor_bam_fn {input.tumor}  \\
+        --ref_fn {params.genome} \\
+        --threads {threads} \\
+        --platform  ilmn \\
+        --output_dir {params.outdir} \\
+        --conda_prefix /opt/micromamba/envs/clairs-to
+    
+    # Concatenate SNPs and Indels
+    bcftools concat \\
+        -a \\
+        -O v \\
+        -o {output.tmp} \\
+        {output.snps} \\
+        {output.indels} 
+    
+    # Filter for PASS variants
+    bcftools view \\
+        -f 'PASS' \\
+        -O v \\
+        -o {output.vcf} \\
+        {output.tmp}
+    """
+
+
 rule muse:
     """Data-processing step to call somatic mutations with MuSE. This tool is 
     unique in accounting for tumor heterogeneity using a sample-specific error 

@@ -281,6 +281,11 @@
     "partition": "",
     "threads": "8"
   },
+  "clairs_tumor_only": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "8"
+  },
   "inbreeding": {
     "mem": "4G",
     "partition": "",

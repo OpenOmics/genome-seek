@@ -290,6 +290,11 @@
         "time" : "1-00:00:00",
         "threads": "24"
     },
+    "clairs_tumor_only": {
+        "mem": "64G",
+        "time" : "1-00:00:00",
+        "threads": "24"
+    },
     "somatic_purple_maf": {
         "threads": "4",
         "mem": "32G",
