@@ -70,6 +70,11 @@
     "partition": "",
     "threads": "2"
   },
+  "deepsomatic": {
+    "threads": "12",
+    "mem": "4G",
+    "partition": ""
+  },
   "deepvariant": {
     "mem": "3G",
     "partition": "",

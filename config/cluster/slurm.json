@@ -72,6 +72,12 @@
         "time": "10-00:00:00",
         "gres": "lscratch:512"
     },
+    "deepsomatic": {
+        "threads": "24",
+        "mem": "64G",
+        "time": "1-18:00:00",
+        "gres": "lscratch:512"
+    },
     "deepvariant": {
         "threads": "18",
         "mem": "48G",
