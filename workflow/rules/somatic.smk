@@ -53,9 +53,9 @@ def get_normal_pileup_table(wildcards):
 def get_somatic_tn_callers(wildcards):
     """Returns somatic variants found with tumor-normal variant
     callers. For tumor-normal samples, extra somatic callers 
-    (i.e. MuSE and Strelka) are run. Tumor-only return empty
-    list (rule already has reference in input section).
-    See config['pairs'] for tumor, normal pairs.
+    (i.e. MuSE and Strelka and DeepSomatic) are run. Tumor-only 
+    samples return an empty list (rule already has reference 
+    in input section). See config['pairs'] for tumor, normal pairs.
     """
     tumor = wildcards.name
     normal = tumor2normal[tumor]
@@ -746,6 +746,70 @@ rule clairs_tumor_only:
     """
 
 
+rule deepsomatic:
+    """
+    Data processing step to call somatic variants using deep neural 
+    network in tumor-normal pairs. DeepSomatic is an extension of the
+    deep learning-based variant caller DeepVariant that takes aligned
+    reads (in BAM or CRAM format) from tumor and normal data, produces 
+    pileup image tensors from them, classifies each tensor using a CNN,
+    and  finally reports somatic variants in a standard VCF or gVCF file. 
+    This rule runs all three steps in the deepsomatic pipeline as a one 
+    step: i.e. make_examples, call_variants, and postprocess_variants.
+    This is not optimal for large-scale projects as it will consume a lot
+    of resources inefficently (only the 2nd step in the dv pipeline can
+    make use of GPU-computing). As so, it is better to run the 1st/3rd 
+    step on a normal compute node and run the 2nd step on a GPU node.
+    @Input:
+        Duplicate marked, sorted Tumor-Normal BAM file (scatter)
+    @Output:
+        Single-sample VCF file with called somatic variants
+    """
+    input: 
+        tumor  = join(workpath, "BAM", "{name}.sorted.bam"),
+        normal = get_normal_sorted_bam
+    output:
+        vcf  = join(workpath, "deepsomatic", "somatic", "{name}.deepsomatic.vcf"),
+    params: 
+        rname  = "deepsom",
+        genome = config['references']['GENOME'],
+        tmpdir = tmpdir,
+        # Building option for deepsomatic config, where:
+        #  @WGS = --model_type=WGS
+        #  @WES = --model_type=WES  (may be added in future)
+        dv_model_type = "WGS",
+        # Get tumor and normal sample names 
+        tumor  = '{name}',
+        # Building option for the paired normal sorted bam
+        normal_bam_option = lambda w: "--reads_normal={0}.sorted.bam".format(
+            join(workpath, "BAM", tumor2normal[w.name])
+        ) if tumor2normal[w.name] else "",
+        # Building option for the normal sample name
+        normal_name_option = lambda w: "--sample_name_normal={0}".format(
+            tumor2normal[w.name]
+        ) if tumor2normal[w.name] else "",
+    threads: int(allocated("threads", "deepsomatic", cluster))
+    container: config['images']['deepsomatic']
+    envmodules: config['tools']['deepsomatic']
+    shell: """
+    # Setups temporary directory for
+    # intermediate files with built-in 
+    # mechanism for deletion on exit
+    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+    tmp=$(mktemp -d -p "{params.tmpdir}")
+    trap 'rm -rf "${{tmp}}"' EXIT
+
+    run_deepsomatic \\
+        --model_type={params.dv_model_type} \\
+        --ref={params.genome} \\
+        --reads_tumor={input.tumor} {params.normal_bam_option} \\
+        --sample_name_tumor={params.tumor} {params.normal_name_option} \\
+        --output_vcf={output.vcf} \\
+        --num_shards={threads} \\
+        --intermediate_results_dir=${{tmp}}
+    """
+
+
 rule muse:
     """Data-processing step to call somatic mutations with MuSE. This tool is 
     unique in accounting for tumor heterogeneity using a sample-specific error 
@@ -1077,11 +1141,9 @@ rule somatic_merge_tumor:
         Variants found in at least 2 callers
     """
     input:
-        tn_callers = get_somatic_tn_callers,
+        tn_callers = get_somatic_tn_callers,   # i.e muse, strelka, deepsomatic
         octopus = join(workpath, "octopus", "somatic", "{name}.octopus.filtered.norm.vcf"),
         mutect2 = join(workpath, "mutect2", "somatic", "{name}.mutect2.filtered.norm.vcf"),
-        # muse = join(workpath, "muse", "somatic", "{name}.muse.filtered.norm.vcf"),
-        # strelka = join(workpath, "strelka", "somatic", "{name}.strelka.filtered.norm.vcf"),
     output:
         merged = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.vcf.gz"),
     params:
