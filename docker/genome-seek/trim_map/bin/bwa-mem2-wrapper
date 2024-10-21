@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+# About: this script is a wrapper around bwa-mem2
+# that selects the correct Intel compiled binary
+# based on the CPU architecture of the host machine.
+# This is necessary because the Intel compiled binary
+# AVX-512 binary is NOT compatible with Zen4 AMD CPUs.
+# AVX-512 support was added in Zen4 and is not present
+# in Zen3. On Biowulf, the new AMD nodes are Zen4. If
+# a AMD node is detected, this script will use the
+# an AVX2 compiled binary instead, if left to bwa-mem2
+# it will select the axv-512bw binary and error out.
+# The difference in performance is minimal between
+# AVX-512 vs. AVX2 (may be around 20-30% faster), so
+# it's not a big deal to use the AVX2 binary on Zen4.
+
+set -euo pipefail
+
+# Functions
+function err() { cat <<< "$@" 1>&2; }
+function fatal() { cat <<< "$@" 1>&2; exit 1; }
+
+# Select the best binary for Intel
+# versus AMD CPUs
+if grep -q GenuineIntel /proc/cpuinfo ; then
+    # Let bwa-mem2 select the best
+    # precompiled binary for Intel
+    bwa-mem2 "$@"
+elif grep -q AuthenticAMD /proc/cpuinfo ; then
+    # Use the AVX2 compiled binary,
+    # this ensure compatibility with
+    # Zen3 and Zen4 AMD CPUs.
+    bwa-mem2.avx2 "$@"
+else
+    err   "Fatal error: failed to resolve CPU architecture, neither Intel nor AMD detected." 
+    err   "  ├── Are you trying to run bwa-mem2 on a non-x86 CPU (ARM-based) cpu?"
+    fatal "  └── Only Intel and AMD CPUs are supported, exiting now!"
+fi
