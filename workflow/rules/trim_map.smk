@@ -76,8 +76,23 @@ rule bwa_mem2:
     if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
     tmp=$(mktemp -d -p "{params.tmpdir}")
     trap 'rm -rf "${{tmp}}"' EXIT
-
-    bwa-mem2 mem \\
+    
+    # This wrapper to bwa-mem2 selects a
+    # compatible pre-compiled binary for 
+    # Intel and AMD (Zen4) processors. The
+    # AVX-512 instruction set was added to
+    # processors with the release of Zen4.
+    # This instruction set is NOT compatible
+    # with the Intel-compiled AVX-512bw 
+    # binary in the docker image. The wrapper
+    # detects whether it is running on an 
+    # Intel or AMD processor and selects the
+    # appropriate binary. If AMD, it will use
+    # the AVX2 binary. If Intel, it uses the
+    # default entry point for bwa-mem2 which
+    # will select the best available based
+    # on available CPU information.
+    bwa-mem2-wrapper mem \\
         -t {threads} \\
         -K 100000000 \\
         -M \\

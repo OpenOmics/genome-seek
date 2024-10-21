@@ -1,7 +1,7 @@
 {
     "images": {
         "genome-seek":          "docker://skchronicles/genome-seek:v0.1.0",
-        "genome-seek_trim_map": "docker://skchronicles/genome-seek_trim_map:v0.1.0",
+        "genome-seek_trim_map": "docker://skchronicles/genome-seek_trim_map:v0.1.1",
         "genome-seek_somatic":  "docker://skchronicles/genome-seek_somatic:v0.1.0",
         "genome-seek_qc":       "docker://skchronicles/genome-seek_qc:v0.1.0",
         "genome-seek_sv":       "docker://skchronicles/genome-seek_sv:v0.2.0",
