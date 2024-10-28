@@ -76,7 +76,7 @@
         "threads": "24",
         "mem": "64G",
         "time": "1-18:00:00",
-        "gres": "lscratch:800"
+        "gres": "lscratch:1200"
     },
     "deepvariant": {
         "threads": "18",
@@ -297,7 +297,7 @@
         "threads": "24"
     },
     "clairs_tumor_only": {
-        "mem": "64G",
+        "mem": "120G",
         "time" : "1-00:00:00",
         "threads": "24"
     },

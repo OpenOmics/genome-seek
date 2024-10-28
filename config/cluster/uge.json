@@ -287,7 +287,7 @@
     "threads": "8"
   },
   "clairs_tumor_only": {
-    "mem": "4G",
+    "mem": "5G",
     "partition": "",
     "threads": "8"
   },

@@ -50,6 +50,7 @@ def get_normal_pileup_table(wildcards):
         # Runs in tumor-only mode
         return []
 
+
 def get_somatic_tn_callers(wildcards):
     """Returns somatic variants found with tumor-normal variant
     callers. For tumor-normal samples, extra somatic callers 
@@ -706,7 +707,10 @@ rule clairs_tumor_only:
         genome  = config['references']['GENOME'],
         outdir = join(workpath, "clairs", "somatic", "{name}"),
     threads: 
-        int(allocated("threads", "clairs_tumor_only", cluster)),
+        # ClairS-TO over utilizes threads,
+        # testing has shown it over utilizes
+        # around 50% of the threads allocated
+        max(int(int(allocated("threads", "clairs_tumor_only", cluster))/2.0), 2),
     container: config['images']['clairs-to']
     envmodules: config['tools']['rlang']
     shell: """
@@ -789,7 +793,7 @@ rule deepsomatic:
     # mechanism for deletion on exit
     if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
     tmp=$(mktemp -d -p "{params.tmpdir}")
-    trap 'rm -rf "${{tmp}}"' EXIT
+    trap 'du -sh "${{tmp}}"; rm -rf "${{tmp}}"' EXIT
 
     run_deepsomatic \\
         --model_type={params.dv_model_type} \\
