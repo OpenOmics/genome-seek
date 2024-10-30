@@ -609,12 +609,14 @@ rule gatk_filter_mutect2:
         config['tools']['gatk4'],
         config['tools']['vcftools'],
     shell: """
-    # Mutect2 orien bias filter
+    # Mutect2 orien bias filter,
+    # removing the contamination filter 
+    # option due to causing low recall
+    # with SEQC2 truth set
     gatk FilterMutectCalls \\
         -R {params.genome} \\
         -V {input.vcf} \\
         --ob-priors {input.orien} \\
-        --contamination-table {input.summary} \\
         -O {output.vcf} \\
         --stats {input.stats} 
     """
