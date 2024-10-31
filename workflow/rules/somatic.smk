@@ -797,6 +797,21 @@ rule deepsomatic:
     tmp=$(mktemp -d -p "{params.tmpdir}")
     trap 'du -sh "${{tmp}}"; rm -rf "${{tmp}}"' EXIT
 
+    # Export OpenBLAS variable to
+    # control the number of threads
+    # in a thread pool. By setting
+    # this variable to 1, work is
+    # done in the thread that ran
+    # the operation, rather than
+    # disbatching the work to a
+    # thread pool. If this option
+    # is not provided, it can lead
+    # to nested parallelism.
+    # See this issue for more info:
+    # https://github.com/google/deepsomatic/issues/28
+    export OPENBLAS_NUM_THREADS=1
+
+    # Run deepsomatic
     run_deepsomatic \\
         --model_type={params.dv_model_type} \\
         --ref={params.genome} \\
