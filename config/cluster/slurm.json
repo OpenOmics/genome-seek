@@ -76,7 +76,7 @@
         "threads": "24",
         "mem": "64G",
         "time": "1-18:00:00",
-        "gres": "lscratch:1200"
+        "gres": "lscratch:750"
     },
     "deepvariant": {
         "threads": "18",
