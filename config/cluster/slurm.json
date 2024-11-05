@@ -73,10 +73,29 @@
         "gres": "lscratch:512"
     },
     "deepsomatic": {
-        "threads": "24",
-        "mem": "64G",
+        "threads": "36",
+        "mem": "192G",
         "time": "1-18:00:00",
         "gres": "lscratch:750"
+    },
+    "deepsomatic_make_examples": {
+        "threads": "36",
+        "mem": "96G",
+        "time": "1-00:00:00",
+        "gres": "lscratch:750"
+    },
+    "deepsomatic_call_variants": {
+        "threads": "16",
+        "mem": "60G",
+        "partition": "gpu",
+        "gres": "gpu:a100:1,lscratch:450",
+        "time": "1-00:00:00"
+    },
+    "deepsomatic_postprocess_variants": {
+        "threads": "4",
+        "mem": "64G",
+        "time": "1-00:00:00",
+        "gres": "lscratch:256"
     },
     "deepvariant": {
         "threads": "18",

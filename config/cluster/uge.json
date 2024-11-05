@@ -75,6 +75,21 @@
     "mem": "4G",
     "partition": ""
   },
+  "deepsomatic_call_variants": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "8"
+  },
+  "deepsomatic_make_examples": {
+    "mem": "4G",
+    "partition": "",
+    "threads": "8"
+  },
+  "deepsomatic_postprocess_variants": {
+    "mem": "8G",
+    "partition": "",
+    "threads": "4"
+  },
   "deepvariant": {
     "mem": "3G",
     "partition": "",
