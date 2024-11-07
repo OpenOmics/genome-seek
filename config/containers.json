@@ -11,6 +11,7 @@
         "deepvariant_gpu":      "docker://google/deepvariant:1.5.0-gpu",
         "deepvariant":          "docker://google/deepvariant:1.5.0",
         "deepsomatic":          "docker://google/deepsomatic:1.7.0",
+        "deepsomatic_gpu":      "docker://google/deepsomatic:1.7.0-gpu",
         "clairs-to":            "docker://hkubal/clairs-to:v0.3.0",
         "glnexus":              "docker://ghcr.io/dnanexus-rnd/glnexus:v1.4.1",
         "open_cravat":          "docker://skchronicles/ncbr_opencravat:v0.1.0",
