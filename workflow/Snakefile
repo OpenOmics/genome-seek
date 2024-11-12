@@ -22,6 +22,7 @@ today = str(datetime.datetime.today()).split()[0].replace('-', '')
 # Global workflow variables
 configfile: 'config.json'                      # Generated from user input and config/*.json
 run_mode = config['options']['mode']           # Run mode: local, slurm, or uge
+bindpath = config['bindpaths']                 # Singularity paths to bind to the container
 samples  = config['samples']                   # Base name of input samples
 workpath = config['project']['workpath']       # Pipeline's output directory
 filetype = config['project']['filetype']       # 'paired-end' or 'single-end' (not supported)
@@ -36,6 +37,10 @@ normals  = [n for n in normals if n]           # Remove tumor-onlys, i.e. empty 
 tumor2normal =  config['pairs']                # Dict to map a tumor to its normal
 # List of tumor samples with a paired normal
 tumorWnormal = [t for t in tumors if tumor2normal[t]]
+# Use GPU-compute for any supported tools
+use_gpus = str_bool(
+    config['options']['use_gpus']
+)
 
 # Analysis Options 
 call_cnv = str_bool(                      # Call copy number variation (CNVs),

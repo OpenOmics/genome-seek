@@ -99,7 +99,7 @@
     },
     "deepsomatic_postprocess_variants": {
         "threads": "6",
-        "mem": "72G",
+        "mem": "120G",
         "time": "1-00:00:00",
         "gres": "lscratch:450"
     },

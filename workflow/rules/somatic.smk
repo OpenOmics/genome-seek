@@ -5,6 +5,7 @@ from scripts.common import (
     joint_option
 )
 
+
 # Helper functions for tumor, normal pairs 
 def get_normal_recal_bam(wildcards):
     """
@@ -797,7 +798,6 @@ rule deepsomatic_make_examples:
         normal_name_option = lambda w: "--sample_name_normal {0}".format(
             tumor2normal[w.name]
         ) if tumor2normal[w.name] else "",
-    message: "Running DeepSomatic make_examples on '{input.tumor}' input file"
     threads: int(allocated("threads", "deepsomatic_make_examples", cluster))
     container: config['images']['deepsomatic']
     envmodules: config['tools']['deepsomatic']
@@ -849,76 +849,176 @@ rule deepsomatic_make_examples:
     && touch {output.success}
     """
 
+if use_gpus:
+    # Use GPU-acceleration to speed up 
+    # the second step in deepsomatic
+    rule deepsomatic_call_variants_gpu:
+        """
+        Data processing step to call somatic variants using deep neural 
+        network. The make_examples step prepares the input data for the
+        deepsomatic's CNN. DeepSomatic is an extension of deep learning-
+        based variant caller Deepvariant. It is composed of multiple steps
+        that takes aligned reads (in BAM or CRAM format), produces pileup
+        image tensors from them, classifies each tensor using a convolutional 
+        neural network, and finally reports the results in a standard VCF or
+        gVCF file. This rule is the first step in the deepsomatic pipeline:
+           1. make_examples        (CPU, parallelizable with gnu-parallel)
+         * 2. call_variants        (GPU, use a GPU node)
+           3. postprocess_variants (CPU, single-threaded)
+        Running deepsomatic in a single step using run_deepsomatic is not 
+        optimal for large-scale projects as it will consume resources very
+        inefficently. As so, it is better to run the 1st/3rd step on a 
+        compute node and run the 2nd step on a GPU node.
+        NOTE: When deepsomatic is run on a GPU/TPU, it will scatter the
+        writing of the output *.call_variants.tfrecord.gz across a pool
+        of processes (by default, --writer_threads 16). This causes causes
+        the final output file to be different if you are running DeepSomatic
+        on a CPU versus GPU.
+        @Input:
+            Flag file to indicate success of make_examples (scatter)
+        @Output:
+            Flag file to indicate success of call_variants, 
+            actually produces (given 16 writer threads):
+              {name}.call_variants-00000-of-00016.tfrecord.gz, ...
+              {name}.call_variants-00015-of-00016.tfrecord.gz
+        """
+        input: 
+            success = join(workpath, "deepsomatic", "mk_examples", "{name}.make_examples.success"),
+        output:
+            success = join(workpath, "deepsomatic", "call_variants", "{name}.cv.success"),
+        params: 
+            rname  = "ds_callvars_gpu",
+            genome = config['references']['GENOME'],
+            # Singularity options
+            sif = config['images']['deepsomatic_gpu'],
+            bindpaths = ','.join(bindpath),
+            tmpdir = tmpdir,
+            # NOTE: There BE dragons here!
+            # We need allocation info from make_examples rule
+            # to determine the number of shards that were
+            # used in the make_examples step, this is used
+            # to resolve a dependency file of this rule,
+            # which is the examples tf record file produced by 
+            # make_examples. This file gets passed to the
+            # --examples option of call_variants. 
+            example = lambda w: join(workpath, "deepsomatic", "mk_examples", "{0}.make_examples.tfrecord@{1}.gz".format(
+                w.name,
+                int(allocated("threads", "deepsomatic_make_examples", cluster))
+            )),
+            callvar = join(workpath, "deepsomatic", "call_variants", "{name}.call_variants.tfrecord.gz"),
+            # TODO: add option --ffpe option to pipeline, that
+            # selects either the ffpe_wgs or ffpe_wes checkpoints.
+            # Building option for checkpoint file (assumes TN-pairs and
+            # non-FFPE samples), where:
+            #  @WES = "/opt/models/deepsomatic/wes"
+            #  @WGS = "/opt/models/deepsomatic/wgs"
+            ckpt = lambda _: "/opt/models/deepsomatic/wes" if run_wes else "/opt/models/deepsomatic/wgs",
+        threads: max(int(allocated("threads", "deepsomatic_call_variants_gpu", cluster)) - 2, 4),
+        envmodules: config['tools']['deepsomatic']
+        shell: """
+        # Setups temporary directory for
+        # intermediate files with built-in 
+        # mechanism for deletion on exit
+        if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+        tmp=$(mktemp -d -p "{params.tmpdir}")
+        trap 'rm -rf "${{tmp}}"' EXIT
+        echo "Using tmpdir: ${{tmp}}"
+        export TMPDIR="${{tmp}}"
 
-rule deepsomatic_call_variants:
-    """
-    Data processing step to call somatic variants using deep neural 
-    network. The make_examples step prepares the input data for the
-    deepsomatic's CNN. DeepSomatic is an extension of deep learning-
-    based variant caller Deepvariant. It is composed of multiple steps
-    that takes aligned reads (in BAM or CRAM format), produces pileup
-    image tensors from them, classifies each tensor using a convolutional 
-    neural network, and finally reports the results in a standard VCF or
-    gVCF file. This rule is the first step in the deepsomatic pipeline:
-       1. make_examples        (CPU, parallelizable with gnu-parallel)
-     * 2. call_variants        (GPU, use a GPU node)
-       3. postprocess_variants (CPU, single-threaded)
-    Running deepsomatic in a single step using run_deepsomatic is not 
-    optimal for large-scale projects as it will consume resources very
-    inefficently. As so, it is better to run the 1st/3rd step on a 
-    compute node and run the 2nd step on a GPU node.
-    @Input:
-        Flag file to indicate success of make_examples (scatter)
-    @Output:
-        Per sample call_variants tensorflow records file
-    """
-    input: 
-        success = join(workpath, "deepsomatic", "mk_examples", "{name}.make_examples.success"),
-    output:
-        callvar = join(workpath, "deepsomatic", "call_variants", "{name}.call_variants.tfrecord.gz"),
-    params: 
-        rname  = "ds_callvars",
-        genome = config['references']['GENOME'],
-        tmpdir = tmpdir,
-        # NOTE: There BE dragons here!
-        # We need allocation info from make_examples rule
-        # to determine the number of shards that were
-        # used in the make_examples step, this is used
-        # to resolve a dependency file of this rule,
-        # which is the examples tf record file produced by 
-        # make_examples. This file gets passed to the
-        # --examples option of call_variants. 
-        example = lambda w: join(workpath, "deepsomatic", "mk_examples", "{0}.make_examples.tfrecord@{1}.gz".format(
-            w.name,
-            int(allocated("threads", "deepsomatic_make_examples", cluster))
-        )),
-        # TODO: add option --ffpe option to pipeline, that
-        # selects either the ffpe_wgs or ffpe_wes checkpoints.
-        # Building option for checkpoint file (assumes TN-pairs and
-        # non-FFPE samples), where:
-        #  @WES = "/opt/models/deepsomatic/wes"
-        #  @WGS = "/opt/models/deepsomatic/wgs"
-        ckpt = lambda _: "/opt/models/deepsomatic/wes" if run_wes else "/opt/models/deepsomatic/wgs",
-    message: "Running deepsomatic call_variants on '{wildcards.name}' sample"
-    threads: int(allocated("threads", "deepsomatic_call_variants", cluster))
-    container: config['images']['deepsomatic']
-    envmodules: config['tools']['deepsomatic']
-    shell: """
-    # Setups temporary directory for
-    # intermediate files with built-in 
-    # mechanism for deletion on exit
-    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
-    tmp=$(mktemp -d -p "{params.tmpdir}")
-    trap 'rm -rf "${{tmp}}"' EXIT
-    echo "Using tmpdir: ${{tmp}}"
-    export TMPDIR="${{tmp}}"
+        # Run DeepSomatic call_variants
+        # using a GPU acceleration
+        singularity exec \\
+            -c \\
+            --nv  \\
+            -B {params.bindpaths},${{tmp}}:/tmp \\
+            {params.sif} /bin/bash -c \\
+        'time call_variants \\
+            --outfile {params.callvar} \\
+            --examples {params.example} \\
+            --checkpoint {params.ckpt} \\
+            --writer_threads {threads}'
+        touch "{output.success}"
+        """
+else:
+    # Use CPU accelerated version for the
+    # second step in deepsomatic
+    rule deepsomatic_call_variants_cpu:
+        """
+        Data processing step to call somatic variants using deep neural 
+        network. The make_examples step prepares the input data for the
+        deepsomatic's CNN. DeepSomatic is an extension of deep learning-
+        based variant caller Deepvariant. It is composed of multiple steps
+        that takes aligned reads (in BAM or CRAM format), produces pileup
+        image tensors from them, classifies each tensor using a convolutional 
+        neural network, and finally reports the results in a standard VCF or
+        gVCF file. This rule is the first step in the deepsomatic pipeline:
+           1. make_examples        (CPU, parallelizable with gnu-parallel)
+         * 2. call_variants        (CPU, multi-threaded)
+           3. postprocess_variants (CPU, single-threaded)
+        Running deepsomatic in a single step using run_deepsomatic is not 
+        optimal for large-scale projects as it will consume resources very
+        inefficently. As so, it is better to run the 1st/3rd step on a 
+        compute node and run the 2nd step on a GPU node. 
+        NOTE: There be dragens here! When deepsomatic is run on a GPU/TPU,
+        it will scatter the writing of the output *.call_variants.tfrecord.gz
+        across a pool of processes (by default, --writer_threads 16). This 
+        causes causes the final output file to be different if you are 
+        running DeepSomatic on a CPU versus GPU.
+        @Input:
+            Flag file to indicate success of make_examples (scatter)
+        @Output:
+            Flag file to indicate success of call_variants,
+            actually produces:
+              {name}.call_variants.tfrecord.gz
+        """
+        input: 
+            success = join(workpath, "deepsomatic", "mk_examples", "{name}.make_examples.success"),
+        output:
+            success = join(workpath, "deepsomatic", "call_variants", "{name}.cv.success"),
+        params: 
+            rname  = "ds_callvars_cpu",
+            genome = config['references']['GENOME'],
+            tmpdir = tmpdir,
+            # NOTE: There BE dragons here!
+            # We need allocation info from make_examples rule
+            # to determine the number of shards that were
+            # used in the make_examples step, this is used
+            # to resolve a dependency file of this rule,
+            # which is the examples tf record file produced by 
+            # make_examples. This file gets passed to the
+            # --examples option of call_variants. 
+            example = lambda w: join(workpath, "deepsomatic", "mk_examples", "{0}.make_examples.tfrecord@{1}.gz".format(
+                w.name,
+                int(allocated("threads", "deepsomatic_make_examples", cluster))
+            )),
+            callvar = join(workpath, "deepsomatic", "call_variants", "{name}.call_variants.tfrecord.gz"),
+            # TODO: add option --ffpe option to pipeline, that
+            # selects either the ffpe_wgs or ffpe_wes checkpoints.
+            # Building option for checkpoint file (assumes TN-pairs and
+            # non-FFPE samples), where:
+            #  @WES = "/opt/models/deepsomatic/wes"
+            #  @WGS = "/opt/models/deepsomatic/wgs"
+            ckpt = lambda _: "/opt/models/deepsomatic/wes" if run_wes else "/opt/models/deepsomatic/wgs",
+        threads: int(allocated("threads", "deepsomatic_call_variants_cpu", cluster))
+        container: config['images']['deepsomatic']
+        envmodules: config['tools']['deepsomatic']
+        shell: """
+        # Setups temporary directory for
+        # intermediate files with built-in 
+        # mechanism for deletion on exit
+        if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+        tmp=$(mktemp -d -p "{params.tmpdir}")
+        trap 'rm -rf "${{tmp}}"' EXIT
+        echo "Using tmpdir: ${{tmp}}"
+        export TMPDIR="${{tmp}}"
 
-    # Run DeepSomatic call_variants
-    time call_variants \\
-        --outfile {output.callvar} \\
-        --examples {params.example} \\
-        --checkpoint {params.ckpt}
-    """
+        # Run CPU DeepSomatic call_variants
+        time call_variants \\
+            --outfile {params.callvar} \\
+            --examples {params.example} \\
+            --checkpoint {params.ckpt}
+        touch "{output.success}"
+        """
 
 
 rule deepsomatic_postprocess_variants:
@@ -938,20 +1038,29 @@ rule deepsomatic_postprocess_variants:
     optimal for large-scale projects as it will consume resources very
     inefficently. As so, it is better to run the 1st/3rd step on a 
     compute node and run the 2nd step on a GPU node.
+    NOTE: There be dragens here! Deepsomatic will generate a different 
+    set of output files at the call_variants steps if it is run on a 
+    CPU versus a GPU. A flag file is used to indicate this step was
+    successful and the actual sharded/non-shared file (which is input
+    to this step) is resolved in the params section. Please note this
+    file will not actually exist if call_variants was run with a GPU.
+    Looking at their source code, it appears deepsomatic has some logic
+    to detect if a sharded writer was used in the previous step, and it
+    will read in the set of sharded call_variants files without issues. 
     @Input:
         Per-sample call_variants tensorflow records file (scatter)
     @Output:
-        Single-sample gVCF file with called variants
+        Single-sample VCF file with called variants
     """
     input: 
-        callvar = join(workpath, "deepsomatic", "call_variants", "{name}.call_variants.tfrecord.gz"),
+        success = join(workpath, "deepsomatic", "call_variants", "{name}.cv.success"),
     output:
         vcf  = join(workpath, "deepsomatic", "somatic", "{name}.deepsomatic.vcf"),
     params: 
-        rname  = "ds_postprovars",
-        genome = config['references']['GENOME'],
-        tmpdir = tmpdir,
-    message: "Running DeepSomatic postprocess_variants on '{input.callvar}' input file"
+        rname   = "ds_postprovars",
+        genome  = config['references']['GENOME'],
+        tmpdir  = tmpdir,
+        callvar = join(workpath, "deepsomatic", "call_variants", "{name}.call_variants.tfrecord.gz"),
     threads: int(allocated("threads", "deepsomatic_postprocess_variants", cluster))
     container: config['images']['deepsomatic']
     envmodules: config['tools']['deepsomatic']
@@ -968,9 +1077,10 @@ rule deepsomatic_postprocess_variants:
     # Run DeepSomatic postprocess_variants
     time postprocess_variants \\
         --ref {params.genome} \\
-        --infile {input.callvar} \\
+        --infile {params.callvar} \\
         --outfile {output.vcf} \\
-        --process_somatic=true
+        --process_somatic=true \\
+        --cpus={threads}
     """
 
 

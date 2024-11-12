@@ -388,7 +388,7 @@ def parsed_arguments(name, description):
                 [--open-cravat] [--oc-annotators OC_ANNOTATORS] [--oc-modules OC_MODULES] \\
                 [--pairs PAIRS] [--pon PANEL_OF_NORMALS] [--wes-mode] [--wes-bed WES_BED] \\
                 [--skip-qc] [--tmp-dir TMP_DIR] [--silent] [--sif-cache SIF_CACHE] \\
-                [--singularity-cache SINGULARITY_CACHE] \\
+                [--singularity-cache SINGULARITY_CACHE] [--use-gpus] \\
                 [--resource-bundle RESOURCE_BUNDLE] \\
                 [--dry-run] [--threads THREADS] \\
                 --input INPUT [INPUT ...] \\
@@ -621,6 +621,12 @@ def parsed_arguments(name, description):
                                 recommended setting this vaule to the maximum number 
                                 of CPUs available on the host machine, default: 2.
                                   Example: --threads: 16
+          --use-gpus
+                                Utilize GPU computing for any suppported tools.
+                                Several steps in the pipeline can be accelerated 
+                                with GPUs. This feature is only supported on 
+                                Biowulf at the NIH.
+                                  Example: --use-gpus
         
         {3}{4}Misc Options:{5}
           -h, --help            Show usage information, help message, and exit.
@@ -939,6 +945,18 @@ def parsed_arguments(name, description):
         type = int,
         required = False,
         default = 2,
+        help = argparse.SUPPRESS
+    )
+
+    # Use GPU computing to speed
+    # up any time consuming steps,
+    # this is only supported for 
+    # a few tools.
+    subparser_run.add_argument(
+        '--use-gpus',
+        action = 'store_true',
+        required = False,
+        default = False,
         help = argparse.SUPPRESS
     )
 
