@@ -148,5 +148,6 @@ rule deepsomatic:
         --sample_name_tumor={params.tumor} {params.normal_name_option} \\
         --output_vcf={output.vcf} \\
         --num_shards={threads} \\
-        --intermediate_results_dir=${{tmp}}
+        --intermediate_results_dir=${{tmp}} \\
+        --vcf_stats_report=false
     """
