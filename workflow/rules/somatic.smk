@@ -624,11 +624,15 @@ rule gatk_filter_mutect2:
 
 
 rule hmftools_sage:
-    """Data-processing step to call somatic variants in TO and TN 
-    samples using hmftools sage. HMF Tools is a suite of tools the
-    Hartwig Medical Foundation developed to analyze genomic data. Amber 
-    and cobalt must be run prior to running purple. For more information 
-    about hmftools visit: https://github.com/hartwigmedical/hmftools
+    """Data-processing step to call somatic variants in TO and TN samples 
+    using hmftools sage. HMF Tools is a suite of tools the Hartwig Medical 
+    Foundation developed to analyze genomic data. Sage can be run with WES
+    data using the same set of options for WGS. At the current moment, sage
+    does not have an option to restrict variant calling to specific regions.
+    It does have an -high_depth_mode option; however, the authors state it 
+    should only be used for small targeted panels. For more information 
+    about hmftools visit github:
+    https://github.com/hartwigmedical/hmftools
     @Input:
         Sorted BAM file (scatter-per-tumor-sample)
     @Output:
@@ -699,6 +703,7 @@ rule clairs_tumor_only:
     """
     input:
         tumor = join(workpath, "BAM", "{name}.recal.bam"),
+        bed   = provided(join(workpath, "references", "wes_regions_50bp_padded.bed"), run_wes),
     output:
         snps   = join(workpath, "clairs", "somatic", "{name}", "snv.vcf.gz"),
         indels = join(workpath, "clairs", "somatic", "{name}", "indel.vcf.gz"),
@@ -709,6 +714,9 @@ rule clairs_tumor_only:
         tumor   = '{name}',
         genome  = config['references']['GENOME'],
         outdir = join(workpath, "clairs", "somatic", "{name}"),
+        wes_region_option = lambda _: "--bed_fn {0}".format(
+            join(workpath, "references", "wes_regions_50bp_padded.bed"),
+        ) if run_wes else '',
     threads: 
         # ClairS-TO over utilizes threads,
         # testing has shown it over utilizes
@@ -724,7 +732,7 @@ rule clairs_tumor_only:
         --tumor_bam_fn {input.tumor}  \\
         --ref_fn {params.genome} \\
         --threads {threads} \\
-        --platform  ilmn \\
+        --platform  ilmn {params.wes_region_option} \\
         --output_dir {params.outdir} \\
         --conda_prefix /opt/micromamba/envs/clairs-to
     
