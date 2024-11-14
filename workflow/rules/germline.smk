@@ -31,6 +31,7 @@ rule deepvariant_make_examples:
     input: 
         bam = join(workpath, "BAM", "{name}.sorted.bam"),
         bai = join(workpath, "BAM", "{name}.sorted.bam.bai"),
+        bed = provided(join(workpath, "references", "wes_regions_50bp_padded.bed"), run_wes),
     output:
         success = join(workpath, "deepvariant", "mk_examples", "{name}.make_examples.success"),
     params: 
@@ -46,7 +47,11 @@ rule deepvariant_make_examples:
             w.name,
             int(allocated("threads", "deepvariant_make_examples", cluster))
         )),
-    message: "Running DeepVariant make_examples on '{input.bam}' input file"
+        # Call variants within regions BED 
+        # file created from WES capture kit
+        wes_region_option = lambda _: "--regions {0}".format(
+            join(workpath, "references", "wes_regions_50bp_padded.bed"),
+        ) if run_wes else '',
     threads: int(allocated("threads", "deepvariant_make_examples", cluster))
     container: config['images']['deepvariant']
     envmodules: config['tools']['deepvariant']
@@ -74,7 +79,7 @@ rule deepvariant_make_examples:
             --halt 2 \\
             --line-buffer \\
             make_examples \\
-                --mode calling \\
+                --mode calling {params.wes_region_option} \\
                 --ref {params.genome} \\
                 --reads {input.bam} \\
                 --examples {params.example} \\
@@ -131,7 +136,6 @@ rule deepvariant_call_variants:
         #  @WES = "/opt/models/wes/model.ckpt"
         #  @WGS = "/opt/models/wgs/model.ckpt"
         ckpt = lambda _: "/opt/models/wes/model.ckpt" if run_wes else "/opt/models/wgs/model.ckpt",
-    message: "Running DeepVariant call_variants on '{wildcards.name}' sample"
     threads: int(allocated("threads", "deepvariant_call_variants", cluster))
     container: config['images']['deepvariant']
     envmodules: config['tools']['deepvariant']
@@ -197,7 +201,6 @@ rule deepvariant_postprocess_variants:
             w.name,
             int(allocated("threads", "deepvariant_make_examples", cluster))
         )),
-    message: "Running DeepVariant postprocess_variants on '{input.callvar}' input file"
     threads: int(allocated("threads", "deepvariant_postprocess_variants", cluster))
     container: config['images']['deepvariant']
     envmodules: config['tools']['deepvariant']

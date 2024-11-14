@@ -630,8 +630,9 @@ rule hmftools_sage:
     data using the same set of options for WGS. At the current moment, sage
     does not have an option to restrict variant calling to specific regions.
     It does have an -high_depth_mode option; however, the authors state it 
-    should only be used for small targeted panels. For more information 
-    about hmftools visit github:
+    should only be used for small targeted panels. In the 'somatic_selectvar'
+    rule, any variants outside the padded regions/capture-kit BED file are
+    removed in WES data. For more information about hmftools visit github:
     https://github.com/hartwigmedical/hmftools
     @Input:
         Sorted BAM file (scatter-per-tumor-sample)
@@ -796,6 +797,11 @@ rule deepsomatic_make_examples:
         #  @WES = "/opt/models/deepsomatic/wes"
         #  @WGS = "/opt/models/deepsomatic/wgs"
         ckpt = lambda _: "/opt/models/deepsomatic/wes" if run_wes else "/opt/models/deepsomatic/wgs",
+        # Call variants within regions BED 
+        # file created from WES capture kit
+        wes_region_option = lambda _: "--regions {0}".format(
+            join(workpath, "references", "wes_regions_50bp_padded.bed"),
+        ) if run_wes else '',
         # Get tumor and normal sample names 
         tumor  = '{name}',
         # Building option for the paired normal sorted bam
@@ -848,7 +854,7 @@ rule deepsomatic_make_examples:
                 --reads_tumor {input.tumor}  {params.normal_bam_option} \\
                 --sample_name_tumor {params.tumor} {params.normal_name_option} \\
                 --examples {params.example} \\
-                --checkpoint "{params.ckpt}" \\
+                --checkpoint "{params.ckpt}" {params.wes_region_option} \\
                 --vsc_max_fraction_indels_for_non_target_sample "0.5" \\
                 --vsc_max_fraction_snps_for_non_target_sample "0.5" \\
                 --vsc_min_fraction_indels "0.05" \\
@@ -1337,7 +1343,8 @@ rule somatic_selectvar:
     somatic callers. This step takes the somatic calls from all the callers
     (assumes already re-headered if needed, i.e. strelka and muse), and then 
     runs bcftools norm to split multi-allelic sites AND gatk SelectVariants 
-    to filter sites.
+    to filter sites. For WES data, this step will also remove any variants
+    that are outside the padded regions/capture-kit BED file.
     @Input:
         Per sample, per caller, VCF somatic variants
     @Output:
