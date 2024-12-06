@@ -54,39 +54,32 @@ rule build_exome_bed:
         | cut -f1,2 \\
     > {output.sizes}
 
-    # Determine if BED file contains strand
-    # information. If so, pass this along to
-    # bedtools merge cmd, via the '-s' option.
-    # If any features in the BED file are set
-    # to '.' for strand (6th column), then
-    # strand information is used with merge
-    # cmd. This is important because bedtools
-    # merge will not merge or consider any 
-    # features where the strand is set to 
-    # '.' with the '-s' option. This will
-    # result in an empty BED file to be 
-    # produced or for entries in the BED
-    # file to be dropped if the strand 
-    # column contains a mixture of "+/-/."
-    # strandedness=$(
-    #    awk -F '\\t' -v OFS='\\t' -v option="-s" \\
-    #    '$6=="." || $6=="" {{option=""; exit}} END {{print option}}' \\
-    #    {input.bed}
-    # )
-    # echo "Setting the bedtools merge strandedness option: ${{strandedness}}"
-    # Enforcing BED is in BED6 format,
+    # Enforcing BED is in BED6 format,  
     # Padding features +/- N base pairs  
     # according to strand and merge any
-    # overlapping features after padding
+    # overlapping features after padding.
+    # Tools like deepvariant/deepsomatic
+    # strictly if check the BED input BED
+    # BED file is valid. The score must 
+    # be a numeric value and strand info
+    # must also be valid: "+", "-", or "."
+    # Set strand as "." as its not important
+    # to retain and only causes problems
+    # later with bedtools merge distinct.
+    # If originial strand information is
+    # kept, it can lead to strand equaling 
+    # "+,-" after the bedtools merge. This
+    # causes problems with DV/DS.
     awk -F '\\t' -v OFS='\\t' \\
         'function trim(s) {{ sub(/^[ ]+/, "", s); sub(/[ ]+$/, "", s); return s }}; \\
+        function isnum(x) {{ return(x==x+0) }} {{ if (isnum($1)) {{print $1}} }} ; \\
         NF>="3" {{print \\
             trim($1), \\
             trim($2), \\
             trim($3), \\
             ((trim($4)=="" || trim($4)==".") ? trim($1)"_"trim($2)"_"trim($3)"_"NR : trim($4)), \\
-            ($5=="" ? "." : trim($5)), \\
-            ($6=="" ? "." : trim($6)) \\
+            (!(isnum(trim($5))) ? 0 : trim($5) ), \\
+            "." \\
     }}' {input.bed} \\
     | bedtools slop \\
         -s \\
