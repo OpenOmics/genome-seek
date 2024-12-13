@@ -52,24 +52,31 @@ def get_normal_pileup_table(wildcards):
         return []
 
 
-def get_somatic_tn_callers(wildcards):
-    """Returns somatic variants found with tumor-normal variant
-    callers. For tumor-normal samples, extra somatic callers 
-    (i.e. MuSE and Strelka and DeepSomatic) are run. Tumor-only 
-    samples return an empty list (rule already has reference 
-    in input section). See config['pairs'] for tumor, normal pairs.
+def get_somatic_conditional_callers(wildcards):
+    """Returns conditional somatic variant callers. These are
+    variant callers that will only run in tumor-normal mode or
+    tumor-only mode. For example, MuSE and DeepSomatic are only
+    run in tumor-normal mode, and clairs-to is only run with
+    tumor-only samples. For more info, please see config['pairs']
+    for a list of tumor-normal pairs from the config.json file.
     """
     tumor = wildcards.name
     normal = tumor2normal[tumor]
     if normal:
-        # Callers = MuSE, Strelka
+        # Callers = MuSE, Deepsomatic (no longer running strelka)
+        # Strelka removed with the addition of Deepsomatic
         return [
             join(workpath, caller, "somatic", "{0}.{1}.filtered.norm.vcf".format(tumor, caller)) \
             for caller in tn_somatic_callers
         ]
     else:
-        # No paired normal, return nothing
-        return []
+        # No paired normal, return clairs
+        # which is only run on tumor-only
+        # samples
+        return [
+            join(workpath, caller, "somatic", "{0}.{1}.filtered.norm.vcf".format(tumor, caller)) \
+            for caller in to_somatic_callers
+        ]
 
 
 # Data processing rules for calling somatic variants
@@ -643,6 +650,7 @@ rule hmftools_sage:
         tumor  = join(workpath, "BAM", "{name}.sorted.bam"),
         normal = get_normal_sorted_bam
     output:
+        tmp  = join(workpath, "sage", "somatic", "{name}.tmp.vcf"),
         vcf  = join(workpath, "sage", "somatic", "{name}.sage.vcf"),
     params:
         rname     = 'hmfsage',
@@ -687,7 +695,19 @@ rule hmftools_sage:
             -panel_bed {params.panel} \\
             -high_confidence_bed {params.high_conf} \\
             -ensembl_data_dir {params.ensembl_data} \\
-            -output_vcf {output.vcf}
+            -output_vcf {output.tmp}
+    
+    # Remove SG INFO/FORMAT tag from temp 
+    # VCF file. This tag causes issues when
+    # bcftools is run on the merged VCF file
+    # produced by CombineVariants. If it is
+    # not removed, any subsequent bcftools
+    # commands cause downstream issues.
+    bcftools annotate \\
+        -x "FORMAT/SB,INFO/SB" \\
+        {output.tmp} \\
+        -Ov \\
+        -o {output.vcf}
     """
 
 
@@ -772,13 +792,13 @@ rule deepsomatic_make_examples:
     inefficently. As so, it is better to run the 1st/3rd step on a 
     compute node and run the 2nd step on a GPU node.
     @Input:
-        Duplicate marked, sorted BAM file (scatter)
+        Duplicate marked, recal BAM file (scatter)
     @Output:
         Flag file to indicate success of make_examples 
     """
     input: 
-        tumor  = join(workpath, "BAM", "{name}.sorted.bam"),
-        normal = get_normal_sorted_bam
+        tumor  = join(workpath, "BAM", "{name}.recal.bam"),
+        normal = get_normal_recal_bam
     output:
         success = join(workpath, "deepsomatic", "mk_examples", "{name}.make_examples.success"),
     params: 
@@ -804,8 +824,8 @@ rule deepsomatic_make_examples:
         ) if run_wes else '',
         # Get tumor and normal sample names 
         tumor  = '{name}',
-        # Building option for the paired normal sorted bam
-        normal_bam_option = lambda w: "--reads_normal {0}.sorted.bam".format(
+        # Building option for the paired normal recal bam
+        normal_bam_option = lambda w: "--reads_normal {0}.recal.bam".format(
             join(workpath, "BAM", tumor2normal[w.name])
         ) if tumor2normal[w.name] else "",
         # Building option for the normal sample name
@@ -1069,7 +1089,8 @@ rule deepsomatic_postprocess_variants:
     input: 
         success = join(workpath, "deepsomatic", "call_variants", "{name}.cv.success"),
     output:
-        vcf  = join(workpath, "deepsomatic", "somatic", "{name}.deepsomatic.vcf"),
+        vcfgz  = join(workpath, "deepsomatic", "somatic", "{name}.deepsomatic.vcf.gz"),
+        vcf    = join(workpath, "deepsomatic", "somatic", "{name}.deepsomatic.vcf"),
     params: 
         rname   = "ds_postprovars",
         genome  = config['references']['GENOME'],
@@ -1092,9 +1113,12 @@ rule deepsomatic_postprocess_variants:
     time postprocess_variants \\
         --ref {params.genome} \\
         --infile {params.callvar} \\
-        --outfile {output.vcf} \\
+        --outfile {output.vcfgz} \\
         --process_somatic=true \\
         --cpus={threads}
+    # Deepsomatic outputs a gzipped VCF file
+    zcat {output.vcfgz} \\
+    > {output.vcf}
     """
 
 
@@ -1174,7 +1198,9 @@ rule muse:
 
 
 rule strelka:
-    """Data-processing step to call somatic mutations with Strelka. This tool is 
+    """
+    @DEPRECIATED: The pipeline no longer RUNS Strelka! Deepsomatic replaced it.
+    Data-processing step to call somatic mutations with Strelka. This tool is 
     optimized for rapid clinical analysis of germline variation in small cohorts 
     and somatic variation in tumor/normal sample pairs. More information about 
     strelka can be found here: https://github.com/Illumina/strelka
@@ -1284,7 +1310,9 @@ rule strelka:
 
 
 rule strelka_format:
-    """Data-processing step to call somatic mutations with Strelka. This tool is 
+    """
+    @DEPRECIATED: The pipeline no longer RUNS Strelka. Deepsomatic replaced it.
+    Data-processing step to call somatic mutations with Strelka. This tool is 
     optimized for rapid clinical analysis of germline variation in small cohorts 
     and somatic variation in tumor/normal sample pairs. More information about 
     strelka can be found here: https://github.com/Illumina/strelka
@@ -1428,12 +1456,13 @@ rule somatic_merge_tumor:
     @Input:
         Somatic variants found in the tumor sample (gather-across-somatic-callers)
     @Output:
-        Variants found in at least 2 callers
+        Variants found in all callers (union callset)
     """
     input:
-        tn_callers = get_somatic_tn_callers,   # i.e muse, strelka, deepsomatic
-        octopus = join(workpath, "octopus", "somatic", "{name}.octopus.filtered.norm.vcf"),
-        mutect2 = join(workpath, "mutect2", "somatic", "{name}.mutect2.filtered.norm.vcf"),
+        cn_callers  = get_somatic_conditional_callers,   # i.e muse-TN, deepsomatic-TN, clairs-TO
+        octopus     = join(workpath, "octopus", "somatic", "{name}.octopus.filtered.norm.vcf"),
+        mutect2     = join(workpath, "mutect2", "somatic", "{name}.mutect2.filtered.norm.vcf"),
+        sage        = join(workpath, "sage", "somatic", "{name}.sage.filtered.norm.vcf"),
     output:
         merged = join(workpath, "merged", "somatic", "{name}.merged.filtered.norm.vcf.gz"),
     params:
@@ -1451,14 +1480,18 @@ rule somatic_merge_tumor:
         # Dynamically update the priority list
         # based on wether a sample is a tumor-only
         # or a tumor-normal
-        priority_list = lambda w: "mutect2,octopus,muse,strelka" \
-          if tumor2normal[w.name] else "mutect2,octopus",
-        strelka_option = lambda w: "--variant:strelka {0}.strelka.filtered.norm.vcf".format(
-            join(workpath, "strelka", "somatic", w.name)
-        ) if tumor2normal[w.name] else "",
+        priority_list = lambda w: "mutect2,octopus,muse,deepsomatic,sage" \
+          if tumor2normal[w.name] else "mutect2,octopus,clairs,sage",
         muse_option = lambda w: "--variant:muse {0}.muse.filtered.norm.vcf".format(
             join(workpath, "muse", "somatic", w.name)
         ) if tumor2normal[w.name] else "",
+        deepsomatic_option = lambda w: "--variant:deepsomatic {0}.deepsomatic.filtered.norm.vcf".format(
+            join(workpath, "deepsomatic", "somatic", w.name)
+        ) if tumor2normal[w.name] else "",
+        # Only run clairs with tumor-only samples
+        clairs_option = lambda w: "" if tumor2normal[w.name] else "--variant:clairs {0}.clairs.filtered.norm.vcf".format(
+            join(workpath, "clairs", "somatic", w.name)
+        ),
     threads: 
         int(allocated("threads", "somatic_merge_tumor", cluster))
     container: config['images']['genome-seek_somatic']
@@ -1477,7 +1510,9 @@ rule somatic_merge_tumor:
             --genotypemergeoption PRIORITIZE \\
             --rod_priority_list {params.priority_list} \\
             -o {output.merged} \\
-            --variant:octopus {input.octopus} --variant:mutect2 {input.mutect2} {params.strelka_option} {params.muse_option} 
+            --variant:octopus {input.octopus} \\
+            --variant:mutect2 {input.mutect2} \\
+            --variant:sage {input.sage} {params.clairs_option} {params.muse_option} {params.deepsomatic_option}
     """
 
 rule somatic_sample_maf:

@@ -37,6 +37,8 @@ normals  = [n for n in normals if n]           # Remove tumor-onlys, i.e. empty 
 tumor2normal =  config['pairs']                # Dict to map a tumor to its normal
 # List of tumor samples with a paired normal
 tumorWnormal = [t for t in tumors if tumor2normal[t]]
+# List of tumor-only samples
+tumorOnly = [t for t in tumors if not tumor2normal[t]]
 # Use GPU-compute for any supported tools
 use_gpus = str_bool(
     config['options']['use_gpus']
@@ -93,8 +95,9 @@ call_gatk_germline = str_bool(config['options']['gatk_germline'])
 # caller is added and add
 # conditional running of 
 # each supported caller
-somatic_callers = ["octopus", "mutect2"]
-tn_somatic_callers = ["muse", "strelka"]
+somatic_callers = ["octopus", "mutect2", "sage"]  # callers run in both TN and TO mode
+tn_somatic_callers = ["muse", "deepsomatic"]      # callers run exclusively in TN mode, strelka removed
+to_somatic_callers = ["clairs"]                   # callers run exclusively in TO mode
 # Mutect2 and MuSE reliably 
 # work with Purple CNV Caller
 purple_callers  = ["mutect2"]
@@ -348,6 +351,21 @@ rule all:
             join(workpath, "octopus", "somatic", "{name}.octopus.vcf"),
             name=provided(tumors, call_somatic),
         ),
+        # Call somatic variants with SAGE,
+        # only runs if provided --call-somatic,
+        # @imported from rules/somatic.smk
+        expand( 
+            join(workpath, "sage", "somatic", "{name}.sage.vcf"),
+            name=provided(tumors, call_somatic),
+        ),
+        # Call somatic variants with ClairS-TO,
+        # only runs if provided --call-somatic,
+        # and only runs with tumor-only samples,
+        # @imported from rules/somatic.smk
+        expand( 
+            join(workpath, "clairs", "somatic", "{name}.clairs.vcf"),
+            name=provided(tumorOnly, call_somatic),
+        ),
         # Manta, call somatic structural variation (SV),
         # only runs if provided --call-somatic AND --call-sv
         # @imported from rules/sv.smk
@@ -389,6 +407,14 @@ rule all:
             join(workpath, "mutect2", "somatic", "{name}.mutect2.vcf"),
             name=provided(tumors, call_somatic),
         ),
+        # Call somatic variants with Deepsomatic,
+        # only runs if provided --call-somatic,
+        # only runs with tumor-normal pairs,
+        # @imported from rules/somatic.smk
+        expand( 
+            join(workpath, "deepsomatic", "somatic", "{name}.deepsomatic.vcf"),
+            name=provided(tumorWnormal, call_somatic),
+        ),
         # MuSE, call somatic variants,
         # only runs if provided --call-somatic,
         # only runs with tumor-normal pairs, 
@@ -397,29 +423,30 @@ rule all:
             join(workpath, "muse", "somatic", "{name}.muse.vcf"),
             name=provided(tumorWnormal, call_somatic),
         ),
-        # Strelka, call somatic variants,
-        # only runs if provided --call-somatic,
-        # only runs with tumor-normal pairs,
-        # @imported from rules/somatic.smk
-        expand( 
-            join(workpath, "strelka", "somatic", "{name}.strelka.vcf"),
-            name=provided(tumorWnormal, call_somatic),
-        ),
         # Post-process somatic VCF, filter and 
         # normalize each somatic callers VCF,
-        # only runs if provided --call-somatic 
+        # only runs if provided --call-somatic,
+        # runs TN or Tonly somatic callers,
+        # Octopus, Mutect2, SAGE
         # @imported from rules/somatic.smk
         expand( 
             join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
             caller=provided(somatic_callers, call_somatic),
             name=provided(tumors, call_somatic),
         ),
-        # Conditionally add tumor-normal callers,
-        # MuSE and Strelka
+        # Conditionally runs the exclusive TN callers,
+        # MuSE and Deepsomatic (strelka removed)
         expand( 
             join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
             caller=provided(tn_somatic_callers, call_somatic),
             name=provided(tumorWnormal, call_somatic),
+        ),
+        # Conditionally runs the exclusive TO callers,
+        # ClairS-TO
+        expand( 
+            join(workpath, "{caller}", "somatic", "{name}.{caller}.filtered.norm.vcf"),
+            caller=provided(to_somatic_callers, call_somatic),
+            name=provided(tumorOnly, call_somatic),
         ),
         # Post-process somatic VCF, 
         # and merge callsets across callers,
