@@ -677,6 +677,19 @@ rule hmftools_sage:
         normal_bam = lambda w: "-reference_bam {0}.sorted.bam".format(
             join(workpath, "BAM", tumor2normal[w.name])
         ) if tumor2normal[w.name] else "",
+        # Options related to running PAVE
+        # to filter tumor-only samples
+        # SAGE run mode, either:
+        # tumor-normal or tumor-only
+        pave_jar      = config['references']['HMFTOOLS_PAVE_JAR'],
+        sage_run_mode = lambda w: "tumor-normal" if tumor2normal[w.name] else "tumor-only",
+        pave_input    = join(workpath, "sage", "somatic", "{name}.tmp.vcf.gz"),
+        pave_output   = join(workpath, "sage", "somatic", "{name}_pave_tmp", "{name}.tmp.pave.vcf.gz"),
+        pave_filtered = join(workpath, "sage", "somatic", "{name}_pave_tmp", "{name}.filtered.pave.vcf"),
+        pave_outdir   = join(workpath, "sage", "somatic", "{name}_pave_tmp"),
+        cohort_pon    = config['references']['HMFTOOLS_COHORT_PON'],
+        bcf_ann_input = lambda w: join(workpath, "sage", "somatic", "{0}.tmp.vcf".format(w.name)) if tumor2normal[w.name] \
+        else join(workpath, "sage", "somatic", "{0}_pave_tmp".format(w.name), "{0}.filtered.pave.vcf".format(w.name)),
     threads: 
         int(allocated("threads", "hmftools_sage", cluster)),
     container: config['images']['genome-seek_cnv']
@@ -696,7 +709,51 @@ rule hmftools_sage:
             -high_confidence_bed {params.high_conf} \\
             -ensembl_data_dir {params.ensembl_data} \\
             -output_vcf {output.tmp}
-    
+
+    # Filter tumor-only samples with PAVE,
+    # filtering is needed when SAGE is run
+    # in tumor-only mode to remove the high
+    # false positives, this step will only 
+    # run if a tumor sample does NOT have 
+    # a paired normal sample.
+    SAGE_MODE="{params.sage_run_mode}"
+    if [ $SAGE_MODE == "tumor-only" ]; then
+        # PAVE needs bgzipp-ed, indexed VCF   
+        bgzip -c {output.tmp} \\
+        > {params.pave_input}
+        tabix -p vcf {params.pave_input}
+
+        # Run PAVE to annotate VCF with PON
+        # tags for downstream filtering
+        java -Xmx{params.memory}g -jar {params.pave_jar} \\
+            -pon_file {params.cohort_pon} \\
+            -sample {params.tumor} \\
+            -vcf_file {params.pave_input} \\
+            -ensembl_data_dir {params.ensembl_data} \\
+            -ref_genome {params.genome} \\
+            -ref_genome_version {params.ref_version} \\
+            -output_dir {params.pave_outdir}/  \\
+            -threads {threads}
+        
+        # Filtering PAVE output based on the
+        # authors recommendations
+        bcftools filter \\
+            -e 'PON_COUNT!="." && INFO/TIER="HOTSPOT" && PON_MAX>=5 && PON_COUNT >= 5' \\
+            -s PON \\
+            -m+ {params.pave_output} -Ou \\
+        | bcftools filter \\
+            -e 'PON_COUNT!="." && INFO/TIER="PANEL" && PON_MAX>=5 && PON_COUNT >= 2' \\
+            -s PON \\
+            -m+ \\
+            -Ou \\
+        | bcftools filter \\
+            -e 'PON_COUNT!="." && INFO/TIER!="HOTSPOT" && INFO/TIER!="PANEL" && PON_COUNT >= 2' \\
+            -s PON \\
+            -m+ \\
+            -Ov \\
+            -o {params.pave_filtered}
+    fi
+
     # Remove SG INFO/FORMAT tag from temp 
     # VCF file. This tag causes issues when
     # bcftools is run on the merged VCF file
@@ -705,7 +762,7 @@ rule hmftools_sage:
     # commands cause downstream issues.
     bcftools annotate \\
         -x "FORMAT/SB,INFO/SB" \\
-        {output.tmp} \\
+        {params.bcf_ann_input} \\
         -Ov \\
         -o {output.vcf}
     """
@@ -1492,6 +1549,12 @@ rule somatic_merge_tumor:
         clairs_option = lambda w: "" if tumor2normal[w.name] else "--variant:clairs {0}.clairs.filtered.norm.vcf".format(
             join(workpath, "clairs", "somatic", w.name)
         ),
+        # Tumor-only option to require variants 
+        # to be present in the callset of at
+        # least two callers. Variants found in
+        # tumor-only samples need to be found
+        # by at least two callers.
+        min_n_option = lambda w: "" if tumor2normal[w.name] else "-minN 2"
     threads: 
         int(allocated("threads", "somatic_merge_tumor", cluster))
     container: config['images']['genome-seek_somatic']
@@ -1505,7 +1568,7 @@ rule somatic_merge_tumor:
 
     java -Xmx{params.memory}g -Djava.io.tmpdir=${{tmp}} \\
         -XX:ParallelGCThreads={threads} -jar $GATK_JAR -T CombineVariants \\
-            -R {params.genome} \\
+            -R {params.genome} {params.min_n_option} \\
             --filteredrecordsmergetype KEEP_IF_ANY_UNFILTERED \\
             --genotypemergeoption PRIORITIZE \\
             --rod_priority_list {params.priority_list} \\
