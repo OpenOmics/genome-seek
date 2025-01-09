@@ -725,6 +725,7 @@ rule hmftools_sage:
 
         # Run PAVE to annotate VCF with PON
         # tags for downstream filtering
+        mkdir -p {params.pave_outdir}/
         java -Xmx{params.memory}g -jar {params.pave_jar} \\
             -pon_file {params.cohort_pon} \\
             -sample {params.tumor} \\
