@@ -414,7 +414,7 @@
     },
     "octopus_somatic": {
         "threads": "28",
-        "mem": "64G",
+        "mem": "96G",
         "time": "2-12:00:00"
     },
     "octopus_merge": {
