@@ -236,7 +236,7 @@ snakemake --latency-wait 120 -s "$3/workflow/Snakefile" -d "$3" \\
   --stats "$3/logfiles/runtime_statistics.json" \\
   --keep-remote --local-cores 14 2>&1
 # Create summary report
-snakemake -d "$3" --report "Snakemake_Report.html"
+# snakemake -d "$3" --report "Snakemake_Report.html"
 EOF
           chmod +x kickoff.sh
           job_id=$(sbatch kickoff.sh | tee -a "$3"/logfiles/master.log)
