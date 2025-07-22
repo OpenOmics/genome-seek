@@ -89,73 +89,158 @@ rule deepvariant_make_examples:
     && touch {output.success}
     """
 
+if use_gpus:
+    rule deepvariant_call_variants_gpu:
+        """
+        Data processing step to call germline variants using deep neural 
+        network. The call_variants step classifies variants using a CNN. 
+        DeepVariant is a deep learning-based variant caller composed of
+        multiple steps that takes aligned reads (in BAM or CRAM format),
+        produces pileup image tensors from them, classifies each tensor
+        using a convolutional neural network, and finally reports the
+        results in a standard VCF or gVCF file. 
+        This rule is the first step in the deepvariant pipeline:
+           1. make_examples        (CPU, parallelizable with gnu-parallel)
+         * 2. call_variants        (GPU, use a GPU node)
+           3. postprocess_variants (CPU, single-threaded)
+        Running deepvariant in a single step using run_deepvariant is not 
+        optimal for large-scale projects as it will consume resources very
+        inefficently. As so, it is better to run the 1st/3rd step on a 
+        compute node and run the 2nd step on a GPU node.
+        NOTE: When deepvariant is run on a GPU/TPU, it will scatter the
+        writing of the output *.call_variants.tfrecord.gz across a pool
+        of processes (by default, --writer_threads 16). This causes causes
+        the final output file to be different if you are running deepvariant
+        on a CPU versus GPU.
+        @Input:
+            Flag file to indicate success of make_examples (scatter)
+        @Output:
+            Flag file to indicate success of call_variants, 
+            actually produces (given 16 writer threads):
+              {name}.call_variants-00000-of-00016.tfrecord.gz, ...
+              {name}.call_variants-00015-of-00016.tfrecord.gz
+        """
+        input: 
+            success = join(workpath, "deepvariant", "mk_examples", "{name}.make_examples.success"),
+        output:
+            success = join(workpath, "deepvariant", "call_variants", "{name}.cv.success"),
+        params: 
+            rname  = "dv_callvars_gpu",
+            genome = config['references']['GENOME'],
+            # Singularity options
+            sif = config['images']['deepvariant_gpu'],
+            bindpaths = ','.join(bindpath),
+            tmpdir = tmpdir,
+            # NOTE: There BE dragons here!
+            # We need allocation info from make_examples rule
+            # to determine the number of shards that were
+            # used in the make_examples step, this is used
+            # to resolve a dependency file of this rule,
+            # which is the examples tf record file produced by 
+            # make_examples. This file gets passed to the
+            # --examples option of call_variants. 
+            example = lambda w: join(workpath, "deepvariant", "mk_examples", "{0}.make_examples.tfrecord@{1}.gz".format(
+                w.name,
+                int(allocated("threads", "deepvariant_make_examples", cluster))
+            )),
+            callvar = join(workpath, "deepvariant", "call_variants", "{name}.call_variants.tfrecord.gz"),
+            # Building option for checkpoint file, where:
+            #  @WES = "/opt/models/wes/model.ckpt"
+            #  @WGS = "/opt/models/wgs/model.ckpt"
+            ckpt = lambda _: "/opt/models/wes/model.ckpt" if run_wes else "/opt/models/wgs/model.ckpt",
+        threads: max(int(allocated("threads", "deepvariant_call_variants_gpu", cluster)) - 2, 4),
+        envmodules: config['tools']['deepvariant']
+        shell: """
+        # Setups temporary directory for
+        # intermediate files with built-in 
+        # mechanism for deletion on exit
+        if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+        tmp=$(mktemp -d -p "{params.tmpdir}")
+        trap 'rm -rf "${{tmp}}"' EXIT
+        echo "Using tmpdir: ${{tmp}}"
+        export TMPDIR="${{tmp}}"
 
-rule deepvariant_call_variants:
-    """
-    Data processing step to call germline variants using deep neural 
-    network. The call_variants step classifies variants using a CNN. 
-    DeepVariant is a deep learning-based variant caller composed of
-    multiple steps that takes aligned reads (in BAM or CRAM format),
-    produces pileup image tensors from them, classifies each tensor
-    using a convolutional neural network, and finally reports the
-    results in a standard VCF or gVCF file. 
-    This rule is the first step in the deepvariant pipeline:
-       1. make_examples        (CPU, parallelizable with gnu-parallel)
-     * 2. call_variants        (GPU, use a GPU node)
-       3. postprocess_variants (CPU, single-threaded)
-    Running deepvariant in a single step using run_deepvariant is not 
-    optimal for large-scale projects as it will consume resources very
-    inefficently. As so, it is better to run the 1st/3rd step on a 
-    compute node and run the 2nd step on a GPU node.
-    @Input:
-        Flag file to indicate success of make_examples (scatter)
-    @Output:
-        Per sample call_variants tensorflow records file
-    """
-    input: 
-        success = join(workpath, "deepvariant", "mk_examples", "{name}.make_examples.success"),
-    output:
-        callvar = join(workpath, "deepvariant", "call_variants", "{name}.call_variants.tfrecord.gz"),
-    params: 
-        rname  = "dv_callvars",
-        genome = config['references']['GENOME'],
-        tmpdir = tmpdir,
-        # NOTE: There BE dragons here!
-        # We need allocation info from make_examples rule
-        # to determine the number of shards that were
-        # used in the make_examples step, this is used
-        # to resolve a dependency file of this rule,
-        # which is the examples tf record file produced by 
-        # make_examples. This file gets passed to the
-        # --examples option of call_variants. 
-        example = lambda w: join(workpath, "deepvariant", "mk_examples", "{0}.make_examples.tfrecord@{1}.gz".format(
-            w.name,
-            int(allocated("threads", "deepvariant_make_examples", cluster))
-        )),
-        # Building option for checkpoint file, where:
-        #  @WES = "/opt/models/wes/model.ckpt"
-        #  @WGS = "/opt/models/wgs/model.ckpt"
-        ckpt = lambda _: "/opt/models/wes/model.ckpt" if run_wes else "/opt/models/wgs/model.ckpt",
-    threads: int(allocated("threads", "deepvariant_call_variants", cluster))
-    container: config['images']['deepvariant']
-    envmodules: config['tools']['deepvariant']
-    shell: """
-    # Setups temporary directory for
-    # intermediate files with built-in 
-    # mechanism for deletion on exit
-    if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
-    tmp=$(mktemp -d -p "{params.tmpdir}")
-    trap 'rm -rf "${{tmp}}"' EXIT
-    echo "Using tmpdir: ${{tmp}}"
-    export TMPDIR="${{tmp}}"
+        # Run DeepVariant call_variants
+        # using a GPU acceleration
+        singularity exec \\
+            -c \\
+            --nv  \\
+            -B {params.bindpaths},${{tmp}}:/tmp \\
+            {params.sif} /bin/bash -c \\
+        'time call_variants \\
+            --outfile {params.callvar} \\
+            --examples {params.example} \\
+            --checkpoint {params.ckpt}'
+        touch "{output.success}"
+        """
+else:
+    rule deepvariant_call_variants_cpu:
+        """
+        Data processing step to call germline variants using deep neural 
+        network. The call_variants step classifies variants using a CNN. 
+        DeepVariant is a deep learning-based variant caller composed of
+        multiple steps that takes aligned reads (in BAM or CRAM format),
+        produces pileup image tensors from them, classifies each tensor
+        using a convolutional neural network, and finally reports the
+        results in a standard VCF or gVCF file. 
+        This rule is the first step in the deepvariant pipeline:
+           1. make_examples        (CPU, parallelizable with gnu-parallel)
+         * 2. call_variants        (GPU, use a GPU node)
+           3. postprocess_variants (CPU, single-threaded)
+        Running deepvariant in a single step using run_deepvariant is not 
+        optimal for large-scale projects as it will consume resources very
+        inefficently. As so, it is better to run the 1st/3rd step on a 
+        compute node and run the 2nd step on a GPU node.
+        @Input:
+            Flag file to indicate success of make_examples (scatter)
+        @Output:
+            Per sample call_variants tensorflow records file
+        """
+        input: 
+            success = join(workpath, "deepvariant", "mk_examples", "{name}.make_examples.success"),
+        output:
+            success = join(workpath, "deepvariant", "call_variants", "{name}.cv.success"),
+        params: 
+            rname  = "dv_callvars_cpu",
+            genome = config['references']['GENOME'],
+            tmpdir = tmpdir,
+            # NOTE: There BE dragons here!
+            # We need allocation info from make_examples rule
+            # to determine the number of shards that were
+            # used in the make_examples step, this is used
+            # to resolve a dependency file of this rule,
+            # which is the examples tf record file produced by 
+            # make_examples. This file gets passed to the
+            # --examples option of call_variants. 
+            example = lambda w: join(workpath, "deepvariant", "mk_examples", "{0}.make_examples.tfrecord@{1}.gz".format(
+                w.name,
+                int(allocated("threads", "deepvariant_make_examples", cluster))
+            )),
+            callvar = join(workpath, "deepvariant", "call_variants", "{name}.call_variants.tfrecord.gz"),
+            # Building option for checkpoint file, where:
+            #  @WES = "/opt/models/wes/model.ckpt"
+            #  @WGS = "/opt/models/wgs/model.ckpt"
+            ckpt = lambda _: "/opt/models/wes/model.ckpt" if run_wes else "/opt/models/wgs/model.ckpt",
+        threads: int(allocated("threads", "deepvariant_call_variants_cpu", cluster))
+        container: config['images']['deepvariant']
+        envmodules: config['tools']['deepvariant']
+        shell: """
+        # Setups temporary directory for
+        # intermediate files with built-in 
+        # mechanism for deletion on exit
+        if [ ! -d "{params.tmpdir}" ]; then mkdir -p "{params.tmpdir}"; fi
+        tmp=$(mktemp -d -p "{params.tmpdir}")
+        trap 'rm -rf "${{tmp}}"' EXIT
+        echo "Using tmpdir: ${{tmp}}"
+        export TMPDIR="${{tmp}}"
 
-    # Run DeepVariant call_variants
-    time call_variants \\
-        --outfile {output.callvar} \\
-        --examples {params.example} \\
-        --checkpoint {params.ckpt}
-    """
-
+        # Run DeepVariant call_variants
+        time call_variants \\
+            --outfile {params.callvar} \\
+            --examples {params.example} \\
+            --checkpoint {params.ckpt}
+        touch "{output.success}"
+        """
 
 
 rule deepvariant_postprocess_variants:
@@ -176,12 +261,12 @@ rule deepvariant_postprocess_variants:
     inefficently. As so, it is better to run the 1st/3rd step on a 
     compute node and run the 2nd step on a GPU node.
     @Input:
-        Per-sample call_variants tensorflow records file (scatter)
+        Per-sample call_variants tensorflow records flag file (scatter)
     @Output:
         Single-sample gVCF file with called variants
     """
-    input: 
-        callvar = join(workpath, "deepvariant", "call_variants", "{name}.call_variants.tfrecord.gz"),
+    input:
+        success = join(workpath, "deepvariant", "call_variants", "{name}.cv.success"),
     output:
         gvcf = join(workpath, "deepvariant", "gVCFs", "{name}.g.vcf.gz"),
         vcf  = join(workpath, "deepvariant", "VCFs", "{name}.vcf.gz"),
@@ -189,6 +274,7 @@ rule deepvariant_postprocess_variants:
         rname  = "dv_postprovars",
         genome = config['references']['GENOME'],
         tmpdir = tmpdir,
+        callvar = join(workpath, "deepvariant", "call_variants", "{name}.call_variants.tfrecord.gz"),
         # NOTE: There BE dragons here!
         # We need allocation info from make_examples rule
         # to determine the number of shards that were
@@ -217,7 +303,7 @@ rule deepvariant_postprocess_variants:
     # Run DeepVariant postprocess_variants
     time postprocess_variants \\
         --ref {params.genome} \\
-        --infile {input.callvar} \\
+        --infile {params.callvar} \\
         --outfile {output.vcf} \\
         --nonvariant_site_tfrecord_path {params.gvcf} \\
         --gvcf_outfile {output.gvcf}

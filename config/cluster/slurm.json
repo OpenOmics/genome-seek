@@ -116,11 +116,17 @@
         "time": "1-00:00:00",
         "gres": "lscratch:256"
     },
-    "deepvariant_call_variants": {
+    "deepvariant_call_variants_gpu": {
         "threads": "18",
         "mem": "48G",
         "partition": "gpu",
         "gres": "gpu:v100x:1,lscratch:256",
+        "time": "1-00:00:00"
+    },
+    "deepvariant_call_variants_cpu": {
+        "threads": "18",
+        "mem": "72G",
+        "gres": "lscratch:256",
         "time": "1-00:00:00"
     },
     "deepvariant_postprocess_variants": {

@@ -1140,7 +1140,7 @@ rule deepsomatic_postprocess_variants:
     to detect if a sharded writer was used in the previous step, and it
     will read in the set of sharded call_variants files without issues. 
     @Input:
-        Per-sample call_variants tensorflow records file (scatter)
+        Per-sample call_variants tensorflow records flag file (scatter)
     @Output:
         Single-sample VCF file with called variants
     """
