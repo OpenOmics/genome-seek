@@ -734,6 +734,7 @@ rule hmftools_sage:
             -ref_genome {params.genome} \\
             -ref_genome_version {params.ref_version} \\
             -output_dir {params.pave_outdir}/  \\
+            -read_pass_only \\
             -threads {threads}
         
         # Filtering PAVE output based on the
