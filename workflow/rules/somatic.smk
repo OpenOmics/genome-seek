@@ -809,6 +809,7 @@ rule clairs_tumor_only:
     # run in isolated sample directory to
     # collisions in file names
     /opt/bin/run_clairs_to \\
+        --sample_name {params.tumor} \\
         --tumor_bam_fn {input.tumor}  \\
         --ref_fn {params.genome} \\
         --threads {threads} \\
