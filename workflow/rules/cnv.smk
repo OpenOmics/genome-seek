@@ -375,13 +375,14 @@ rule hmftools_purple:
     echo "Amber output directory: $amber_outdir"
     echo "Cobalt output directory: $cobalt_outdir"
     
-    # Decompress and filter merged 
-    # somatic variant VCF to remove 
-    # biallelic variants and variants 
-    # with > 0.01 frequency in the 
-    # general population
+    # Filter merged somatic variant VCF to retain
+    # biallelic variants with non-missing AD and DP
+    # values in the first sample, impactful variants,
+    # and rare variants with gnomAD popmax AF < 0.01
+    # and TOPMed AF < 0.05.
     bcftools view \\
         -O v \\
+        -i 'FMT/AD[0:0]!="." && FMT/AD[0:1]!="." && FMT/DP[0]!="."' \\
         --max-alleles 2 \\
         {input.vcf} \\
         | slivar expr \\
